@@ -76,8 +76,10 @@ class ScreenCapture {
 
     // Encoding pipeline state (captured by frame handler closure)
     private var encodeQueue: DispatchQueue?
-    private var pendingEncodes: Int32 = 0
-    private var lastPixelBuffer: CVPixelBuffer?
+    /// Every SCStream-path encode goes through the pacer: it limits frames in
+    /// flight, keeps timestamps increasing and fills gaps up to the frame rate.
+    private var pacer: FramePacer?
+    private var lastPixelBuffer: CVPixelBuffer? { pacer?.lastBuffer }
 
     /// Callback when capture method changes (e.g. SCStream → CGDisplayStream fallback)
     var onCaptureMethodChanged: ((String) -> Void)?
@@ -112,16 +114,8 @@ class ScreenCapture {
 
         requestKeyframe()
 
-        guard let encoder, let cached = lastPixelBuffer else { return }
-
-        let pts = CMTime(
-            value: CMTimeValue(DispatchTime.now().uptimeNanoseconds / 1000),
-            timescale: 1_000_000
-        )
-
-        encodeQueue?.async {
-            encoder.encode(pixelBuffer: cached, presentationTimeStamp: pts)
-        }
+        guard encoder != nil, lastPixelBuffer != nil else { return }
+        pacer?.submit(nil, kind: .replay)
     }
 
     var displayWidth: Int {
@@ -375,8 +369,13 @@ class ScreenCapture {
     private func configureFrameHandler(label: String) {
         let queue = DispatchQueue(label: "encodeQueue.\(label)", qos: .userInteractive)
         encodeQueue = queue
-        pendingEncodes = 0
-        lastPixelBuffer = nil
+        pacer?.stop()
+        let newPacer = FramePacer(fps: refreshRate, encodeQueue: queue) { [weak self] buffer, pts in
+            self?.encoder?.encode(pixelBuffer: buffer, presentationTimeStamp: pts)
+        }
+        pacer = newPacer
+        newPacer.start()
+        debugLog("Frame pacing \(newPacer.pacingEnabled ? "on" : "off") at \(refreshRate) fps (\(label))")
 
         streamOutput?.onFrameReceived = { [weak self] sampleBuffer in
             guard let self = self else { return }
@@ -396,27 +395,12 @@ class ScreenCapture {
                 self.onCaptureMethodChanged?("SCStream")
             }
 
-            let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-
-            // Backpressure: skip if encode queue already has 2+ frames pending
-            let pending = OSAtomicAdd32(0, &self.pendingEncodes)
-            if pending >= 2 {
-                return
-            }
-
+            // New pixels go out at once; a tick without pixels re-sends the
+            // cached frame. The pacer drops it when 2 encodes are in flight.
             if let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-                self.lastPixelBuffer = imageBuffer
-                OSAtomicIncrement32(&self.pendingEncodes)
-                queue.async {
-                    self.encoder?.encode(pixelBuffer: imageBuffer, presentationTimeStamp: pts)
-                    OSAtomicDecrement32(&self.pendingEncodes)
-                }
-            } else if let cached = self.lastPixelBuffer {
-                OSAtomicIncrement32(&self.pendingEncodes)
-                queue.async {
-                    self.encoder?.encode(pixelBuffer: cached, presentationTimeStamp: pts)
-                    OSAtomicDecrement32(&self.pendingEncodes)
-                }
+                newPacer.submit(imageBuffer, kind: .captured)
+            } else {
+                newPacer.submit(nil, kind: .idle)
             }
         }
     }
@@ -508,16 +492,10 @@ class ScreenCapture {
             if stalled {
                 let hasHadFrames = self.stateLock.withLock { $0.hasReceivedFirstFrame }
 
-                if hasHadFrames, let lastBuffer = self.lastPixelBuffer {
+                if hasHadFrames, self.lastPixelBuffer != nil {
                     // Screen is idle — SCStream is healthy but not delivering frames (macOS optimization).
                     // Re-send the last captured frame as a keepalive so the tablet stays connected.
-                    let pts = CMTime(
-                        value: CMTimeValue(DispatchTime.now().uptimeNanoseconds / 1000),
-                        timescale: 1_000_000
-                    )
-                    self.encodeQueue?.async {
-                        self.encoder?.encode(pixelBuffer: lastBuffer, presentationTimeStamp: pts)
-                    }
+                    self.pacer?.submit(nil, kind: .replay)
                     self.stateLock.withLock { $0.lastFrameTime = DispatchTime.now() }
                     // Keep monitoring — real errors are handled by the SCStream error delegate
                 } else {
@@ -647,6 +625,8 @@ class ScreenCapture {
     // MARK: - CGDisplayStream fallback
 
     private func attemptFallbackCapture() {
+        // The fallback encodes on its own clock; repeats would interleave.
+        pacer?.stop()
         guard let displayID = virtualDisplayID else {
             debugLog("Fallback skipped — no displayID")
             return
@@ -797,8 +777,10 @@ class ScreenCapture {
         isStreaming = false
         streamGeneration &+= 1
 
-        // Cancel frame flow monitor
+        // Cancel frame flow monitor and pacing
         stopFrameMonitor()
+        pacer?.stop()
+        pacer = nil
 
         // Let the display idle-sleep normally again once we stop streaming.
         releaseDisplaySleepAssertion()
