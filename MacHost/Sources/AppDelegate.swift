@@ -52,6 +52,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var settings = DisplaySettings()
     var settingsWindow: SettingsWindowController?
     var statusItem: NSStatusItem?
+    private var statusPanel: MenuBarPanelController?
     let pairedDeviceStore = PairedDeviceStore()
     let deviceProfileStore = DeviceProfileStore()
     /// Profile key of the tablet currently streaming (nil when none, or when
@@ -338,25 +339,49 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
+        // A popup panel rather than an NSMenu (see MenuBarPanelController).
+        statusPanel = MenuBarPanelController(
+            settings: settings,
+            actions: .init(
+                toggleServer: { [weak self] in self?.toggleServerFromMenu() },
+                showSettings: { [weak self] in self?.showSettings() },
+                quit: { NSApp.terminate(nil) }
+            )
+        )
+
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "display.2", accessibilityDescription: "SharpScreen")
+            button.image = MenuBarIcon.image(faint: true)
+            if #available(macOS 27.0, *), let item = statusItem {
+                // The system opens and closes the panel and draws the item as
+                // selected meanwhile (setting the highlight in code no longer
+                // shows on macOS 27).
+                item.expandedInterfaceDelegate = self
+                statusPanel?.systemManagesSelection = true
+                statusPanel?.onDismiss = { [weak item] in item?.expandedInterfaceSession?.cancel() }
+            } else {
+                button.target = self
+                button.action = #selector(statusItemClicked(_:))
+                // On release: acting on the press let the button's own
+                // mouse-up clear the selected look set while the panel is open.
+                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            }
         }
 
-        // Items are rebuilt on every open (menuNeedsUpdate) so the menu always
-        // reflects live server/connection state.
-        let menu = NSMenu()
-        menu.delegate = self
-        menu.autoenablesItems = false
-        statusItem?.menu = menu
-
-        // Dim the menu bar icon while the server is stopped — at-a-glance
+        // Solid while a tablet is connected, faint otherwise: at-a-glance
         // state without opening the menu.
         settings.$isRunning
+            .combineLatest(settings.$clientConnected)
+            .map { running, connected in running && connected }
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] running in
-                self?.statusItem?.button?.appearsDisabled = !running
+            .sink { [weak self] connected in
+                self?.statusItem?.button?.image = MenuBarIcon.image(faint: !connected)
             }
             .store(in: &cancellables)
+    }
+
+    @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
+        statusPanel?.toggle(from: sender)
     }
 
     @objc private func toggleServerFromMenu() {
@@ -367,16 +392,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 await self?.startServer()
             }
         }
-    }
-
-    @objc private func selectUSBMode() {
-        guard settings.connectionMode != .usb else { return }
-        settings.connectionMode = .usb
-    }
-
-    @objc private func selectWirelessMode() {
-        guard settings.connectionMode != .wireless else { return }
-        settings.connectionMode = .wireless
     }
 
     func setupSettingsWindow() {
@@ -533,15 +548,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let alert = NSAlert()
         if isMacOS26 {
-            alert.messageText = "Screen & System Audio Recording Permission Required"
-            alert.informativeText = "Please grant Screen & System Audio Recording permission in System Settings > Privacy & Security."
+            alert.messageText = String(localized: "Screen & System Audio Recording Permission Required")
+            alert.informativeText = String(localized: "Please grant Screen & System Audio Recording permission in System Settings > Privacy & Security.")
         } else {
-            alert.messageText = "Screen Recording Permission Required"
-            alert.informativeText = "Please grant Screen Recording permission in System Settings > Privacy & Security."
+            alert.messageText = String(localized: "Screen Recording Permission Required")
+            alert.informativeText = String(localized: "Please grant Screen Recording permission in System Settings > Privacy & Security.")
         }
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Open System Settings")
-        alert.addButton(withTitle: "Later")
+        alert.addButton(withTitle: String(localized: "Open System Settings"))
+        alert.addButton(withTitle: String(localized: "Later"))
 
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
@@ -678,7 +693,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 throw NSError(
                     domain: "SideScreen.Startup",
                     code: 2,
-                    userInfo: [NSLocalizedDescriptionKey: "The streaming server could not be created."]
+                    userInfo: [NSLocalizedDescriptionKey: String(localized: "The streaming server could not be created.")]
                 )
             }
             try await server.start()
@@ -695,7 +710,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.tearDownServerResources(saveDisplayPosition: false)
 
                 let alert = NSAlert()
-                alert.messageText = "Failed to Start Server"
+                alert.messageText = String(localized: "Failed to Start Server")
                 alert.informativeText = error.localizedDescription
                 alert.alertStyle = .critical
                 alert.runModal()
@@ -733,7 +748,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             throw NSError(
                 domain: "SideScreen.Startup",
                 code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "The virtual display was created without a display ID."]
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "The virtual display was created without a display ID.")]
             )
         }
         let capture = try await ScreenCapture()
@@ -1338,64 +1353,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-// MARK: - Menu bar quick actions
+@available(macOS 27.0, *)
+extension AppDelegate: NSStatusItemExpandedInterfaceDelegate {
+    func statusItem(_ statusItem: NSStatusItem, didBegin expandedInterfaceSession: NSStatusItemExpandedInterfaceSession) {
+        guard let button = statusItem.button else { return }
+        statusPanel?.show(from: button)
+    }
 
-extension AppDelegate: NSMenuDelegate {
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        menu.removeAllItems()
-
-        // Live status line (not clickable)
-        let statusTitle: String
-        if settings.isRunning {
-            if settings.clientConnected {
-                let device = settings.currentWirelessDevice ?? "tablet"
-                statusTitle = "🟢 Connected — \(device)"
-            } else {
-                statusTitle = "🟡 Waiting for tablet on port \(settings.port)"
-            }
-        } else {
-            statusTitle = "⚪️ Server stopped"
-        }
-        let statusLine = NSMenuItem(title: statusTitle, action: nil, keyEquivalent: "")
-        statusLine.isEnabled = false
-        menu.addItem(statusLine)
-        menu.addItem(.separator())
-
-        // Start / Stop
-        let toggle = NSMenuItem(
-            title: settings.isRunning ? "Stop Streaming" : "Start Streaming",
-            action: #selector(toggleServerFromMenu),
-            keyEquivalent: "t"
-        )
-        toggle.target = self
-        // Mirror the settings-window Start button: starting needs the Screen
-        // Recording permission, stopping is always allowed.
-        toggle.isEnabled = settings.isRunning || settings.hasScreenRecordingPermission
-        menu.addItem(toggle)
-
-        // Connection mode (switching while running restarts the server, same
-        // as changing it in the settings window)
-        let modeMenu = NSMenu()
-        modeMenu.autoenablesItems = false
-        let usb = NSMenuItem(title: "USB", action: #selector(selectUSBMode), keyEquivalent: "")
-        usb.target = self
-        usb.state = settings.connectionMode == .usb ? .on : .off
-        modeMenu.addItem(usb)
-        let wireless = NSMenuItem(title: "Wireless", action: #selector(selectWirelessMode), keyEquivalent: "")
-        wireless.target = self
-        wireless.state = settings.connectionMode == .wireless ? .on : .off
-        modeMenu.addItem(wireless)
-        let modeItem = NSMenuItem(title: "Connection Mode", action: nil, keyEquivalent: "")
-        modeItem.submenu = modeMenu
-        menu.addItem(modeItem)
-
-        menu.addItem(.separator())
-
-        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: "s")
-        settingsItem.target = self
-        menu.addItem(settingsItem)
-
-        menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit SharpScreen", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+    func statusItemDidEndExpandedInterfaceSession(_ statusItem: NSStatusItem, animated: Bool) {
+        statusPanel?.close()
     }
 }

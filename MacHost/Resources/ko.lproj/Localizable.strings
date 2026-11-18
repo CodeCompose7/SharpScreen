@@ -1,0 +1,241 @@
+/* SharpScreen Mac UI strings. Key = English source text (SwiftUI
+   LocalizedStringKey / String(localized:)). Interpolations use the
+   specifiers Swift generates: Int -> %lld, String -> %@. Ports, IDs and
+   bitrates are passed as strings (%@) so they are never digit-grouped. */
+
+/* Settings window: tabs */
+"Connection" = "연결";
+"Display" = "디스플레이";
+"Streaming" = "스트리밍";
+"General" = "일반";
+"About" = "정보";
+
+/* Connection pane */
+"Streaming · %@" = "스트리밍 중 · %@";
+"Streaming to tablet" = "태블릿으로 스트리밍 중";
+"Waiting for tablet" = "태블릿 대기 중";
+"Stopped" = "중지됨";
+"Start" = "시작";
+"Stop" = "중지";
+"%lld Hz" = "%lld Hz";
+"Port %@" = "포트 %@";
+"Screen Recording permission required — see General." = "화면 기록 권한이 필요합니다. 일반 탭을 확인하십시오.";
+"USB" = "USB";
+"Wireless" = "무선";
+"USB Setup" = "USB 설정";
+"Connect the tablet with a USB cable and allow USB debugging when asked. SharpScreen sets up adb reverse automatically when you click Start." = "USB 케이블로 태블릿을 연결하고 USB 디버깅 허용 요청이 나타나면 허용하십시오. 시작을 클릭하면 SharpScreen이 adb reverse를 자동으로 설정합니다.";
+"ADB installed" = "ADB 설치";
+"Installed" = "설치됨";
+"Missing" = "없음";
+"USB mode tunnels the TCP stream through the cable using `adb reverse`. Requires the `adb` command on the Mac. Searched paths: Homebrew, /usr/local/bin, ~/Library/Android/sdk/platform-tools, and PATH (`which adb`)." = "USB 모드는 `adb reverse`를 사용해 TCP 스트림을 케이블로 전달합니다. Mac에 `adb` 명령이 있어야 합니다. 검색 경로: Homebrew, /usr/local/bin, ~/Library/Android/sdk/platform-tools, PATH(`which adb`).";
+"Install it with Homebrew:" = "Homebrew로 설치하십시오:";
+"ADB reverse" = "ADB reverse";
+"OK" = "정상";
+"Pending" = "대기 중";
+"Whether `adb reverse tcp:%@ tcp:%@` is currently configured. The Mac app sets this up automatically when you click Start. Goes green within ~2 seconds after the tablet is plugged in and authorized." = "`adb reverse tcp:%@ tcp:%@`이(가) 현재 설정되어 있는지 나타냅니다. 시작을 클릭하면 Mac 앱이 자동으로 설정합니다. 태블릿을 연결하고 허용하면 약 2초 안에 초록색으로 바뀝니다.";
+"USB device" = "USB 기기";
+"Detected" = "감지됨";
+"Not detected" = "감지되지 않음";
+"An Android device authorized for ADB and visible to your Mac. Plug in via USB-C and tap Allow on the device's USB debugging prompt." = "ADB 사용이 허용되어 Mac에서 인식되는 Android 기기입니다. USB-C로 연결한 다음 기기의 USB 디버깅 요청에서 허용을 탭하십시오.";
+"Network Status" = "네트워크 상태";
+"Wi-Fi" = "Wi-Fi";
+"Connected" = "연결됨";
+"Disconnected" = "연결 끊김";
+"Whether the Mac currently has a working internet route. Wireless mode requires the Mac to be on a Wi-Fi (or Ethernet) network — the same network the tablet is on." = "Mac이 현재 네트워크에 정상적으로 연결되어 있는지 나타냅니다. 무선 모드를 사용하려면 Mac이 태블릿과 같은 Wi-Fi(또는 이더넷) 네트워크에 연결되어 있어야 합니다.";
+"Listening on" = "수신 주소";
+"The LAN address the tablet must reach. The QR code embeds this exact host:port — if it changes (e.g. you switch Wi-Fi), re-scan the new QR on the tablet." = "태블릿이 접속해야 하는 LAN 주소입니다. QR 코드에 이 host:port가 그대로 들어 있으므로, 주소가 바뀌면(예: Wi-Fi 변경) 태블릿에서 새 QR 코드를 다시 스캔하십시오.";
+"Network" = "네트워크";
+"Server Port" = "서버 포트";
+"Port" = "포트";
+"Stop the server to change the port." = "포트를 변경하려면 서버를 중지하십시오.";
+"Changing the port invalidates existing pairings — re-scan the QR on each tablet." = "포트를 변경하면 기존 페어링이 무효화됩니다. 각 태블릿에서 QR 코드를 다시 스캔하십시오.";
+"Custom port set — the Android app must use the same port." = "사용자 지정 포트가 설정되었습니다. Android 앱도 같은 포트를 사용해야 합니다.";
+
+/* Connection pane: wireless pairing */
+"Pair Device" = "기기 페어링";
+"Click Start above to begin listening, then scan the QR." = "위의 시작을 클릭해 수신을 시작한 다음 QR 코드를 스캔하십시오.";
+"Generating QR…" = "QR 코드 생성 중…";
+"Scan this QR from SharpScreen for Android (Wireless tab)" = "Android용 SharpScreen의 무선 탭에서 이 QR 코드를 스캔하십시오";
+"Listening: %@:%@" = "수신 중: %@:%@";
+"Wi-Fi disconnected — no LAN address" = "Wi-Fi 연결 끊김 — LAN 주소 없음";
+"No camera on your tablet?" = "태블릿에 카메라가 없나요?";
+"Type this one-time code in the Android app instead.\nA new code is issued after each pairing." = "대신 Android 앱에 이 일회용 코드를 입력하십시오.\n페어링할 때마다 새 코드가 발급됩니다.";
+"Paired Devices (%lld)" = "페어링된 기기(%lld)";
+"No devices paired yet." = "아직 페어링된 기기가 없습니다.";
+"Forget" = "삭제";
+"Reset Pairing Token" = "페어링 토큰 재설정";
+"Forgets every paired device." = "페어링된 모든 기기를 삭제합니다.";
+"Reset…" = "재설정…";
+"Refresh list and timestamps" = "목록 및 시간 새로 고침";
+"Reset Token?" = "토큰을 재설정하겠습니까?";
+"This will disconnect all paired devices. They will need to scan the new QR to connect again." = "페어링된 모든 기기의 연결이 해제됩니다. 다시 연결하려면 새 QR 코드를 스캔해야 합니다.";
+"just now" = "방금 전";
+
+/* Display pane */
+"Resolution" = "해상도";
+"Show all" = "모두 보기";
+"Custom" = "사용자 지정";
+"User defined" = "사용자 정의";
+"Widescreen" = "와이드스크린";
+"HD/4K" = "HD/4K";
+"Classic" = "클래식";
+"Surface/Pixel" = "Surface/Pixel";
+"Tablet Wide" = "와이드 태블릿";
+"iPad" = "iPad";
+"W" = "가로";
+"H" = "세로";
+"Apply" = "적용";
+"Supported range: 640–7680 × 480–4320" = "지원 범위: 640–7680 × 480–4320";
+"HiDPI (Retina)" = "HiDPI(Retina)";
+"Renders at 2× resolution for sharper text. Increases bandwidth." = "2배 해상도로 렌더링해 텍스트가 더 선명해집니다. 대역폭 사용량이 늘어납니다.";
+"Orientation" = "방향";
+"Portrait" = "세로";
+"Landscape" = "가로";
+"Rotation" = "회전";
+"Display will be in portrait mode" = "디스플레이가 세로 모드로 표시됩니다";
+"Flip Horizontally" = "좌우 반전";
+"Mirror left and right" = "왼쪽과 오른쪽을 뒤집습니다";
+"Flip Vertically" = "상하 반전";
+"Mirror top and bottom" = "위쪽과 아래쪽을 뒤집습니다";
+"Display Arrangement" = "디스플레이 배치";
+"Position the tablet relative to your other displays." = "다른 디스플레이를 기준으로 태블릿 위치를 지정합니다.";
+"Arrange Displays…" = "디스플레이 배치…";
+"Frame Rate" = "프레임률";
+"Refresh Rate" = "주사율";
+"High refresh rate for a smooth experience" = "높은 주사율로 부드럽게 표시됩니다";
+"Custom rate — handy when a tablet shows artifacts above a certain FPS" = "사용자 지정 주사율 — 특정 FPS 이상에서 화면이 깨지는 태블릿에 유용합니다";
+
+/* Streaming pane */
+"Gaming Mode" = "게임 모드";
+"Enable Gaming Mode" = "게임 모드 켜기";
+"Optimized for competitive gaming" = "경쟁 게임에 최적화";
+"High bitrate (1000 Mbps)" = "높은 비트레이트(1000 Mbps)";
+"120 Hz refresh rate" = "120 Hz 주사율";
+"Ultra-low latency encoding" = "초저지연 인코딩";
+"Bitrate" = "비트레이트";
+"Target bitrate" = "목표 비트레이트";
+"%@ Mbps" = "%@ Mbps";
+"Locked at 1000 Mbps in Gaming Mode" = "게임 모드에서는 1000 Mbps로 고정됩니다";
+"Quality" = "화질";
+"Ultra Low" = "매우 낮음";
+"Low" = "낮음";
+"Medium" = "중간";
+"High" = "높음";
+"Quality locked to Ultra Low in Gaming Mode" = "게임 모드에서는 화질이 매우 낮음으로 고정됩니다";
+"Fastest encoding, lowest latency" = "가장 빠른 인코딩, 가장 낮은 지연 시간";
+"Touch Input" = "터치 입력";
+"Enable Touch Input" = "터치 입력 켜기";
+"Control the Mac by touching the tablet" = "태블릿을 터치해 Mac을 제어합니다";
+"Touch input is off — the tablet is display-only" = "터치 입력이 꺼져 있습니다. 태블릿은 화면 표시만 합니다";
+"Performance" = "성능";
+"FPS" = "FPS";
+
+/* General pane */
+"Startup" = "시동";
+"Launch at Login" = "로그인 시 실행";
+"Run SharpScreen in the background automatically after you log in." = "로그인하면 SharpScreen을 백그라운드에서 자동으로 실행합니다.";
+"Auto-start streaming on launch" = "실행 시 스트리밍 자동 시작";
+"Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "앱이 열리면 서버를 자동으로 시작해 Mac을 조작하지 않아도 태블릿이 연결할 수 있습니다.";
+"Startup mode" = "시작 모드";
+"Which connection mode to start in when auto-starting." = "자동 시작할 때 사용할 연결 모드입니다.";
+"Permissions & Status" = "권한 및 상태";
+"Screen & System Audio" = "화면 및 시스템 오디오";
+"Screen Recording" = "화면 기록";
+"Granted" = "허용됨";
+"Required" = "필요";
+"Optional" = "선택 사항";
+"macOS privacy permission required to capture the virtual display. Grant it in System Settings → Privacy & Security → Screen Recording." = "가상 디스플레이를 캡처하는 데 필요한 macOS 개인정보 보호 권한입니다. 시스템 설정 → 개인정보 보호 및 보안 → 화면 기록에서 허용하십시오.";
+"Accessibility" = "손쉬운 사용";
+"Optional permission. Required only if you want touch input from the tablet to control the Mac. Streaming works without it." = "선택 권한입니다. 태블릿 터치로 Mac을 제어하려는 경우에만 필요하며, 이 권한 없이도 스트리밍은 작동합니다.";
+"Virtual Display" = "가상 디스플레이";
+"Active" = "활성";
+"Inactive" = "비활성";
+"The macOS virtual display SharpScreen renders into. Created when you click Start; the tablet streams its pixels." = "SharpScreen이 렌더링하는 macOS 가상 디스플레이입니다. 시작을 클릭하면 생성되며, 태블릿은 이 화면을 스트리밍합니다.";
+"Client Connected" = "클라이언트 연결";
+"Yes" = "예";
+"No" = "아니요";
+"Whether the Android app currently has an active stream session." = "Android 앱이 현재 스트리밍 세션에 연결되어 있는지 나타냅니다.";
+"Capture Method" = "캡처 방식";
+"Initializing…" = "초기화 중…";
+"Which macOS API is currently capturing the virtual display. SCStream is the modern path; the CGDisplayStream fallback activates if SCStream fails (e.g. on certain virtual display configurations)." = "현재 가상 디스플레이를 캡처하는 macOS API입니다. SCStream이 기본 방식이며, SCStream이 실패하면(예: 일부 가상 디스플레이 구성) CGDisplayStream 대체 방식이 사용됩니다.";
+"Screen & System Audio Recording Required" = "화면 및 시스템 오디오 녹음 권한 필요";
+"Screen Recording Required" = "화면 기록 권한 필요";
+"Required to capture the virtual display. Go to System Settings > Privacy & Security > Screen & System Audio Recording." = "가상 디스플레이를 캡처하려면 필요합니다. 시스템 설정 > 개인정보 보호 및 보안 > 화면 및 시스템 오디오 녹음으로 이동하십시오.";
+"Required to capture the virtual display." = "가상 디스플레이를 캡처하려면 필요합니다.";
+"Open System Settings" = "시스템 설정 열기";
+"Tablet goes black in fullscreen apps" = "전체 화면 앱에서 태블릿 화면이 검게 표시됨";
+"\"Displays have separate Spaces\" is turned off, so macOS blanks every other display — including the tablet — whenever an app enters fullscreen. Turn it on in System Settings → Desktop & Dock → Mission Control, then log out and back in." = "'디스플레이가 별도의 Spaces를 가짐'이 꺼져 있어, 앱이 전체 화면으로 전환될 때마다 macOS가 태블릿을 포함한 다른 모든 디스플레이를 비웁니다. 시스템 설정 → 데스크탑 및 Dock → Mission Control에서 이 옵션을 켠 다음 로그아웃했다가 다시 로그인하십시오.";
+"Enable Touch Control" = "터치 제어 켜기";
+"Control your Mac from your tablet." = "태블릿에서 Mac을 제어합니다.";
+"Open Settings" = "설정 열기";
+"App" = "앱";
+"Reset Settings" = "설정 재설정";
+"Restore every setting to its default value." = "모든 설정을 기본값으로 되돌립니다.";
+"Restart SharpScreen" = "SharpScreen 재시작";
+"Restart" = "재시작";
+"Quit SharpScreen" = "SharpScreen 종료";
+"Stops streaming and removes the virtual display." = "스트리밍을 중지하고 가상 디스플레이를 제거합니다.";
+"Quit" = "종료";
+"Quit SharpScreen (⌘Q)" = "SharpScreen 종료(⌘Q)";
+"Cancel" = "취소";
+"Reset" = "재설정";
+"This will reset all settings to default values." = "모든 설정이 기본값으로 재설정됩니다.";
+
+/* About pane */
+"Version %@" = "버전 %@";
+"Turn your tablet into a second display" = "태블릿을 보조 디스플레이로";
+"Turns an Android tablet or phone into a second display for your Mac — over USB or Wi-Fi, with touch control. Free and open source." = "Android 태블릿이나 휴대폰을 USB 또는 Wi-Fi로 연결해 터치 제어까지 가능한 Mac의 보조 디스플레이로 만들어 줍니다. 무료 오픈 소스입니다.";
+"Check for Updates…" = "업데이트 확인…";
+"Look for a newer version now. SharpScreen also checks once a day." = "지금 새 버전을 확인합니다. SharpScreen은 하루에 한 번 자동으로도 확인합니다.";
+"Update checks are only available in the released build." = "업데이트 확인은 정식 배포 빌드에서만 사용할 수 있습니다.";
+"Links" = "링크";
+"GitHub" = "GitHub";
+"Releases" = "릴리스";
+"Report a Problem" = "문제 보고";
+"Credits" = "크레딧";
+"Fork of Side Screen by Tran Vuong Quoc Dat (MIT)" = "Tran Vuong Quoc Dat의 Side Screen 포크(MIT)";
+
+/* Menu bar and app menu */
+"Connected — %@" = "연결됨 — %@";
+"Connected to tablet" = "태블릿에 연결됨";
+"Waiting for tablet on port %@" = "포트 %@에서 태블릿 대기 중";
+"Server stopped" = "서버 중지됨";
+"Start Streaming" = "스트리밍 시작";
+"Stop Streaming" = "스트리밍 중지";
+"Connection Mode" = "연결 모드";
+"Settings…" = "설정…";
+"About SharpScreen" = "SharpScreen에 관하여";
+"Edit" = "편집";
+"Cut" = "자르기";
+"Copy" = "복사하기";
+"Paste" = "붙여넣기";
+"Select All" = "전체 선택";
+
+/* Alerts and errors */
+"Screen & System Audio Recording Permission Required" = "화면 및 시스템 오디오 녹음 권한 필요";
+"Please grant Screen & System Audio Recording permission in System Settings > Privacy & Security." = "시스템 설정 > 개인정보 보호 및 보안에서 화면 및 시스템 오디오 녹음 권한을 허용하십시오.";
+"Screen Recording Permission Required" = "화면 기록 권한 필요";
+"Please grant Screen Recording permission in System Settings > Privacy & Security." = "시스템 설정 > 개인정보 보호 및 보안에서 화면 기록 권한을 허용하십시오.";
+"Later" = "나중에";
+"Failed to Start Server" = "서버를 시작하지 못했습니다";
+"The streaming server could not be created." = "스트리밍 서버를 생성할 수 없습니다.";
+"The virtual display was created without a display ID." = "가상 디스플레이가 디스플레이 ID 없이 생성되었습니다.";
+"Could not listen on port %@: %@" = "포트 %@에서 수신할 수 없습니다: %@";
+"Server startup on port %@ was cancelled before the listener became ready." = "수신기가 준비되기 전에 포트 %@의 서버 시작이 취소되었습니다.";
+"Last listener error: %@" = "마지막 수신기 오류: %@";
+"Timed out while waiting for the server to listen on port %@." = "서버가 포트 %@에서 수신을 시작하기를 기다리는 중 시간이 초과되었습니다.";
+"Server startup was awaited more than once." = "서버 시작을 두 번 이상 기다렸습니다.";
+"Virtual display creation failed: %@" = "가상 디스플레이를 생성하지 못했습니다: %@";
+"Settings apply failed: %@" = "설정을 적용하지 못했습니다: %@";
+"Virtual display has not been created" = "가상 디스플레이가 생성되지 않았습니다";
+"Main display not found" = "주 디스플레이를 찾을 수 없습니다";
+"Display configuration failed: %@" = "디스플레이 구성에 실패했습니다: %@";
+"Mirror mode operation failed: %@" = "미러링 모드 작업에 실패했습니다: %@";
+"SCShareableContent timed out after %llds (possible Apple bug FB12114396)" = "SCShareableContent가 %lld초 후 시간 초과되었습니다(Apple 버그 FB12114396일 수 있음)";
+"Virtual display ID not set" = "가상 디스플레이 ID가 설정되지 않았습니다";
+"Virtual display with ID %@ not found after 5 attempts" = "5번 시도했지만 ID가 %@인 가상 디스플레이를 찾을 수 없습니다";
+"Display not initialized" = "디스플레이가 초기화되지 않았습니다";
+
+/* Wireless: AWDL warning */
+"AirDrop, Handoff and Universal Control can make wireless streaming stutter." = "AirDrop, Handoff 및 유니버설 컨트롤로 인해 무선 스트리밍이 끊길 수 있습니다.";
+"They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until the next restart or AirDrop: sudo ifconfig awdl0 down" = "이 기능들은 1초에 두 번 정도 Mac의 Wi-Fi를 잠시 다른 채널로 옮깁니다(매번 약 80ms). 스트리밍하는 동안 끄거나, Mac을 이더넷으로 연결하거나, USB를 사용하십시오. 다음 재시동 또는 AirDrop 사용 전까지 끄려면: sudo ifconfig awdl0 down";

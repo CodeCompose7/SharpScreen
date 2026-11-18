@@ -1,10 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">#4CAF50</item>
-        <item name="colorPrimaryDark">#000000</item>
-        <item name="colorAccent">#2196F3</item>
-        <item name="android:statusBarColor">#000000</item>
-        <item name="android:navigationBarColor">#000000</item>
+    <!-- Always dark: the panels and dialogs are designed for a dark background. -->
+    <style name="AppTheme" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/ss_accent</item>
+        <item name="colorPrimaryVariant">@color/ss_accent</item>
+        <item name="colorOnPrimary">@color/ss_on_accent</item>
+        <item name="colorSecondary">@color/ss_accent</item>
+        <item name="colorSecondaryVariant">@color/ss_accent</item>
+        <item name="colorOnSecondary">@color/ss_on_accent</item>
+        <item name="colorSurface">@color/ss_card</item>
+        <item name="colorOnSurface">@color/ss_text_primary</item>
+        <item name="colorControlActivated">@color/ss_accent</item>
+        <item name="colorControlNormal">@color/ss_text_secondary</item>
+        <!-- Cards and dialogs keep their exact colours instead of a lighter elevation tint. -->
+        <item name="elevationOverlayEnabled">false</item>
+        <item name="android:colorBackground">@color/ss_bg</item>
+        <item name="android:windowBackground">@color/ss_bg</item>
+        <item name="android:textColorPrimary">@color/ss_text_primary</item>
+        <item name="android:textColorSecondary">@color/ss_text_secondary</item>
+        <item name="android:textColorHint">@color/ss_text_secondary</item>
+        <item name="android:textColorHighlight">@color/ss_accent_tint</item>
+        <item name="android:statusBarColor">@color/ss_bg</item>
+        <item name="android:navigationBarColor">@color/ss_bg</item>
+        <item name="textAppearanceButton">@style/TextAppearance.SharpScreen.Button</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.SharpScreen.Dialog</item>
+    </style>
+
+    <style name="ThemeOverlay.SharpScreen.Dialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorPrimary">@color/ss_accent</item>
+        <item name="colorSurface">@color/ss_card</item>
+        <item name="colorOnSurface">@color/ss_text_primary</item>
+        <item name="colorControlActivated">@color/ss_accent</item>
+        <item name="colorControlNormal">@color/ss_text_secondary</item>
+        <item name="elevationOverlayEnabled">false</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.SharpScreen.Card</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/SharpScreen.DialogTitle</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.SharpScreen.Button.DialogText</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.SharpScreen.Button.DialogText.Quiet</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.SharpScreen.Button.DialogText.Quiet</item>
     </style>
 </resources>

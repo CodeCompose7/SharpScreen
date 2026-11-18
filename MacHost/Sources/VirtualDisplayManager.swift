@@ -397,17 +397,17 @@ enum VirtualDisplayError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .creationFailed(let msg):
-            return "Virtual display creation failed: \(msg)"
+            return String(localized: "Virtual display creation failed: \(msg)")
         case .settingsApplyFailed(let msg):
-            return "Settings apply failed: \(msg)"
+            return String(localized: "Settings apply failed: \(msg)")
         case .displayNotCreated:
-            return "Virtual display has not been created"
+            return String(localized: "Virtual display has not been created")
         case .mainDisplayNotFound:
-            return "Main display not found"
+            return String(localized: "Main display not found")
         case .configurationFailed(let msg):
-            return "Display configuration failed: \(msg)"
+            return String(localized: "Display configuration failed: \(msg)")
         case .mirrorModeFailed(let msg):
-            return "Mirror mode operation failed: \(msg)"
+            return String(localized: "Mirror mode operation failed: \(msg)")
         }
     }
 }

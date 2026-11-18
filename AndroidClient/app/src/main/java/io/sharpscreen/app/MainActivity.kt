@@ -46,8 +46,10 @@ import java.net.Socket
 
 private fun mainDiag(msg: String) = DiagLog.log("MA", msg)
 
-private const val MAC_APP_URL = "https://github.com/CodeCompose7/SharpScreen/releases"
-private const val REPORT_PROBLEM_URL = "https://github.com/CodeCompose7/SharpScreen/issues"
+// Also linked from SettingsActivity's About section.
+internal const val GITHUB_URL = "https://github.com/CodeCompose7/SharpScreen"
+internal const val MAC_APP_URL = "$GITHUB_URL/releases"
+internal const val REPORT_PROBLEM_URL = "$GITHUB_URL/issues"
 
 class MainActivity : AppCompatActivity() {
     private lateinit var wirelessController: WirelessTabController
@@ -147,6 +149,7 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        showAppVersion()
         appUpdater = AppUpdater(this)
         reviewPrompter = ReviewPrompter(this) { !isStreamingUi }
 
@@ -173,8 +176,9 @@ class MainActivity : AppCompatActivity() {
         binding.modeToggleGroup.check(if (saved == ConnectionMode.WIRELESS) R.id.modeWireless else R.id.modeUSB)
         applyModeVisibility(saved)
 
-        binding.modeToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
+        // A RadioGroup (pill segments): one segment is always checked.
+        binding.modeToggleGroup.setOnCheckedChangeListener { _, checkedId ->
+            if (checkedId == View.NO_ID) return@setOnCheckedChangeListener
             val mode = if (checkedId == R.id.modeWireless) ConnectionMode.WIRELESS else ConnectionMode.USB
             prefs.connectionMode = mode
             applyModeVisibility(mode)
@@ -424,14 +428,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupUI() {
         binding.connectButton.setOnClickListener {
-            var host =
-                binding.hostInput.text
-                    .toString()
-                    .ifEmpty { "127.0.0.1" }
-            val port =
-                binding.portInput.text
-                    .toString()
-                    .toIntOrNull() ?: 54321
+            // USB host/port are edited in SettingsActivity (defaults 127.0.0.1:54321).
+            var host = prefs.usbHost.trim().ifEmpty { PreferencesManager.DEFAULT_USB_HOST }
+            val port = prefs.usbPort
 
             // Convert localhost to 127.0.0.1 for better Android compatibility
             if (host.equals("localhost", ignoreCase = true)) {
@@ -440,11 +439,11 @@ class MainActivity : AppCompatActivity() {
 
             // Validate input
             if (host.isBlank()) {
-                showError("Please enter a host address")
+                showError(getString(R.string.error_enter_host))
                 return@setOnClickListener
             }
 
-            updateStatus("Connecting...")
+            updateStatus(getString(R.string.status_connecting))
             connect(host, port)
         }
 
@@ -452,12 +451,8 @@ class MainActivity : AppCompatActivity() {
             disconnect()
         }
 
-        // Advanced settings toggle
-        var advancedVisible = false
-        binding.showAdvanced.setOnClickListener {
-            advancedVisible = !advancedVisible
-            binding.advancedSettings.visibility = if (advancedVisible) View.VISIBLE else View.GONE
-            binding.showAdvanced.text = if (advancedVisible) "Hide Advanced Settings" else "Advanced Settings"
+        binding.appSettingsButton.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
 
         binding.demoButton.setOnClickListener { startDemo() }
@@ -466,19 +461,19 @@ class MainActivity : AppCompatActivity() {
             try {
                 startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(MAC_APP_URL)))
             } catch (_: Exception) {
-                showError("Open $MAC_APP_URL in a browser to download the Mac app.")
+                showError(getString(R.string.error_open_mac_app_url, MAC_APP_URL))
             }
         }
         binding.reportProblemLink.setOnClickListener {
             try {
                 startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(REPORT_PROBLEM_URL)))
             } catch (_: Exception) {
-                showError("Open $REPORT_PROBLEM_URL in a browser to report a problem.")
+                showError(getString(R.string.error_open_report_url, REPORT_PROBLEM_URL))
             }
         }
 
         // Initial status
-        updateStatus("Ready to connect")
+        updateStatus(getString(R.string.status_ready))
     }
 
     // ==================== Demo Mode ====================
@@ -490,7 +485,7 @@ class MainActivity : AppCompatActivity() {
                 DemoPlayer(applicationContext) { videoDecoder }
             } catch (e: Exception) {
                 mainDiag("Demo load failed: ${e.message}")
-                showError("Could not start the demo: ${e.message}")
+                showError(getString(R.string.error_demo_failed, e.message.toString()))
                 return
             }
         mainDiag("Demo started")
@@ -521,7 +516,7 @@ class MainActivity : AppCompatActivity() {
         // UI text on phones (a real session sizes the Mac display to the tablet).
         setSurfaceAspect("${DemoPlayer.WIDTH}:${DemoPlayer.HEIGHT}")
         updateResolutionOverlay()
-        binding.resolutionText.append(" (demo)")
+        binding.resolutionText.append(getString(R.string.stat_demo_suffix))
         binding.latencyText.text = "—"
         updateOverlayVisibility(prefs.showStatsOverlay)
         initializeDecoderForCurrentSurface()
@@ -535,7 +530,7 @@ class MainActivity : AppCompatActivity() {
         demoPlayer = player
         player.start()
         android.widget.Toast
-            .makeText(this, "Demo mode — open Settings (⚙) or press Back to exit", android.widget.Toast.LENGTH_LONG)
+            .makeText(this, R.string.toast_demo_started, android.widget.Toast.LENGTH_LONG)
             .show()
     }
 
@@ -589,7 +584,7 @@ class MainActivity : AppCompatActivity() {
         android.widget.Toast
             .makeText(
                 this,
-                "Demo mode — when connected, touching here clicks, drags and scrolls on your Mac.",
+                R.string.toast_demo_touch,
                 android.widget.Toast.LENGTH_LONG,
             ).show()
     }
@@ -605,11 +600,10 @@ class MainActivity : AppCompatActivity() {
                 return@runOnUiThread
             }
             try {
-                android.app.AlertDialog
-                    .Builder(this)
-                    .setTitle("Connection Error")
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.error_title_connection)
                     .setMessage(message)
-                    .setPositiveButton("OK", null)
+                    .setPositiveButton(R.string.ok, null)
                     .show()
             } catch (e: android.view.WindowManager.BadTokenException) {
                 mainDiag("showError failed — no window token: ${e.message}")
@@ -734,7 +728,7 @@ class MainActivity : AppCompatActivity() {
         // Only show Disconnect when actually streaming. Otherwise the button is
         // a no-op and confuses users into clicking it twice.
         disconnectButton.visibility = if (isStreamingUi) View.VISIBLE else View.GONE
-        if (demoActive) (disconnectButton as TextView).text = "Exit demo"
+        if (demoActive) (disconnectButton as TextView).setText(R.string.display_exit_demo)
 
         // Position buttons (8 directions)
         val cornerTopLeft = view.findViewById<MaterialButton>(R.id.cornerTopLeft)
@@ -771,9 +765,9 @@ class MainActivity : AppCompatActivity() {
                 if (index == selectedPosition) {
                     button.backgroundTintList =
                         android.content.res.ColorStateList
-                            .valueOf(0x334CAF50)
+                            .valueOf(getColor(R.color.ss_accent_tint))
                 } else {
-                    button.backgroundTintList = null
+                    button.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.TRANSPARENT)
                 }
             }
         }
@@ -794,7 +788,7 @@ class MainActivity : AppCompatActivity() {
                 android.widget.Toast
                     .makeText(
                         this,
-                        "Settings icon hidden — use the back gesture to reveal it",
+                        R.string.toast_settings_icon_hidden,
                         android.widget.Toast.LENGTH_LONG,
                     ).show()
             }
@@ -1079,7 +1073,7 @@ class MainActivity : AppCompatActivity() {
         if (!CodecCapabilities.hasHevcDecoder && streamClient?.codecNegotiated != true) {
             mainDiag("AVC-only device but Mac did not negotiate codec — Mac app too old")
             runOnUiThread {
-                updateStatus("This device has no HEVC decoder. Update the SharpScreen Mac app to enable H.264 support.")
+                updateStatus(getString(R.string.status_no_hevc))
             }
         }
     }
@@ -1211,13 +1205,11 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
                 runOnUiThread {
-                    val capText = cap?.let { " (max ~${it.first}×${it.second})" } ?: ""
+                    val capText = cap?.let { getString(R.string.toast_decoder_stalled_cap, it.first, it.second) } ?: ""
                     android.widget.Toast
                         .makeText(
                             this,
-                            "No video output — the stream resolution may exceed " +
-                                "this tablet's decoder limit$capText. " +
-                                "Lower the resolution or refresh rate, or disable HiDPI, on the Mac.",
+                            getString(R.string.toast_decoder_stalled, capText),
                             android.widget.Toast.LENGTH_LONG,
                         ).show()
                 }
@@ -1231,14 +1223,14 @@ class MainActivity : AppCompatActivity() {
             mainDiag("Decoder init FAILED: ${e.message}")
             log("❌ Failed to initialize decoder: ${e.message}")
             runOnUiThread {
-                updateStatus("Video decoder failed: ${e.message}")
+                updateStatus(getString(R.string.status_decoder_failed, e.message.toString()))
                 // The status text sits in the settings panel, hidden while streaming —
                 // without this the user would just see a black screen.
                 if (isStreamingUi) {
                     android.widget.Toast
                         .makeText(
                             this,
-                            "Video decoder failed — disconnect and reconnect to retry.",
+                            R.string.toast_decoder_failed,
                             android.widget.Toast.LENGTH_LONG,
                         ).show()
                 }
@@ -1276,14 +1268,14 @@ class MainActivity : AppCompatActivity() {
                 isConnected = connected
                 reviewPrompter.onConnectionChanged(connected)
                 if (connected) {
-                    updateStatus("Connected - Streaming active")
+                    updateStatus(getString(R.string.status_connected))
                 } else {
-                    updateStatus("Disconnected")
+                    updateStatus(getString(R.string.status_disconnected))
                 }
                 binding.connectButton.isEnabled = !connected
                 binding.disconnectButton.isEnabled = connected
                 binding.statusIndicator.setBackgroundResource(
-                    if (connected) android.R.color.holo_green_light else android.R.color.holo_red_light,
+                    if (connected) R.drawable.status_indicator_green else R.drawable.status_indicator_red,
                 )
                 if (connected) {
                     startPingTimer()
@@ -1382,10 +1374,10 @@ class MainActivity : AppCompatActivity() {
 
         val dialog =
             com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                .setTitle("Pair with code")
+                .setTitle(R.string.pair_code_title)
                 .setView(view)
-                .setPositiveButton("Pair", null) // listener installed below so it doesn't auto-dismiss
-                .setNegativeButton("Cancel", null)
+                .setPositiveButton(R.string.pair_code_pair, null) // listener installed below so it doesn't auto-dismiss
+                .setNegativeButton(R.string.cancel, null)
                 .create()
 
         dialog.setOnShowListener {
@@ -1398,28 +1390,28 @@ class MainActivity : AppCompatActivity() {
                 errorText.visibility = View.GONE
                 when {
                     host.isEmpty() -> {
-                        errorText.text = "Enter the Mac's address (shown as \"Listening\" under the QR)."
+                        errorText.setText(R.string.pair_error_host)
                         errorText.visibility = View.VISIBLE
                         return@setOnClickListener
                     }
                     port == null || port !in 1..65535 -> {
-                        errorText.text = "Port must be between 1 and 65535."
+                        errorText.setText(R.string.pair_error_port)
                         errorText.visibility = View.VISIBLE
                         return@setOnClickListener
                     }
                     code.length != AuthHandshake.PAIR_CODE_LEN -> {
-                        errorText.text = "The code is ${AuthHandshake.PAIR_CODE_LEN} digits."
+                        errorText.text = getString(R.string.pair_error_code_length, AuthHandshake.PAIR_CODE_LEN)
                         errorText.visibility = View.VISIBLE
                         return@setOnClickListener
                     }
                 }
                 pairButton.isEnabled = false
-                pairButton.text = "Pairing…"
+                pairButton.setText(R.string.pair_code_pairing)
 
                 fun showPairError(message: String) {
                     runOnUiThread {
                         pairButton.isEnabled = true
-                        pairButton.text = "Pair"
+                        pairButton.setText(R.string.pair_code_pair)
                         errorText.text = message
                         errorText.visibility = View.VISIBLE
                     }
@@ -1442,26 +1434,24 @@ class MainActivity : AppCompatActivity() {
                             showPairError(
                                 when (e) {
                                     is StreamClient.PairingError.CodeRejected ->
-                                        "Code not accepted. Codes change after each use — " +
-                                            "check the Mac for the current one."
+                                        getString(R.string.pair_error_code_rejected)
                                     is StreamClient.PairingError.HostTooOld ->
-                                        "Update SharpScreen on the Mac to use code pairing."
+                                        getString(R.string.pair_error_host_too_old)
                                 },
                             )
                         } catch (e: StreamClient.WirelessConnectError) {
                             showPairError(
                                 when (e) {
                                     is StreamClient.WirelessConnectError.NetworkUnreachable ->
-                                        "No response from $host:$port. Check both devices are " +
-                                            "on the same WiFi and the Mac app is running."
-                                    else -> "Connection error — try again."
+                                        getString(R.string.pair_error_no_response, host, port)
+                                    else -> getString(R.string.pair_error_connection)
                                 },
                             )
                         } catch (e: kotlinx.coroutines.CancellationException) {
                             throw e
                         } catch (e: Exception) {
                             log("Code pairing failed unexpectedly: ${e.message}")
-                            showPairError("Pairing failed — try again.")
+                            showPairError(getString(R.string.pair_error_failed))
                         }
                     }
             }
@@ -1548,9 +1538,9 @@ class MainActivity : AppCompatActivity() {
                         reviewPrompter.onConnectionChanged(connected)
 
                         if (connected) {
-                            updateStatus("Connected - Streaming active")
+                            updateStatus(getString(R.string.status_connected))
                         } else {
-                            updateStatus("Disconnected")
+                            updateStatus(getString(R.string.status_disconnected))
                         }
 
                         binding.connectButton.isEnabled = !connected
@@ -1559,9 +1549,9 @@ class MainActivity : AppCompatActivity() {
                         // Update status indicator color
                         binding.statusIndicator.setBackgroundResource(
                             if (connected) {
-                                android.R.color.holo_green_light
+                                R.drawable.status_indicator_green
                             } else {
-                                android.R.color.holo_red_light
+                                R.drawable.status_indicator_red
                             },
                         )
 
@@ -1637,25 +1627,22 @@ class MainActivity : AppCompatActivity() {
                 val errorMessage =
                     when {
                         e.message?.contains("ECONNREFUSED") == true -> {
-                            "Mac server is not running.\n\nPlease start SharpScreen.app on your Mac first."
+                            getString(R.string.error_server_not_running)
                         }
 
                         e.message?.contains("Network is unreachable") == true -> {
-                            "Cannot reach Mac.\n\n" +
-                                "Make sure both devices are connected via USB cable and ADB reverse is configured."
+                            getString(R.string.error_unreachable)
                         }
 
                         e.message?.contains("timeout") == true -> {
-                            "Connection timeout.\n\nCheck if Mac firewall is blocking port $port."
+                            getString(R.string.error_timeout, port)
                         }
 
                         else -> {
-                            "Connection failed: ${e.message}\n\n" +
-                                "Try:\n• Start SharpScreen.app on Mac\n" +
-                                "• Check USB connection\n• Run: adb reverse tcp:$port tcp:$port"
+                            getString(R.string.error_connection_failed, e.message.toString(), port)
                         }
                     }
-                updateStatus("Connection failed")
+                updateStatus(getString(R.string.status_connection_failed))
                 showError(errorMessage)
             }
         }
@@ -1867,6 +1854,23 @@ class MainActivity : AppCompatActivity() {
         cleanup()
     }
 
+    /** "SharpScreen" with the installed version beside it, smaller and grey. */
+    private fun showAppVersion() {
+        val version =
+            try {
+                packageManager.getPackageInfo(packageName, 0).versionName
+            } catch (_: Exception) {
+                null
+            } ?: return
+        val name = getString(R.string.brand_name)
+        val text = android.text.SpannableString("$name  v$version")
+        val start = name.length
+        text.setSpan(android.text.style.RelativeSizeSpan(0.5f), start, text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        text.setSpan(android.text.style.ForegroundColorSpan(getColor(R.color.ss_text_secondary)), start, text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        text.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.NORMAL), start, text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        binding.appTitle.text = text
+    }
+
     // ==================== Connection Checklist ====================
 
     private fun startChecklistUpdates() {
@@ -1903,7 +1907,7 @@ class MainActivity : AppCompatActivity() {
                 Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
                 0,
             ) == 1
-        updateChecklistItem(binding.checkDeveloperMode, isDeveloperModeEnabled)
+        updateChecklistItem(binding.checkDeveloperMode, binding.hintDeveloperMode, isDeveloperModeEnabled)
 
         // Check USB Debugging (ADB enabled)
         val isAdbEnabled =
@@ -1912,28 +1916,25 @@ class MainActivity : AppCompatActivity() {
                 Settings.Global.ADB_ENABLED,
                 0,
             ) == 1
-        updateChecklistItem(binding.checkUsbDebugging, isAdbEnabled)
+        updateChecklistItem(binding.checkUsbDebugging, binding.hintUsbDebugging, isAdbEnabled)
 
         // Check USB connected (check if any USB device is connected)
         val usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
-        val isUsbConnected = usbManager.deviceList.isNotEmpty() || isCharging()
-        updateChecklistItem(binding.checkUsbConnected, isUsbConnected)
+        val isUsbConnected = usbManager.deviceList.isNotEmpty() || isUsbCablePlugged()
+        updateChecklistItem(binding.checkUsbConnected, binding.hintUsbConnected, isUsbConnected)
 
         // Check Mac Server (try to connect to port)
+        val port = prefs.usbPort
         lifecycleScope.launch(Dispatchers.IO) {
             // Double-check connection state before socket test
             if (isConnected) return@launch
 
-            val port =
-                binding.portInput.text
-                    .toString()
-                    .toIntOrNull() ?: 54321
             val isServerRunning = checkServerRunning("127.0.0.1", port)
             runOnUiThread {
                 // Final check before updating UI
                 if (isConnected) return@runOnUiThread
 
-                updateChecklistItem(binding.checkMacServer, isServerRunning)
+                updateChecklistItem(binding.checkMacServer, binding.hintMacServer, isServerRunning)
 
                 // Update main status indicator based on all checklist items
                 val allReady = isDeveloperModeEnabled && isAdbEnabled && isUsbConnected && isServerRunning
@@ -1950,28 +1951,35 @@ class MainActivity : AppCompatActivity() {
                 R.drawable.status_indicator_red
             },
         )
-        binding.statusText.text = if (allReady) "Ready to connect" else "Not ready to connect"
+        binding.statusText.setText(if (allReady) R.string.status_ready else R.string.status_not_ready)
     }
 
+    /** Green check when OK; otherwise an orange alert plus a one-line hint on what to do. */
     private fun updateChecklistItem(
-        indicator: View,
+        indicator: android.widget.ImageView,
+        hint: View,
         isOk: Boolean,
     ) {
-        indicator.setBackgroundResource(
-            if (isOk) {
-                R.drawable.status_indicator_green
-            } else {
-                R.drawable.status_indicator_red
-            },
-        )
+        indicator.setImageResource(if (isOk) R.drawable.ic_check_circle else R.drawable.ic_alert_circle)
+        hint.visibility = if (isOk) View.GONE else View.VISIBLE
     }
 
-    private fun isCharging(): Boolean {
-        val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        val batteryStatus = registerReceiver(null, intentFilter)
-        val status = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1) ?: -1
-        return status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
-            status == android.os.BatteryManager.BATTERY_STATUS_FULL
+    /**
+     * A cable to the Mac is plugged in. Not "charging": with the cable in,
+     * Samsung's battery protection (or a Mac port giving little power) reports
+     * "not charging", which left this item red while USB worked. The plug
+     * state counts USB and AC (USB-C power delivery can report AC); the USB
+     * gadget state covers a port that supplies no power at all.
+     */
+    private fun isUsbCablePlugged(): Boolean {
+        val battery = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val plugged = battery?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        if (plugged and (android.os.BatteryManager.BATTERY_PLUGGED_USB or android.os.BatteryManager.BATTERY_PLUGGED_AC) != 0) {
+            return true
+        }
+        // Sticky broadcast UsbManager.ACTION_USB_STATE (hidden constant).
+        val usbState = registerReceiver(null, IntentFilter("android.hardware.usb.action.USB_STATE"))
+        return usbState?.getBooleanExtra("connected", false) == true
     }
 
     /**

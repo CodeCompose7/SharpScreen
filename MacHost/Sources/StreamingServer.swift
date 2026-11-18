@@ -79,12 +79,12 @@ enum StreamingServerStartError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .listenerFailed(let port, let underlying):
-            return "Could not listen on port \(port): \(underlying.localizedDescription)"
+            return String(localized: "Could not listen on port \(String(port)): \(underlying.localizedDescription)")
         case .cancelledBeforeReady(let port):
-            return "Server startup on port \(port) was cancelled before the listener became ready."
+            return String(localized: "Server startup on port \(String(port)) was cancelled before the listener became ready.")
         case .startupTimedOut(let port, let lastWaitingError):
-            let detail = lastWaitingError.map { " Last listener error: \($0.localizedDescription)" } ?? ""
-            return "Timed out while waiting for the server to listen on port \(port).\(detail)"
+            let detail = lastWaitingError.map { " " + String(localized: "Last listener error: \($0.localizedDescription)") } ?? ""
+            return String(localized: "Timed out while waiting for the server to listen on port \(String(port)).") + detail
         }
     }
 }
@@ -120,7 +120,7 @@ final class ListenerStartupGate: @unchecked Sendable {
                         NSError(
                             domain: "StreamingServer",
                             code: 1,
-                            userInfo: [NSLocalizedDescriptionKey: "Server startup was awaited more than once."]
+                            userInfo: [NSLocalizedDescriptionKey: String(localized: "Server startup was awaited more than once.")]
                         )
                     )
                 }
@@ -421,7 +421,12 @@ class StreamingServer {
         connection?.start(queue: networkQueue)
     }
 
+    /// The client is over USB (adb reverse, loopback) rather than Wi-Fi.
+    private let clientOverUSB = OSAllocatedUnfairLock(initialState: true)
+    var clientIsOverUSB: Bool { clientOverUSB.withLock { $0 } }
+
     private func onConnectionReady(_ conn: NWConnection) {
+        clientOverUSB.withLock { $0 = conn.endpoint.isLoopback }
         if conn.endpoint.isLoopback {
             debugLog("Client connected via loopback (USB) — skipping auth")
             beginExistingProtocol(on: conn)
