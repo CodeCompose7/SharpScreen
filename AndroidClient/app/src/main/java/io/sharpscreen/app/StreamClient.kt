@@ -679,9 +679,12 @@ class StreamClient(
         }
 
         var isKeyframe = false
+        var hostCaptureNs = 0L
         if (hasMetadata) {
             val flags = input.readUnsignedByte()
-            input.readLong() // Host capture timestamp; clocks are not comparable with Android.
+            // Host capture timestamp. The clocks differ, but the spread of
+            // (arrival - capture) is the transport jitter (see PacingDiag).
+            hostCaptureNs = input.readLong()
             isKeyframe = (flags and FRAME_FLAG_KEYFRAME) != 0
         }
 
@@ -694,6 +697,7 @@ class StreamClient(
 
         // Capture timestamp after full frame received for accurate age tracking.
         val receiveTimestamp = System.nanoTime()
+        PacingDiag.recordArrival(receiveTimestamp, hostCaptureNs)
         checkKeyframeFreshness(receiveTimestamp, isKeyframe)
         diagFrameCount++
         if (diagFrameCount == 1L) {
