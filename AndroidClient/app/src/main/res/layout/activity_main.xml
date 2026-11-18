@@ -195,8 +195,9 @@
                 android:contentDescription="@null"
                 android:importantForAccessibility="no" />
 
-            <!-- Header -->
+            <!-- Header (MainActivity adds the version) -->
             <TextView
+                android:id="@+id/appTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="SharpScreen"

@@ -147,6 +147,7 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        showAppVersion()
         appUpdater = AppUpdater(this)
         reviewPrompter = ReviewPrompter(this) { !isStreamingUi }
 
@@ -1867,6 +1868,23 @@ class MainActivity : AppCompatActivity() {
         cleanup()
     }
 
+    /** "SharpScreen" with the installed version beside it, smaller and grey. */
+    private fun showAppVersion() {
+        val version =
+            try {
+                packageManager.getPackageInfo(packageName, 0).versionName
+            } catch (_: Exception) {
+                null
+            } ?: return
+        val name = "SharpScreen"
+        val text = android.text.SpannableString("$name  v$version")
+        val start = name.length
+        text.setSpan(android.text.style.RelativeSizeSpan(0.5f), start, text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        text.setSpan(android.text.style.ForegroundColorSpan(0xFF888888.toInt()), start, text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        text.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.NORMAL), start, text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        binding.appTitle.text = text
+    }
+
     // ==================== Connection Checklist ====================
 
     private fun startChecklistUpdates() {
@@ -1916,7 +1934,7 @@ class MainActivity : AppCompatActivity() {
 
         // Check USB connected (check if any USB device is connected)
         val usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
-        val isUsbConnected = usbManager.deviceList.isNotEmpty() || isCharging()
+        val isUsbConnected = usbManager.deviceList.isNotEmpty() || isUsbCablePlugged()
         updateChecklistItem(binding.checkUsbConnected, isUsbConnected)
 
         // Check Mac Server (try to connect to port)
@@ -1966,12 +1984,22 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun isCharging(): Boolean {
-        val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        val batteryStatus = registerReceiver(null, intentFilter)
-        val status = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1) ?: -1
-        return status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
-            status == android.os.BatteryManager.BATTERY_STATUS_FULL
+    /**
+     * A cable to the Mac is plugged in. Not "charging": with the cable in,
+     * Samsung's battery protection (or a Mac port giving little power) reports
+     * "not charging", which left this item red while USB worked. The plug
+     * state counts USB and AC (USB-C power delivery can report AC); the USB
+     * gadget state covers a port that supplies no power at all.
+     */
+    private fun isUsbCablePlugged(): Boolean {
+        val battery = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val plugged = battery?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        if (plugged and (android.os.BatteryManager.BATTERY_PLUGGED_USB or android.os.BatteryManager.BATTERY_PLUGGED_AC) != 0) {
+            return true
+        }
+        // Sticky broadcast UsbManager.ACTION_USB_STATE (hidden constant).
+        val usbState = registerReceiver(null, IntentFilter("android.hardware.usb.action.USB_STATE"))
+        return usbState?.getBooleanExtra("connected", false) == true
     }
 
     /**
