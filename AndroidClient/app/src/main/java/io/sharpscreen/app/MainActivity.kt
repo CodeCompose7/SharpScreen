@@ -128,15 +128,13 @@ class MainActivity : AppCompatActivity() {
             diagPrefs.edit().putBoolean("glCompositor", it.getBooleanExtra("diag.glCompositor", false)).apply()
         }
         GlCompositor.enabled = diagPrefs.getBoolean("glCompositor", true)
-        // `--ez diag.tileTint true` tints lossless tiles green to see where they are.
-        intent?.takeIf { it.hasExtra("diag.tileTint") }?.let {
-            diagPrefs.edit().putBoolean("tileTint", it.getBooleanExtra("diag.tileTint", false)).apply()
-        }
-        GlCompositor.tintTiles = diagPrefs.getBoolean("tileTint", false)
-        intent?.takeIf { it.hasExtra("diag.showTiles") }?.let {
-            diagPrefs.edit().putBoolean("showTiles", it.getBooleanExtra("diag.showTiles", true)).apply()
-        }
-        GlCompositor.showTiles = diagPrefs.getBoolean("showTiles", true)
+        // Per launch only, never remembered: a remembered showTiles=false once left
+        // the tablet showing video while the host believed its tiles were on screen.
+        // `--ez diag.tileTint true` tints lossless tiles green; `--ez diag.showTiles false`
+        // keeps showing video (HEVC-only baseline).
+        diagPrefs.edit().remove("tileTint").remove("showTiles").remove("releaseTs").apply()
+        GlCompositor.tintTiles = intent?.getBooleanExtra("diag.tileTint", false) ?: false
+        GlCompositor.showTiles = intent?.getBooleanExtra("diag.showTiles", true) ?: true
 
         // Enable edge-to-edge display (draw behind system bars and cutout)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
