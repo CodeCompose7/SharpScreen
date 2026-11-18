@@ -65,6 +65,13 @@ final class FramePacer {
         UserDefaults.standard.object(forKey: enabledKey) as? Bool ?? true
     }
 
+    /// diag.noRepeats: encode only new pixels. No pacing timer, and
+    /// ScreenCaptureKit's idle ticks are dropped too; keepalive and keyframe
+    /// replays still go out.
+    static var noRepeats: Bool {
+        UserDefaults.standard.bool(forKey: "diag.noRepeats")
+    }
+
     /// Frames allowed in flight on the encode queue (same limit as before).
     static let maxPendingEncodes: Int32 = 2
 
@@ -80,14 +87,15 @@ final class FramePacer {
 
     private let state = OSAllocatedUnfairLock(initialState: State())
     private let encodeQueue: DispatchQueue
-    private let encode: (CVPixelBuffer, CMTime) -> Void
+    private let encode: (CVPixelBuffer, CMTime, Bool) -> Void
     private var timer: DispatchSourceTimer?
+    private var statsTimer: DispatchSourceTimer?
     private var previousTickNs: UInt64 = 0  // touched only on the timer queue
     private let policy: Policy
     let pacingEnabled: Bool
 
     init(fps: Int, encodeQueue: DispatchQueue, pacingEnabled: Bool = FramePacer.isEnabled,
-         encode: @escaping (CVPixelBuffer, CMTime) -> Void) {
+         encode: @escaping (CVPixelBuffer, CMTime, Bool) -> Void) {
         self.policy = Policy(fps: fps)
         self.encodeQueue = encodeQueue
         self.pacingEnabled = pacingEnabled
@@ -115,12 +123,12 @@ final class FramePacer {
         }
         // The timer fills still screens; ScreenCaptureKit's idle ticks would
         // only crowd the slots.
-        if kind == .idle && pacingEnabled && timer != nil {
+        if kind == .idle && (Self.noRepeats || (pacingEnabled && timer != nil)) {
             state.withLock { $0.counters.idleIgnored += 1 }
             return false
         }
         let nowNs = DispatchTime.now().uptimeNanoseconds
-        let job: (CVPixelBuffer, CMTime)? = state.withLockUnchecked { s in
+        let job: (CVPixelBuffer, CMTime, Bool)? = state.withLockUnchecked { s in
             if let buffer { s.lastBuffer = buffer }
             guard s.pending < Self.maxPendingEncodes else {
                 s.counters.skippedBusy += 1
@@ -137,11 +145,11 @@ final class FramePacer {
             case .repeated: s.counters.repeated += 1
             case .replay: s.counters.replay += 1
             }
-            return (frame, CMTime(value: us, timescale: 1_000_000))
+            return (frame, CMTime(value: us, timescale: 1_000_000), kind != .captured)
         }
-        guard let (frame, pts) = job else { return false }
+        guard let (frame, pts, isRepeat) = job else { return false }
         encodeQueue.async { [encode, state] in
-            encode(frame, pts)
+            encode(frame, pts, isRepeat)
             state.withLock { $0.pending -= 1 }
         }
         return true
@@ -152,7 +160,15 @@ final class FramePacer {
         stop()
         let startNs = DispatchTime.now().uptimeNanoseconds
         state.withLock { $0.statsStartNs = startNs }
-        guard pacingEnabled else { return }
+        guard pacingEnabled, !Self.noRepeats else {
+            // No timer, so log the per-second counters from a slow one.
+            let t = DispatchSource.makeTimerSource(queue: DispatchQueue(label: "FramePacer.stats"))
+            t.schedule(deadline: .now() + 1, repeating: 1)
+            t.setEventHandler { [weak self] in self?.logStatsIfDue(nowNs: DispatchTime.now().uptimeNanoseconds) }
+            t.resume()
+            statsTimer = t
+            return
+        }
         previousTickNs = startNs
         let t = DispatchSource.makeTimerSource(flags: .strict, queue: DispatchQueue(label: "FramePacer", qos: .userInteractive))
         t.schedule(deadline: .now() + .nanoseconds(Int(policy.intervalNs)),
@@ -165,6 +181,8 @@ final class FramePacer {
     func stop() {
         timer?.cancel()
         timer = nil
+        statsTimer?.cancel()
+        statsTimer = nil
     }
 
     private func tick() {

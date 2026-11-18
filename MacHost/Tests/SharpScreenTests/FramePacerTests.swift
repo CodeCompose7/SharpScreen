@@ -27,7 +27,7 @@ final class FramePacerTests: XCTestCase {
     }
 
     func testReplayBeforeAnyFrameSubmitsNothing() {
-        let pacer = FramePacer(fps: 120, encodeQueue: DispatchQueue(label: "t"), pacingEnabled: false) { _, _ in
+        let pacer = FramePacer(fps: 120, encodeQueue: DispatchQueue(label: "t"), pacingEnabled: false) { _, _, _ in
             XCTFail("nothing to encode")
         }
         XCTAssertFalse(pacer.submit(nil, kind: .replay))
@@ -37,7 +37,7 @@ final class FramePacerTests: XCTestCase {
         let gate = DispatchSemaphore(value: 0)
         let lock = NSLock()
         var stamps: [CMTime] = []
-        let pacer = FramePacer(fps: 120, encodeQueue: DispatchQueue(label: "t"), pacingEnabled: false) { _, pts in
+        let pacer = FramePacer(fps: 120, encodeQueue: DispatchQueue(label: "t"), pacingEnabled: false) { _, pts, _ in
             gate.wait()
             lock.lock(); stamps.append(pts); lock.unlock()
         }
@@ -61,7 +61,7 @@ final class FramePacerTests: XCTestCase {
     func testPacingFillsAStillScreenTowardTheFrameRate() {
         let lock = NSLock()
         var encoded = 0
-        let pacer = FramePacer(fps: 120, encodeQueue: DispatchQueue(label: "t"), pacingEnabled: true) { _, _ in
+        let pacer = FramePacer(fps: 120, encodeQueue: DispatchQueue(label: "t"), pacingEnabled: true) { _, _, _ in
             lock.lock(); encoded += 1; lock.unlock()
         }
         pacer.submit(makeBuffer(), kind: .captured)  // one frame, then the screen stays still
@@ -79,7 +79,7 @@ final class FramePacerTests: XCTestCase {
     func testIrregularCaptureFramesDoNotOvershootTheRate() {
         let lock = NSLock()
         var encoded = 0
-        let pacer = FramePacer(fps: 120, encodeQueue: DispatchQueue(label: "t"), pacingEnabled: true) { _, _ in
+        let pacer = FramePacer(fps: 120, encodeQueue: DispatchQueue(label: "t"), pacingEnabled: true) { _, _, _ in
             lock.lock(); encoded += 1; lock.unlock()
         }
         let frame = makeBuffer()

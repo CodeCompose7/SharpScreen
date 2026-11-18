@@ -381,8 +381,8 @@ class ScreenCapture {
         let queue = DispatchQueue(label: "encodeQueue.\(label)", qos: .userInteractive)
         encodeQueue = queue
         pacer?.stop()
-        let newPacer = FramePacer(fps: refreshRate, encodeQueue: queue) { [weak self] buffer, pts in
-            self?.encoder?.encode(pixelBuffer: buffer, presentationTimeStamp: pts)
+        let newPacer = FramePacer(fps: refreshRate, encodeQueue: queue) { [weak self] buffer, pts, isRepeat in
+            self?.encoder?.encode(pixelBuffer: buffer, presentationTimeStamp: pts, isRepeat: isRepeat)
         }
         pacer = newPacer
         newPacer.start()
@@ -437,8 +437,8 @@ class ScreenCapture {
         let (width, height) = encodeSize(for: codec)
 
         encoder = VideoEncoder(width: width, height: height, codec: codec, bitrateMbps: bitrateMbps, quality: quality, gamingBoost: gamingBoost, frameRate: frameRate)
-        encoder?.onEncodedFrame = { [weak server] data, timestamp, isKeyframe in
-            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe)
+        encoder?.onEncodedFrame = { [weak server] data, timestamp, isKeyframe, isRepeat in
+            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe, isRepeat: isRepeat)
         }
 
         // Apply any keyframe request that arrived before the encoder existed
@@ -815,8 +815,8 @@ class ScreenCapture {
         let (width, height) = encodeSize(for: codec)
         let server = currentServer
         let newEncoder = VideoEncoder(width: width, height: height, codec: codec, bitrateMbps: currentBitrateMbps, quality: currentQuality, gamingBoost: currentGamingBoost, frameRate: currentFrameRate)
-        newEncoder.onEncodedFrame = { [weak server] data, timestamp, isKeyframe in
-            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe)
+        newEncoder.onEncodedFrame = { [weak server] data, timestamp, isKeyframe, isRepeat in
+            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe, isRepeat: isRepeat)
         }
         newEncoder.requestKeyframe()
         encoder = newEncoder
