@@ -1,4 +1,5 @@
 import AppKit
+import ScreenCaptureKit
 import CoreMedia
 import IOKit.pwr_mgt
 import QuartzCore
@@ -45,6 +46,23 @@ enum CaptureDiagnostics {
     /// compare a real 120 Hz panel with CGVirtualDisplay's compositing rate.
     static var captureMainDisplay: Bool {
         UserDefaults.standard.bool(forKey: "diag.captureMainDisplay")
+    }
+
+    /// Capture 32BGRA instead of 420v (M1b needs RGB pixels for lossless tiles).
+    static var captureBGRA: Bool { UserDefaults.standard.bool(forKey: "diag.captureBGRA") }
+
+    /// Log SCStreamFrameInfo dirty rects / scale for the first frames.
+    static var logDirtyRects: Bool { UserDefaults.standard.bool(forKey: "diag.logDirtyRects") }
+    private static var loggedFrames = 0
+
+    static func logFrameInfo(_ sample: CMSampleBuffer, _ image: CVPixelBuffer) {
+        guard loggedFrames < 40 else { return }
+        loggedFrames += 1
+        guard let attachments = CMSampleBufferGetSampleAttachmentsArray(sample, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
+              let info = attachments.first else { return }
+        let rects = (info[.dirtyRects] as? [NSDictionary] ?? []).compactMap { CGRect(dictionaryRepresentation: $0 as CFDictionary) }
+        let content = (info[.contentRect] as? NSDictionary).flatMap { CGRect(dictionaryRepresentation: $0 as CFDictionary) }
+        debugLog("FrameInfo: buffer \(CVPixelBufferGetWidth(image))x\(CVPixelBufferGetHeight(image)) fmt=\(CVPixelBufferGetPixelFormatType(image)) contentRect=\(content.map { NSStringFromRect($0) } ?? "-") contentScale=\(info[.contentScale] ?? "-") scaleFactor=\(info[.scaleFactor] ?? "-") dirty=\(rects.prefix(4).map { NSStringFromRect($0) })")
     }
 
     /// Capture with CGDisplayStream instead of ScreenCaptureKit, to tell a

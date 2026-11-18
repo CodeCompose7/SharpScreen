@@ -25,6 +25,8 @@ private class StreamDelegate: NSObject, SCStreamDelegate {
 
 class ScreenCapture {
     private var stream: SCStream?
+    private var streamConfig: SCStreamConfiguration?
+    private let tileRefiner = TileRefiner()
     private var streamOutput: StreamOutput?
     private var streamDelegate: StreamDelegate?
     private var encoder: VideoEncoder?
@@ -356,7 +358,11 @@ class ScreenCapture {
         // flag, which clips full-range highlights to white and crushes
         // shadows (#55). Limited range is what every decoder/GPU assumes by
         // default, so it renders identically everywhere.
-        config.pixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+        // 32BGRA once a client composites lossless tiles (see enableLosslessTiles):
+        // the tiles need RGB, and VideoToolbox converts for HEVC itself.
+        config.pixelFormat = (CaptureDiagnostics.captureBGRA || tileRefiner.isActive)
+            ? kCVPixelFormatType_32BGRA
+            : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
         config.showsCursor = true
         config.queueDepth = CaptureDiagnostics.queueDepth
         config.capturesAudio = false
@@ -364,15 +370,14 @@ class ScreenCapture {
         config.scalesToFit = false
 
         let scStream = SCStream(filter: filter, configuration: config, delegate: delegate)
-        // The stock concurrent global queue can hand two frames to the
-        // handler at once and out of order; diag.serialSampleQueue tests that.
-        let sampleQueue = CaptureDiagnostics.serialSampleQueue
-            ? DispatchQueue(label: "SCStream.samples", qos: .userInteractive)
-            : DispatchQueue.global(qos: .userInteractive)
+        // Serial: lossless tiles track changes in capture order. (A concurrent
+        // queue measured no faster; diag.serialSampleQueue is now the default.)
+        let sampleQueue = DispatchQueue(label: "SCStream.samples", qos: .userInteractive)
         try scStream.addStreamOutput(output, type: .screen, sampleHandlerQueue: sampleQueue)
 
         stream = scStream
-        debugLog("Stream configured: \(width)x\(height) @ \(fps)fps (with delegate), queueDepth=\(config.queueDepth), minInterval=\(config.minimumFrameInterval.seconds), sampleQueue=\(CaptureDiagnostics.serialSampleQueue ? "serial" : "global")")
+        streamConfig = config
+        debugLog("Stream configured: \(width)x\(height) @ \(fps)fps (with delegate), queueDepth=\(config.queueDepth), minInterval=\(config.minimumFrameInterval.seconds), pixelFormat=\(config.pixelFormat == kCVPixelFormatType_32BGRA ? "BGRA" : "420v")")
     }
 
     // MARK: - Shared frame handler (used by both startStreaming and restartStream)
@@ -409,6 +414,12 @@ class ScreenCapture {
             // New pixels go out at once; a tick without pixels re-sends the
             // cached frame. The pacer drops it when 2 encodes are in flight.
             if let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+                if CaptureDiagnostics.logDirtyRects { CaptureDiagnostics.logFrameInfo(sampleBuffer, imageBuffer) }
+                if self.tileRefiner.isActive {
+                    let capturedAtNs = DispatchTime.now().uptimeNanoseconds
+                    self.currentServer?.noteDirtyRects(TileRefiner.dirtyRects(of: sampleBuffer), capturedAtNs: capturedAtNs)
+                    self.tileRefiner.noteFrame(imageBuffer, capturedAtNs: capturedAtNs)
+                }
                 newPacer.submit(imageBuffer, kind: .captured,
                                 capturePts: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
             } else {
@@ -477,6 +488,29 @@ class ScreenCapture {
                 attemptFallbackCapture()
             }
         }
+    }
+
+    // MARK: - Lossless tiles (M1b)
+
+    /// The client composites lossless tiles: capture 32BGRA from now on and
+    /// start refining still tiles. Called from the server's receive queue.
+    func enableLosslessTiles() {
+        guard let server = currentServer, !tileRefiner.isActive else { return }
+        let (w, h) = encodeSize(for: encoder?.codec ?? .hevc)
+        let grid = TileGrid(width: w, height: h)
+        server.resetLosslessTiles(grid: grid)
+        tileRefiner.start(server: server, grid: grid)
+        if let stream, let config = streamConfig, config.pixelFormat != kCVPixelFormatType_32BGRA {
+            config.pixelFormat = kCVPixelFormatType_32BGRA
+            stream.updateConfiguration(config) { error in
+                if let error {
+                    debugLog("Lossless tiles: switching capture to BGRA failed: \(error)")
+                } else {
+                    debugLog("Lossless tiles: capture switched to BGRA")
+                }
+            }
+        }
+        debugLog("Lossless tiles on: grid \(grid.columns)x\(grid.rows) of \(grid.tileSize) px over \(w)x\(h)")
     }
 
     private var motionPattern: MotionPatternWindow?
@@ -834,6 +868,7 @@ class ScreenCapture {
 
         // Cancel frame flow monitor and pacing
         stopFrameMonitor()
+        tileRefiner.stop()
         pacer?.stop()
         pacer = nil
         DispatchQueue.main.async {
