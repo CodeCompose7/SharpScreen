@@ -5,12 +5,13 @@ import os
 
 /// Keeps the stream at the configured frame rate.
 ///
-/// ScreenCaptureKit only delivers a frame when the screen changed, so the
-/// stream ran at 70-110 fps on a 120 Hz setting depending on what was on
-/// screen. New frames are still encoded the moment they arrive (no added
-/// latency); the pacer only fills the gaps by re-encoding the last frame when
-/// nothing went out for most of a frame interval. An unchanged frame costs a
-/// few hundred bytes of HEVC.
+/// ScreenCaptureKit only delivers new pixels when the screen changed (plus
+/// ~72 "idle" ticks a second on a still screen), so a 120 Hz stream ran at
+/// 70-110 fps depending on content. With pacing on, the timer owns the
+/// cadence: one frame per 1/fps slot. New pixels are still encoded the moment
+/// they arrive (no added latency); a tick re-encodes the last frame only if
+/// nothing went out since the previous tick, and idle ticks are dropped.
+/// An unchanged frame costs a few hundred bytes of HEVC.
 ///
 /// All submissions go through `submit`, which also keeps presentation
 /// timestamps strictly increasing: a repeat is stamped "now", and a capture
@@ -29,6 +30,7 @@ final class FramePacer {
         var repeated = 0
         var replay = 0
         var skippedBusy = 0
+        var idleIgnored = 0
 
         var encoded: Int { captured + idle + repeated + replay }
     }
@@ -37,18 +39,16 @@ final class FramePacer {
     struct Policy {
         let intervalNs: UInt64
 
-        /// Repeat once nothing was submitted for this share of an interval.
-        /// Below 1 so timer jitter does not skip a slot; above 0.5 so a repeat
-        /// never lands right next to a fresh capture frame.
-        static let gapFraction = 0.75
-
         init(fps: Int) {
             intervalNs = UInt64(1_000_000_000 / max(1, fps))
         }
 
-        func shouldRepeat(nowNs: UInt64, lastSubmitNs: UInt64) -> Bool {
-            guard lastSubmitNs > 0, nowNs > lastSubmitNs else { return false }
-            return Double(nowNs - lastSubmitNs) >= Double(intervalNs) * Self.gapFraction
+        /// One frame per slot: repeat at a tick only if nothing was submitted
+        /// since the previous tick. A gap-based rule ("nothing for 75% of an
+        /// interval") let a repeat and an irregular capture frame share a slot
+        /// and ran a 120 fps stream at 145-153 fps during motion.
+        static func shouldRepeat(lastSubmitNs: UInt64, previousTickNs: UInt64) -> Bool {
+            lastSubmitNs > 0 && lastSubmitNs <= previousTickNs
         }
 
         /// Next timestamp in microseconds, strictly after `lastUs`.
@@ -79,6 +79,7 @@ final class FramePacer {
     private let encodeQueue: DispatchQueue
     private let encode: (CVPixelBuffer, CMTime) -> Void
     private var timer: DispatchSourceTimer?
+    private var previousTickNs: UInt64 = 0  // touched only on the timer queue
     private let policy: Policy
     let pacingEnabled: Bool
 
@@ -100,6 +101,12 @@ final class FramePacer {
     /// Returns false when nothing was submitted (no frame yet, or busy).
     @discardableResult
     func submit(_ buffer: CVPixelBuffer?, kind: Kind) -> Bool {
+        // The timer fills still screens; ScreenCaptureKit's idle ticks would
+        // only crowd the slots.
+        if kind == .idle && pacingEnabled && timer != nil {
+            state.withLock { $0.counters.idleIgnored += 1 }
+            return false
+        }
         let nowNs = DispatchTime.now().uptimeNanoseconds
         let job: (CVPixelBuffer, CMTime)? = state.withLockUnchecked { s in
             if let buffer { s.lastBuffer = buffer }
@@ -131,8 +138,10 @@ final class FramePacer {
     /// Start the gap-filling timer (no-op when pacing is disabled).
     func start() {
         stop()
-        state.withLock { $0.statsStartNs = DispatchTime.now().uptimeNanoseconds }
+        let startNs = DispatchTime.now().uptimeNanoseconds
+        state.withLock { $0.statsStartNs = startNs }
         guard pacingEnabled else { return }
+        previousTickNs = startNs
         let t = DispatchSource.makeTimerSource(flags: .strict, queue: DispatchQueue(label: "FramePacer", qos: .userInteractive))
         t.schedule(deadline: .now() + .nanoseconds(Int(policy.intervalNs)),
                    repeating: .nanoseconds(Int(policy.intervalNs)), leeway: .nanoseconds(0))
@@ -147,9 +156,12 @@ final class FramePacer {
     }
 
     private func tick() {
-        let nowNs = DispatchTime.now().uptimeNanoseconds
-        let due = state.withLock { policy.shouldRepeat(nowNs: nowNs, lastSubmitNs: $0.lastSubmitNs) }
+        let due = state.withLock { Policy.shouldRepeat(lastSubmitNs: $0.lastSubmitNs, previousTickNs: previousTickNs) }
         if due { submit(nil, kind: .repeated) }
+        // Mark the slot boundary after our own repeat, so it does not count as
+        // "already filled" for the next slot.
+        let nowNs = DispatchTime.now().uptimeNanoseconds
+        previousTickNs = nowNs
         logStatsIfDue(nowNs: nowNs)
     }
 
@@ -163,6 +175,6 @@ final class FramePacer {
             return c
         }
         guard let c = snapshot else { return }
-        debugLog("Capture: \(c.encoded) encoded = \(c.captured) new + \(c.idle) idle + \(c.repeated) repeated + \(c.replay) replay; \(c.skippedBusy) skipped (encoder busy)")
+        debugLog("Capture: \(c.encoded) encoded = \(c.captured) new + \(c.idle) idle + \(c.repeated) repeated + \(c.replay) replay; \(c.skippedBusy) skipped (encoder busy), \(c.idleIgnored) idle ticks ignored")
     }
 }
