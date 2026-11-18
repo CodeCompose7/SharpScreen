@@ -31,6 +31,8 @@ final class FramePacer {
         var replay = 0
         var skippedBusy = 0
         var idleIgnored = 0
+        /// Captured frames whose capture time is not after the previous one's.
+        var outOfOrder = 0
 
         var encoded: Int { captured + idle + repeated + replay }
     }
@@ -73,6 +75,7 @@ final class FramePacer {
         var counters = Counters()
         var statsStartNs: UInt64 = 0
         var pending: Int32 = 0
+        var lastCapturePts: CMTime = .invalid
     }
 
     private let state = OSAllocatedUnfairLock(initialState: State())
@@ -100,7 +103,16 @@ final class FramePacer {
     /// Submit a frame for encoding. `buffer` nil means "the cached frame".
     /// Returns false when nothing was submitted (no frame yet, or busy).
     @discardableResult
-    func submit(_ buffer: CVPixelBuffer?, kind: Kind) -> Bool {
+    func submit(_ buffer: CVPixelBuffer?, kind: Kind, capturePts: CMTime = .invalid) -> Bool {
+        if capturePts.isValid {
+            state.withLock { s in
+                if s.lastCapturePts.isValid, CMTimeCompare(capturePts, s.lastCapturePts) <= 0 {
+                    s.counters.outOfOrder += 1
+                } else {
+                    s.lastCapturePts = capturePts
+                }
+            }
+        }
         // The timer fills still screens; ScreenCaptureKit's idle ticks would
         // only crowd the slots.
         if kind == .idle && pacingEnabled && timer != nil {
@@ -175,6 +187,6 @@ final class FramePacer {
             return c
         }
         guard let c = snapshot else { return }
-        debugLog("Capture: \(c.encoded) encoded = \(c.captured) new + \(c.idle) idle + \(c.repeated) repeated + \(c.replay) replay; \(c.skippedBusy) skipped (encoder busy), \(c.idleIgnored) idle ticks ignored")
+        debugLog("Capture: \(c.encoded) encoded = \(c.captured) new + \(c.idle) idle + \(c.repeated) repeated + \(c.replay) replay; \(c.skippedBusy) skipped (encoder busy), \(c.idleIgnored) idle ticks ignored, \(c.outOfOrder) out of order")
     }
 }
