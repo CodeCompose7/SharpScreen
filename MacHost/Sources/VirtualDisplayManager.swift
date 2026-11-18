@@ -82,6 +82,7 @@ class VirtualDisplayManager {
             refreshRate: Double(refreshRate)
         ))
         settings.modes = modes
+        CaptureDiagnostics.applyHiddenSettings(to: settings)
 
         self.displaySettings = settings
 

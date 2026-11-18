@@ -292,6 +292,12 @@ class ScreenCapture {
 
             debugLog("SCShareableContent returned \(content.displays.count) displays: \(content.displays.map { $0.displayID })")
 
+            if CaptureDiagnostics.captureMainDisplay,
+               let main = content.displays.first(where: { $0.displayID == CGMainDisplayID() }) {
+                display = main
+                debugLog("diag.captureMainDisplay: capturing main display \(main.width)x\(main.height) (ID: \(main.displayID))")
+                return
+            }
             if let virtualDisplay = content.displays.first(where: { $0.displayID == virtualDisplayID }) {
                 display = virtualDisplay
                 debugLog("Capturing virtual display: \(virtualDisplay.width)x\(virtualDisplay.height) (ID: \(virtualDisplayID))")
@@ -342,7 +348,7 @@ class ScreenCapture {
         let config = SCStreamConfiguration()
         config.width = width
         config.height = height
-        config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(fps))
+        config.minimumFrameInterval = CaptureDiagnostics.minimumFrameInterval(fps: fps)
         // Video-range (16-235) rather than full-range (0-255). VideoToolbox
         // derives the bitstream's VUI full_range_flag from the pixel format,
         // and several Android vendor display paths (Xiaomi/HyperOS among
@@ -352,16 +358,21 @@ class ScreenCapture {
         // default, so it renders identically everywhere.
         config.pixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
         config.showsCursor = true
-        config.queueDepth = 4
+        config.queueDepth = CaptureDiagnostics.queueDepth
         config.capturesAudio = false
         config.backgroundColor = .clear
         config.scalesToFit = false
 
         let scStream = SCStream(filter: filter, configuration: config, delegate: delegate)
-        try scStream.addStreamOutput(output, type: .screen, sampleHandlerQueue: .global(qos: .userInteractive))
+        // The stock concurrent global queue can hand two frames to the
+        // handler at once and out of order; diag.serialSampleQueue tests that.
+        let sampleQueue = CaptureDiagnostics.serialSampleQueue
+            ? DispatchQueue(label: "SCStream.samples", qos: .userInteractive)
+            : DispatchQueue.global(qos: .userInteractive)
+        try scStream.addStreamOutput(output, type: .screen, sampleHandlerQueue: sampleQueue)
 
         stream = scStream
-        debugLog("Stream configured: \(width)x\(height) @ \(fps)fps (with delegate)")
+        debugLog("Stream configured: \(width)x\(height) @ \(fps)fps (with delegate), queueDepth=\(config.queueDepth), minInterval=\(config.minimumFrameInterval.seconds), sampleQueue=\(CaptureDiagnostics.serialSampleQueue ? "serial" : "global")")
     }
 
     // MARK: - Shared frame handler (used by both startStreaming and restartStream)
@@ -398,7 +409,8 @@ class ScreenCapture {
             // New pixels go out at once; a tick without pixels re-sends the
             // cached frame. The pacer drops it when 2 encodes are in flight.
             if let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-                newPacer.submit(imageBuffer, kind: .captured)
+                newPacer.submit(imageBuffer, kind: .captured,
+                                capturePts: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
             } else {
                 newPacer.submit(nil, kind: .idle)
             }
@@ -448,15 +460,44 @@ class ScreenCapture {
         configureFrameHandler(label: "initial")
 
         Task {
+            if CaptureDiagnostics.forceCGDisplayStream {
+                debugLog("diag.forceCGDisplayStream: capturing with CGDisplayStream instead of SCStream")
+                attemptFallbackCapture()
+                showMotionPatternIfRequested()
+                return
+            }
             do {
                 try await stream?.startCapture()
                 debugLog("SCStream capture started — starting frame flow monitor (3s interval, 5s timeout)")
                 startFrameMonitor()
+                showMotionPatternIfRequested()
             } catch {
                 debugLog("Failed to start SCStream capture: \(error)")
                 debugLog("Attempting CGDisplayStream fallback due to start failure")
                 attemptFallbackCapture()
             }
+        }
+    }
+
+    private var motionPattern: MotionPatternWindow?
+    private var activityPinger: UserActivityPinger?
+
+    private func showMotionPatternIfRequested() {
+        if UserActivityPinger.enabled {
+            DispatchQueue.main.async {
+                self.activityPinger?.stop()
+                let pinger = UserActivityPinger()
+                pinger.start()
+                self.activityPinger = pinger
+            }
+        }
+        guard CaptureDiagnostics.motionPattern,
+              let id = CaptureDiagnostics.captureMainDisplay ? CGMainDisplayID() : virtualDisplayID else { return }
+        DispatchQueue.main.async {
+            self.motionPattern?.hide()
+            let pattern = MotionPatternWindow()
+            pattern.show(on: id)
+            self.motionPattern = pattern
         }
     }
 
@@ -666,7 +707,12 @@ class ScreenCapture {
         // composites the cursor at all (the key defaults to false), so any
         // session that degrades to CGDisplayStream loses the pointer on the
         // tablet even when WindowServer is healthy.
-        let streamProps = [CGDisplayStream.showCursor as String: true] as CFDictionary
+        let streamProps = [
+            CGDisplayStream.showCursor as String: true,
+            CGDisplayStream.minimumFrameTime as String: 1.0 / Double(max(1, refreshRate)),
+        ] as CFDictionary
+        var cgFrames = 0
+        var cgWindowStart = DispatchTime.now().uptimeNanoseconds
 
         guard let displayStream = CGDisplayStream(
             dispatchQueueDisplay: displayID,
@@ -675,7 +721,16 @@ class ScreenCapture {
             pixelFormat: pixelFormat,
             properties: streamProps,
             queue: queue,
-            handler: { [weak self] _, _, frameSurface, _ in
+            handler: { [weak self] status, _, frameSurface, _ in
+                if status == .frameComplete {
+                    cgFrames += 1
+                    let now = DispatchTime.now().uptimeNanoseconds
+                    if now - cgWindowStart >= 1_000_000_000 {
+                        debugLog("CGDisplayStream: \(cgFrames) complete frames/s")
+                        cgFrames = 0
+                        cgWindowStart = now
+                    }
+                }
                 guard let self = self, let surface = frameSurface else { return }
 
                 var unmanagedPB: Unmanaged<CVPixelBuffer>?
@@ -781,6 +836,10 @@ class ScreenCapture {
         stopFrameMonitor()
         pacer?.stop()
         pacer = nil
+        DispatchQueue.main.async {
+            self.motionPattern?.hide(); self.motionPattern = nil
+            self.activityPinger?.stop(); self.activityPinger = nil
+        }
 
         // Let the display idle-sleep normally again once we stop streaming.
         releaseDisplaySleepAssertion()
