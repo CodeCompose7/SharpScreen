@@ -262,14 +262,13 @@
                 android:background="@drawable/segment_track"
                 android:layout_marginBottom="20dp">
 
-                <com.google.android.material.button.MaterialButtonToggleGroup
+                <RadioGroup
                     android:id="@+id/modeToggleGroup"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:selectionRequired="true"
-                    app:singleSelection="true">
+                    android:orientation="horizontal">
 
-                    <com.google.android.material.button.MaterialButton
+                    <RadioButton
                         android:id="@+id/modeUSB"
                         style="@style/Widget.SharpScreen.Segment"
                         android:layout_width="0dp"
@@ -277,14 +276,14 @@
                         android:layout_height="36dp"
                         android:text="@string/mode_usb" />
 
-                    <com.google.android.material.button.MaterialButton
+                    <RadioButton
                         android:id="@+id/modeWireless"
                         style="@style/Widget.SharpScreen.Segment"
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="36dp"
                         android:text="@string/mode_wireless" />
-                </com.google.android.material.button.MaterialButtonToggleGroup>
+                </RadioGroup>
             </FrameLayout>
 
             <!-- ============= USB MODE CONTENT ============= -->

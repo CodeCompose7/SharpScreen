@@ -238,43 +238,75 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/usbHostLayout"
-                            style="@style/Widget.SharpScreen.TextInputLayout"
+                        <LinearLayout
                             android:layout_width="0dp"
                             android:layout_weight="2"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="12dp"
-                            android:hint="@string/settings_usb_host">
+                            android:orientation="vertical">
 
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/usbHostInput"
+                            <TextView
+                                android:id="@+id/usbHostLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="4dp"
+                                android:labelFor="@+id/usbHostInput"
+                                android:text="@string/settings_usb_host"
+                                android:textColor="@color/ss_text_secondary"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/usbHostLayout"
+                                style="@style/Widget.SharpScreen.TextInputLayout"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="textUri"
-                                android:imeOptions="actionNext"
-                                android:importantForAutofill="no"
-                                android:textColor="@color/ss_text_primary" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                                app:hintEnabled="false">
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/usbPortLayout"
-                            style="@style/Widget.SharpScreen.TextInputLayout"
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/usbHostInput"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="textUri"
+                                    android:imeOptions="actionNext"
+                                    android:importantForAutofill="no"
+                                    android:textColor="@color/ss_text_primary" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
                             android:layout_width="0dp"
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
-                            android:hint="@string/settings_usb_port">
+                            android:orientation="vertical">
 
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/usbPortInput"
+                            <TextView
+                                android:id="@+id/usbPortLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="4dp"
+                                android:labelFor="@+id/usbPortInput"
+                                android:text="@string/settings_usb_port"
+                                android:textColor="@color/ss_text_secondary"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/usbPortLayout"
+                                style="@style/Widget.SharpScreen.TextInputLayout"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="number"
-                                android:maxLength="5"
-                                android:imeOptions="actionDone"
-                                android:importantForAutofill="no"
-                                android:textColor="@color/ss_text_primary" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                                app:hintEnabled="false">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/usbPortInput"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="number"
+                                    android:maxLength="5"
+                                    android:imeOptions="actionDone"
+                                    android:importantForAutofill="no"
+                                    android:textColor="@color/ss_text_primary" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
                     </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton

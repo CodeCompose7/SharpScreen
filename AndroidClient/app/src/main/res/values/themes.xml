@@ -12,6 +12,8 @@
         <item name="colorOnSurface">@color/ss_text_primary</item>
         <item name="colorControlActivated">@color/ss_accent</item>
         <item name="colorControlNormal">@color/ss_text_secondary</item>
+        <!-- Cards and dialogs keep their exact colours instead of a lighter elevation tint. -->
+        <item name="elevationOverlayEnabled">false</item>
         <item name="android:colorBackground">@color/ss_bg</item>
         <item name="android:windowBackground">@color/ss_bg</item>
         <item name="android:textColorPrimary">@color/ss_text_primary</item>
@@ -30,6 +32,7 @@
         <item name="colorOnSurface">@color/ss_text_primary</item>
         <item name="colorControlActivated">@color/ss_accent</item>
         <item name="colorControlNormal">@color/ss_text_secondary</item>
+        <item name="elevationOverlayEnabled">false</item>
         <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.SharpScreen.Card</item>
         <item name="materialAlertDialogTitleTextStyle">@style/SharpScreen.DialogTitle</item>
         <item name="buttonBarPositiveButtonStyle">@style/Widget.SharpScreen.Button.DialogText</item>

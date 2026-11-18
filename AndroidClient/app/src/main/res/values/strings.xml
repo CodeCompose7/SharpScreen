@@ -146,7 +146,7 @@
     <string name="settings_usb_summary">Address of the Mac app over the USB cable. Change only if you changed the port on the Mac.</string>
     <string name="settings_usb_host">Host</string>
     <string name="settings_usb_port">Port</string>
-    <string name="settings_usb_port_invalid">Enter a port between 1 and 65535</string>
+    <string name="settings_usb_port_invalid">Use 1–65535</string>
     <string name="settings_usb_reset">Restore defaults (127.0.0.1:54321)</string>
     <string name="settings_section_about">About</string>
     <string name="settings_version">Version</string>

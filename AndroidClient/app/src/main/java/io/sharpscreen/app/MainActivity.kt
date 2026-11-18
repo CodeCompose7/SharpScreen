@@ -176,8 +176,9 @@ class MainActivity : AppCompatActivity() {
         binding.modeToggleGroup.check(if (saved == ConnectionMode.WIRELESS) R.id.modeWireless else R.id.modeUSB)
         applyModeVisibility(saved)
 
-        binding.modeToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
+        // A RadioGroup (pill segments): one segment is always checked.
+        binding.modeToggleGroup.setOnCheckedChangeListener { _, checkedId ->
+            if (checkedId == View.NO_ID) return@setOnCheckedChangeListener
             val mode = if (checkedId == R.id.modeWireless) ConnectionMode.WIRELESS else ConnectionMode.USB
             prefs.connectionMode = mode
             applyModeVisibility(mode)
@@ -766,7 +767,7 @@ class MainActivity : AppCompatActivity() {
                         android.content.res.ColorStateList
                             .valueOf(getColor(R.color.ss_accent_tint))
                 } else {
-                    button.backgroundTintList = null
+                    button.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.TRANSPARENT)
                 }
             }
         }

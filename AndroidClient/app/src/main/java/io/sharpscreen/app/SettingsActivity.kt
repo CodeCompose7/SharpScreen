@@ -79,19 +79,11 @@ class SettingsActivity : AppCompatActivity() {
         }
         showStored()
 
-        // Saved as typed; MainActivity reads them when Connect is pressed.
-        binding.usbHostInput.doAfterTextChanged { text ->
-            prefs.usbHost = text?.toString()?.trim().orEmpty()
-        }
+        // Validated as typed, saved when the screen is left (onPause), so half-typed
+        // values like the "5" on the way to "54321" are never stored.
         binding.usbPortInput.doAfterTextChanged { text ->
-            val port = PreferencesManager.parsePort(text?.toString().orEmpty())
-            if (port != null) {
-                prefs.usbPort = port
-                binding.usbPortLayout.error = null
-            } else {
-                // Keep the last valid port stored; just flag the field.
-                binding.usbPortLayout.error = getString(R.string.settings_usb_port_invalid)
-            }
+            val valid = PreferencesManager.parsePort(text?.toString().orEmpty()) != null
+            binding.usbPortLayout.error = if (valid) null else getString(R.string.settings_usb_port_invalid)
         }
         binding.usbResetButton.setOnClickListener {
             prefs.usbHost = PreferencesManager.DEFAULT_USB_HOST
@@ -100,10 +92,22 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    /** Saves the USB fields; MainActivity reads them when Connect is pressed. */
+    private fun saveUsbEndpoint() {
+        // An emptied host field means "use the default".
+        prefs.usbHost =
+            binding.usbHostInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+                .ifEmpty { PreferencesManager.DEFAULT_USB_HOST }
+        // An invalid port keeps the previously saved one.
+        PreferencesManager.parsePort(binding.usbPortInput.text?.toString().orEmpty())?.let { prefs.usbPort = it }
+    }
+
     override fun onPause() {
         super.onPause()
-        // An emptied host field means "use the default".
-        if (prefs.usbHost.isBlank()) prefs.usbHost = PreferencesManager.DEFAULT_USB_HOST
+        saveUsbEndpoint()
     }
 
     // ==================== About ====================
