@@ -26,6 +26,12 @@ enum CaptureDiagnostics {
         UserDefaults.standard.bool(forKey: "diag.motionPattern")
     }
 
+    /// Seconds between periodic keyframes (stock 1). diag.keyframeIntervalSec.
+    static var keyframeIntervalSeconds: Double {
+        let v = UserDefaults.standard.double(forKey: "diag.keyframeIntervalSec")
+        return v > 0 ? v : 1.0
+    }
+
     /// SCStreamConfiguration.minimumFrameInterval. Stock: 1/fps.
     /// diag.minFrameIntervalHz = 0 means no limit (CMTime.zero), N means 1/N s.
     static func minimumFrameInterval(fps: Int) -> CMTime {

@@ -163,8 +163,9 @@ class VideoEncoder {
         // starving Mac WindowServer with encoder load. Short-GOP IPP gives 99% of
         // the resilience (frame loss recovery within 1 second) at a fraction of
         // the per-frame cost. TCP over USB-C rarely drops, so 1s GOP is safe.
-        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameInterval, value: frameRate as CFNumber)
-        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: 1.0 as CFNumber)
+        let keyframeSeconds = CaptureDiagnostics.keyframeIntervalSeconds
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameInterval, value: Int(Double(frameRate) * keyframeSeconds) as CFNumber)
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: keyframeSeconds as CFNumber)
 
         // Critical for low latency - NO frame reordering (no B-frames)
         VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AllowFrameReordering, value: kCFBooleanFalse)
