@@ -43,7 +43,9 @@ class VideoDecoder(
 
     private val frameTimes = ArrayDeque<Long>(120)
 
-    private val displayRefreshRate = display?.refreshRate ?: 60f
+    // The panel's top rate, not the current one: adaptive refresh may sit at
+    // 96 Hz when the decoder starts, which under-clocked it for 120 fps.
+    private val displayRefreshRate = DisplayRefresh.peakRefreshRate(display)
 
     private var currentWidth = initialWidth
     private var currentHeight = initialHeight

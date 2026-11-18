@@ -21,6 +21,7 @@ import android.provider.Settings
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.SurfaceHolder
+import android.util.Log
 import android.view.TextureView
 import android.view.View
 import android.view.Window
@@ -92,10 +93,18 @@ class MainActivity : AppCompatActivity() {
     private val checklistHandler = Handler(Looper.getMainLooper())
     private var checklistRunnable: Runnable? = null
     private var isConnected = false // Track connection state to prevent checklist conflicts
+        set(value) {
+            field = value
+            applyRefreshRatePreference()
+        }
 
     // Demo mode: plays a bundled clip so the app can be tried without a Mac
     private var demoPlayer: DemoPlayer? = null
     private var demoActive = false
+        set(value) {
+            field = value
+            applyRefreshRatePreference()
+        }
     private var demoTouchHintShown = false
 
     /** True while video is on screen — a real session or the demo. Drives the streaming chrome. */
@@ -1797,6 +1806,30 @@ class MainActivity : AppCompatActivity() {
             val current = binding.logText.text.toString()
             val lines = current.split("\n").takeLast(5)
             binding.logText.text = (lines + message).joinToString("\n")
+        }
+    }
+
+    /**
+     * While streaming, ask for the panel's top refresh mode (see [DisplayRefresh]);
+     * otherwise hand the choice back to the system. UI thread only.
+     */
+    private fun applyRefreshRatePreference() {
+        @Suppress("DEPRECATION")
+        val display = windowManager.defaultDisplay ?: return
+        val wanted =
+            if (isStreamingUi) {
+                with(DisplayRefresh) {
+                    highestRefreshMode(display.supportedModes.map { it.toMode() }, display.mode.toMode())?.id
+                        ?: display.mode.modeId
+                }
+            } else {
+                0 // no preference
+            }
+        val attrs = window.attributes
+        if (attrs.preferredDisplayModeId != wanted) {
+            attrs.preferredDisplayModeId = wanted
+            window.attributes = attrs
+            Log.i("DisplayRefresh", "preferredDisplayModeId=$wanted (streaming=$isStreamingUi)")
         }
     }
 
