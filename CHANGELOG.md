@@ -6,7 +6,33 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.3.0-beta.1] - 2026-11-18 — Even frame pacing, lighter lossless
+
+Pre-release. Measurements are in [docs/measurements.md](docs/measurements.md).
+
+### Added
+- **Vsync-aligned presentation.** The Mac sends when each frame's pixels were
+  composited; the tablet shows every frame on the vsync that keeps the Mac's
+  spacing. Dragging a window, frames shown at a different spacing than they were
+  composited went from ~50% to 1-16%, with no added latency.
+- **New app icon.** Debug builds are named "SharpScreen Dev" with a DEV badge.
+
 ### Changed
+- **Lossless tiles no longer slow video.** Video is captured as 420v again;
+  tiles read a separate 30 fps BGRA capture. Mac capture-to-send while dragging:
+  7.1 ms -> 6.0 ms (the same as without tiles).
+- Lossless tile messages are drawn with the next video frame instead of on their
+  own. The extra presents backed up the tablet's display queue (queued -> shown
+  26 ms -> 19 ms) and pushed frames out unseen.
+- After a reconnect a still screen is fully sharp in 17-35 ms (was 0.1-1.6 s).
+- Up to 1 MB of tiles per refine tick (photo-heavy full refill 111-136 ms ->
+  76-95 ms).
+
+### Fixed
+- Lossless tiles stopped after the encode size changed or a tablet profile
+  rebuilt the display, until the tablet reconnected.
+
+### Changed (release process)
 - **Android release key.** Release APKs are signed with a SharpScreen release key
   (`CN=SharpScreen`) instead of the Android debug key; `scripts/build_android_release.sh`
   builds and verifies them, and RELEASING.md documents the whole release. The v0.2.0
