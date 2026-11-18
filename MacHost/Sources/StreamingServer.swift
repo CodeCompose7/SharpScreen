@@ -1053,7 +1053,10 @@ class StreamingServer {
         }
     }
 
-    func sendFrame(_ data: Data, timestamp: UInt64, isKeyframe: Bool = false, isRepeat: Bool = false) {
+    /// `timestamp`: encode start, for the send-side statistics. `contentNs`:
+    /// when the pixels were composited, sent to the client (frame metadata)
+    /// so it can present frames on the source's cadence.
+    func sendFrame(_ data: Data, timestamp: UInt64, isKeyframe: Bool = false, isRepeat: Bool = false, contentNs: UInt64 = 0) {
         guard let connection = connection, !isStopped, connectionReady else { return }
 
         // With short-GOP encoding, a fresh client must start on a keyframe —
@@ -1072,7 +1075,7 @@ class StreamingServer {
         frameQueue.async { [weak self] in
             guard let self = self else { return }
 
-            let packet = self.makeFramePacket(data, timestamp: timestamp, isKeyframe: isKeyframe)
+            let packet = self.makeFramePacket(data, timestamp: contentNs > 0 ? contentNs : timestamp, isKeyframe: isKeyframe)
             let sendCallNs = DispatchTime.now().uptimeNanoseconds
 
             connection.send(content: packet, completion: .contentProcessed { error in

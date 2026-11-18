@@ -135,6 +135,9 @@ class MainActivity : AppCompatActivity() {
         GlCompositor.tintTiles = intent?.getBooleanExtra("diag.tileTint", false) ?: false
         GlCompositor.showTiles = intent?.getBooleanExtra("diag.showTiles", true) ?: true
         GlCompositor.losslessTiles = intent?.getBooleanExtra("diag.lossless", true) ?: true
+        // `--ez diag.vsyncPresent false`: present frames as soon as drawn (before M4).
+        GlCompositor.vsyncPresent = intent?.getBooleanExtra("diag.vsyncPresent", true) ?: true
+        intent?.getIntExtra("diag.presentPercentile", 0)?.takeIf { it in 1..99 }?.let { PresentScheduler.PERCENTILE = it }
 
         // Enable edge-to-edge display (draw behind system bars and cutout)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

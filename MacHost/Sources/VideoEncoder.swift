@@ -25,7 +25,7 @@ class VideoEncoder {
     private let sessionQueue = DispatchQueue(label: "VideoEncoder.session", qos: .userInteractive)
 
     private var compressionSession: VTCompressionSession?
-    var onEncodedFrame: ((Data, UInt64, Bool, Bool) -> Void)?  // data, timestamp, isKeyframe, isRepeat
+    var onEncodedFrame: ((Data, UInt64, Bool, Bool, UInt64) -> Void)?  // data, encode start, isKeyframe, isRepeat, content time
     private var width: Int
     private var height: Int
     let codec: StreamCodec
@@ -241,13 +241,13 @@ class VideoEncoder {
     /// tearing down.
     /// `isRepeat` marks a re-encode of an unchanged frame (pacer fill,
     /// keepalive); it only rides along to the send-side statistics.
-    func encode(pixelBuffer: CVPixelBuffer, presentationTimeStamp: CMTime, isRepeat: Bool = false) {
+    func encode(pixelBuffer: CVPixelBuffer, presentationTimeStamp: CMTime, isRepeat: Bool = false, contentNs: UInt64 = 0) {
         sessionQueue.sync {
-            encodeOnSessionQueue(pixelBuffer: pixelBuffer, presentationTimeStamp: presentationTimeStamp, isRepeat: isRepeat)
+            encodeOnSessionQueue(pixelBuffer: pixelBuffer, presentationTimeStamp: presentationTimeStamp, isRepeat: isRepeat, contentNs: contentNs)
         }
     }
 
-    private func encodeOnSessionQueue(pixelBuffer: CVPixelBuffer, presentationTimeStamp: CMTime, isRepeat: Bool) {
+    private func encodeOnSessionQueue(pixelBuffer: CVPixelBuffer, presentationTimeStamp: CMTime, isRepeat: Bool, contentNs: UInt64) {
         guard let session = compressionSession else { return }
         Self.tagAsBT709IfRGB(pixelBuffer)
 
@@ -255,9 +255,10 @@ class VideoEncoder {
 
         // Use system uptime clock — MUST match DispatchTime.now().uptimeNanoseconds
         let captureNanos = DispatchTime.now().uptimeNanoseconds
-        let refconValue = UnsafeMutableRawPointer.allocate(byteCount: 16, alignment: 8)
+        let refconValue = UnsafeMutableRawPointer.allocate(byteCount: 24, alignment: 8)
         refconValue.storeBytes(of: captureNanos, as: UInt64.self)
         refconValue.storeBytes(of: isRepeat ? UInt64(1) : 0, toByteOffset: 8, as: UInt64.self)
+        refconValue.storeBytes(of: contentNs > 0 ? contentNs : captureNanos, toByteOffset: 16, as: UInt64.self)
 
         let shouldForceKeyframe = stateLock.withLock { state -> Bool in
             guard state.pendingForceKeyframe else { return false }
@@ -301,13 +302,16 @@ private let encodingOutputCallback: VTCompressionOutputCallback = { (outputCallb
 
     // Get timestamp for frame age tracking
     let timestamp: UInt64
+    let contentNs: UInt64
     var isRepeat = false
     if let refcon = sourceFrameRefCon {
         timestamp = refcon.load(as: UInt64.self)
         isRepeat = refcon.load(fromByteOffset: 8, as: UInt64.self) != 0
+        contentNs = refcon.load(fromByteOffset: 16, as: UInt64.self)
         refcon.deallocate()
     } else {
         timestamp = DispatchTime.now().uptimeNanoseconds
+        contentNs = timestamp
     }
 
     // Extract encoded data
@@ -386,5 +390,5 @@ private let encodingOutputCallback: VTCompressionOutputCallback = { (outputCallb
         offset += Int(nalLength)
     }
 
-    encoder.onEncodedFrame?(frameData, timestamp, isKeyframe, isRepeat)
+    encoder.onEncodedFrame?(frameData, timestamp, isKeyframe, isRepeat, contentNs)
 }
