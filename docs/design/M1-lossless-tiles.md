@@ -100,13 +100,22 @@ All integers big-endian, like the existing frame header. The host also resends
 | Phase | Work | Gate |
 |---|---|---|
 | M1a | Android GL compositor, video only (no protocol change) | frame age and visible latency within +2 ms of SurfaceView; 120 fps holds. **Passed 2026-11-18** (draw+swap 1.9 ms, decode -0.9 ms; see measurements) |
-| M1b | BGRA capture, TileTracker, types 19-21, LZ4 both ends, debug tint of lossless tiles | text tiles become lossless after `settle`; video unaffected |
-| M1c | Tune `settle`, `refineBudget`, tile size; objective check | tablet `screencap` vs Mac capture: >= 99% of still-text pixels identical |
+| M1b | BGRA capture, TileTracker, types 19-21, LZ4 both ends, debug tint of lossless tiles | text tiles become lossless after `settle`; video unaffected. **Done 2026-11-18** |
+| M1c | Tune `settle`, `refineBudget`, tile size; objective check | tablet `screencap` vs Mac capture: >= 99% of still-text pixels identical. **Met: 653/655 text tiles exact** (tuning still open) |
 
 M1a goes first because it is the riskiest step for latency: SurfaceView lets
 the hardware compose the decoder output directly, a GL pass adds a copy. If it
 costs more than the gate, the fallback is an overlay layer (a second, mostly
 transparent SurfaceView above the video) instead of a GL compositor.
+
+## Known gaps after M1b
+
+- A change of encode size mid-session (new client decode limit, resolution
+  change) keeps the host's old tile grid; the client ignores mismatched tiles,
+  so the screen stays correct but lossy until reconnect.
+- Rotation and flip still use the TextureView path, which has no lossless layer.
+- The 32BGRA capture costs ~1.5-2 ms of encode time. A second, slower BGRA
+  stream for tiles only would avoid it on the video path.
 
 ## Out of scope for M1
 

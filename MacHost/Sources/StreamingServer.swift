@@ -786,6 +786,12 @@ class StreamingServer {
                 if version >= 1, !wasOn {
                     debugLog("Client composites lossless tiles (protocol \(version))")
                     onLosslessTilesRequested?()
+                } else if version >= 1 {
+                    // Sent again when the client rebuilds its compositor (new
+                    // decoder, new size): its canvas is empty, so forget what
+                    // it held and refine everything again.
+                    debugLog("Client asked for a lossless tile resync")
+                    resetLosslessTiles(grid: tileTracker.grid)
                 }
 
             case WireMessage.clientSupportsFrameMetadata:

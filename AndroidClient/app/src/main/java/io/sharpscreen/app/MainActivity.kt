@@ -127,7 +127,16 @@ class MainActivity : AppCompatActivity() {
         intent?.takeIf { it.hasExtra("diag.glCompositor") }?.let {
             diagPrefs.edit().putBoolean("glCompositor", it.getBooleanExtra("diag.glCompositor", false)).apply()
         }
-        GlCompositor.enabled = diagPrefs.getBoolean("glCompositor", false)
+        GlCompositor.enabled = diagPrefs.getBoolean("glCompositor", true)
+        // `--ez diag.tileTint true` tints lossless tiles green to see where they are.
+        intent?.takeIf { it.hasExtra("diag.tileTint") }?.let {
+            diagPrefs.edit().putBoolean("tileTint", it.getBooleanExtra("diag.tileTint", false)).apply()
+        }
+        GlCompositor.tintTiles = diagPrefs.getBoolean("tileTint", false)
+        intent?.takeIf { it.hasExtra("diag.showTiles") }?.let {
+            diagPrefs.edit().putBoolean("showTiles", it.getBooleanExtra("diag.showTiles", true)).apply()
+        }
+        GlCompositor.showTiles = diagPrefs.getBoolean("showTiles", true)
 
         // Enable edge-to-edge display (draw behind system bars and cutout)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -1213,6 +1222,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             streamClient?.requestKeyframe(force = true, reason = "decoder initialized")
+            if (videoDecoder?.compositor != null) streamClient?.requestLosslessTileResync()
             mainDiag("Decoder initialized OK ${displayWidth}x$displayHeight mime=$mime, texture=$useTextureView")
             log("✅ Decoder initialized ${displayWidth}x$displayHeight $mime (${displayObj?.refreshRate ?: 60f}Hz)")
         } catch (e: Exception) {
@@ -1239,6 +1249,8 @@ class MainActivity : AppCompatActivity() {
      * Wire up all StreamClient callbacks. Used by both USB connect() and wireless connectWireless().
      */
     private fun setupStreamClientCallbacks() {
+        streamClient?.onTileInvalidate = { tiles -> videoDecoder?.compositor?.invalidateTiles(tiles) }
+        streamClient?.onLosslessTiles = { tileSize, tiles -> videoDecoder?.compositor?.applyTiles(tileSize, tiles) }
         streamClient?.onFrameReceived = { frameData, frameSize, timestamp, isKeyframe ->
             val dec = videoDecoder
             if (dec != null) {
@@ -1501,6 +1513,8 @@ class MainActivity : AppCompatActivity() {
                 log("Connecting to $host:$port...")
 
                 streamClient = StreamClient(host, port, applicationContext)
+                streamClient?.onTileInvalidate = { tiles -> videoDecoder?.compositor?.invalidateTiles(tiles) }
+                streamClient?.onLosslessTiles = { tileSize, tiles -> videoDecoder?.compositor?.applyTiles(tileSize, tiles) }
                 streamClient?.onFrameReceived = { frameData, frameSize, timestamp, isKeyframe ->
                     val dec = videoDecoder
                     if (dec != null) {
