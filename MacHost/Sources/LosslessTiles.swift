@@ -111,6 +111,12 @@ final class TileTracker {
     /// Tiles not valid on the client that have not changed for `settleNs`,
     /// most recently changed first (what the user just looked at).
     func refineCandidates(nowNs: UInt64, settleNs: UInt64, limit: Int) -> [Int] {
+        refineCandidateChanges(nowNs: nowNs, settleNs: settleNs, limit: limit).map(\.tile)
+    }
+
+    /// refineCandidates with each tile's last change, to tell which a given
+    /// capture can serve (changed before it) and which need a newer one.
+    func refineCandidateChanges(nowNs: UInt64, settleNs: UInt64, limit: Int) -> [(tile: Int, changedNs: UInt64)] {
         lock.withLock { s in
             var c: [(Int, UInt64)] = []
             for t in 0..<s.grid.count where !s.valid[t] {
@@ -118,7 +124,7 @@ final class TileTracker {
                 if nowNs >= changed, nowNs - changed >= settleNs { c.append((t, changed)) }
             }
             c.sort { $0.1 > $1.1 }
-            return c.prefix(limit).map(\.0)
+            return c.prefix(limit).map { (tile: $0.0, changedNs: $0.1) }
         }
     }
 

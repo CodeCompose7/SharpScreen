@@ -57,6 +57,18 @@ enum CaptureDiagnostics {
     /// Capture 32BGRA instead of 420v (M1b needs RGB pixels for lossless tiles).
     static var captureBGRA: Bool { UserDefaults.standard.bool(forKey: "diag.captureBGRA") }
 
+    /// Lossless tiles take their pixels from a second, 32BGRA capture stream
+    /// while video stays 420v (default). false: the video stream itself
+    /// switches to 32BGRA, which costs ~1.4 ms per frame in VideoToolbox.
+    /// diag.tileStream.
+    static var tileStream: Bool { UserDefaults.standard.object(forKey: "diag.tileStream") as? Bool ?? true }
+
+    /// Frame rate cap of that tile stream (stock 30). diag.tileStreamFps.
+    static var tileStreamFps: Int {
+        let v = UserDefaults.standard.integer(forKey: "diag.tileStreamFps")
+        return v > 0 ? v : 30
+    }
+
     /// diag.dumpFrames: every 2 s write the newest 32BGRA capture to a file
     /// (u32 width, u32 height, then packed rows) to compare against the tablet.
     static var dumpFrames: Bool { UserDefaults.standard.bool(forKey: "diag.dumpFrames") }

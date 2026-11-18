@@ -129,10 +129,12 @@ class MainActivity : AppCompatActivity() {
         // Per launch only, never remembered: a remembered showTiles=false once left
         // the tablet showing video while the host believed its tiles were on screen.
         // `--ez diag.tileTint true` tints lossless tiles green; `--ez diag.showTiles false`
-        // keeps showing video (HEVC-only baseline).
+        // keeps showing video (HEVC-only baseline); `--ez diag.lossless false` never
+        // asks the host for tiles at all.
         diagPrefs.edit().remove("tileTint").remove("showTiles").remove("releaseTs").apply()
         GlCompositor.tintTiles = intent?.getBooleanExtra("diag.tileTint", false) ?: false
         GlCompositor.showTiles = intent?.getBooleanExtra("diag.showTiles", true) ?: true
+        GlCompositor.losslessTiles = intent?.getBooleanExtra("diag.lossless", true) ?: true
 
         // Enable edge-to-edge display (draw behind system bars and cutout)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
