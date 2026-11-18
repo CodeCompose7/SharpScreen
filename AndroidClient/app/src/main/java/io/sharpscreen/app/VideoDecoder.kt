@@ -1,6 +1,7 @@
 package io.sharpscreen.app
 
 import android.media.MediaCodec
+import android.media.MediaCodecInfo
 import android.media.MediaCodecList
 import android.media.MediaFormat
 import android.os.Handler
@@ -153,7 +154,12 @@ class VideoDecoder(
         try {
             format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1)
             format.setInteger(MediaFormat.KEY_PRIORITY, 0)
-            format.setInteger(MediaFormat.KEY_OPERATING_RATE, displayRefreshRate.toInt())
+            // Short.MAX_VALUE asks the codec to run as fast as it can instead of
+            // just keeping up with a 120 fps rate: on the Tab S11 Ultra this cut
+            // decode latency from ~9.3 to ~7.3 ms per frame (max 13 -> 10 ms),
+            // at some extra decoder power. Codecs that reject it fall through to
+            // the basic config below.
+            format.setInteger(MediaFormat.KEY_OPERATING_RATE, Short.MAX_VALUE.toInt())
             format.setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
             codec.configure(format, surface, null, 0)
             configured = true
@@ -242,10 +248,7 @@ class VideoDecoder(
         try {
             val codecList = MediaCodecList(MediaCodecList.ALL_CODECS)
             val targetRate = displayRefreshRate.toDouble().coerceAtLeast(30.0)
-            var hwRateDecoder: String? = null
-            var hwSizeDecoder: String? = null
-            var swRateDecoder: String? = null
-            var swSizeDecoder: String? = null
+            val candidates = mutableListOf<DecoderChoice.Candidate>()
 
             for (info in codecList.codecInfos) {
                 if (info.isEncoder) continue
@@ -268,35 +271,28 @@ class VideoDecoder(
                         } catch (_: Exception) {
                             false
                         }
+                val lowLatency =
+                    android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R &&
+                        caps.isFeatureSupported(MediaCodecInfo.CodecCapabilities.FEATURE_LowLatency)
+                val secureOnly = caps.isFeatureRequired(MediaCodecInfo.CodecCapabilities.FEATURE_SecurePlayback)
 
                 diagLog(
                     "$mime decoder '${info.name}': " +
                         "width=${videoCaps.supportedWidths}, " +
                         "height=${videoCaps.supportedHeights}, " +
                         "hw=$isHardware, supports ${width}x$height=$supported, " +
-                        "supports @${"%.0f".format(targetRate)}fps=$rateSupported",
+                        "supports @${"%.0f".format(targetRate)}fps=$rateSupported, " +
+                        "lowLatency=$lowLatency, secureOnly=$secureOnly",
                 )
-
-                if (supported) {
-                    if (isHardware && rateSupported && hwRateDecoder == null) {
-                        hwRateDecoder = info.name
-                    } else if (isHardware && hwSizeDecoder == null) {
-                        hwSizeDecoder = info.name
-                    } else if (!isHardware && rateSupported && swRateDecoder == null) {
-                        swRateDecoder = info.name
-                    } else if (!isHardware && swSizeDecoder == null) {
-                        swSizeDecoder = info.name
-                    }
-                }
+                candidates += DecoderChoice.Candidate(info.name, isHardware, supported, rateSupported, lowLatency, secureOnly)
             }
 
-            // Prefer hardware that advertises the target refresh rate, then any
-            // hardware decoder for the size, then software as a last resort.
-            val chosen = hwRateDecoder ?: hwSizeDecoder ?: swRateDecoder ?: swSizeDecoder
-            if (chosen != null) {
+            val choice = DecoderChoice.choose(candidates)
+            val chosen = choice?.name
+            if (choice != null) {
                 diagLog(
-                    "Selected decoder: $chosen " +
-                        "(rateSupported=${chosen == hwRateDecoder || chosen == swRateDecoder})",
+                    "Selected decoder: $chosen (hw=${choice.hardware}, rateSupported=${choice.rateSupported}, " +
+                        "lowLatency=${choice.lowLatency})",
                 )
             } else {
                 diagLog("No decoder supports ${width}x$height — will use default")
