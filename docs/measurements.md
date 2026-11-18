@@ -186,6 +186,35 @@ tiles on several cores would lift that, but only saves ~20 ms on photo-heavy
 full fills. A display rebuilt mid-connection (2960x1848 to 2560x1600 by
 profile switch) went on with a 40x25 grid, 994/1000 tiles valid.
 
+### Dragging with lossless tiles: a separate BGRA stream
+
+A scripted window sweep on the virtual display (1200 pt/s, display-link
+driven, ~112 moves/s, 8 s per run), tablet launched with and without
+`diag.lossless`. Mac capture-to-send of new frames:
+
+| | Lossless off | Lossless on |
+|---|---|---|
+| Video stream switched to 32BGRA | 5.7 ms | 7.1 ms |
+| Video 420v + 30 fps BGRA tile stream | 6.15 ms | 6.01 ms |
+
+Tablet frame pacing, decoder handoff (~7 ms, as in M1a) and draw+swap did not
+differ with tiles on or off. Tile traffic while dragging: ~600 KB/s.
+
+Two ScreenCaptureKit behaviours shaped it:
+
+- On-demand screenshots (SCScreenshotManager, ~38 ms each) made the video
+  stream report the whole screen dirty after each one, so tiles never stayed
+  valid: dropped.
+- Starting the tile stream does the same once (~50 ms later) without a new
+  tile frame, and the stream's first frame carries the older time of the last
+  composite. Starting tile tracking with streaming, before any client, and
+  counting frames from the stream start: every connection fills in 17-35 ms
+  (20 runs), the first one after an app start included.
+
+With the tile stream, video against the host's BGRA is within 1-2 levels per
+brightness bin (one colour edge bin at +7 R, chroma subsampling); tiles stay
+1274/1282 pixel exact (text/UI 602/604).
+
 ## Video colour with 32BGRA capture (2026-11-18)
 
 Dragging a window left a dark halo: the tiles around it fall back to video,

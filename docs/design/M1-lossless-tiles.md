@@ -115,8 +115,9 @@ transparent SurfaceView above the video) instead of a GL compositor.
   and a display rebuilt under a connected client (profile switch) carries the
   lossless opt-in over to its new capture.
 - Rotation and flip still use the TextureView path, which has no lossless layer.
-- The 32BGRA capture costs ~1.5-2 ms of encode time. A second, slower BGRA
-  stream for tiles only would avoid it on the video path.
+- ~~The 32BGRA capture costs ~1.5-2 ms of encode time.~~ Fixed: video stays
+  420v and tiles read a second 32BGRA stream capped at 30 fps, started with
+  streaming (starting a capture stream marks the whole screen dirty once).
 
 ## Out of scope for M1
 
