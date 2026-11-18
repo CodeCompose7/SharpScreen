@@ -264,7 +264,7 @@ class ScreenCapture {
             group.addTask {
                 try await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
                 throw NSError(domain: "ScreenCapture", code: 10,
-                    userInfo: [NSLocalizedDescriptionKey: "SCShareableContent timed out after \(seconds)s (possible Apple bug FB12114396)"])
+                    userInfo: [NSLocalizedDescriptionKey: String(localized: "SCShareableContent timed out after \(seconds)s (possible Apple bug FB12114396)")])
             }
 
             let result = try await group.next()!
@@ -278,7 +278,7 @@ class ScreenCapture {
     private func setupDisplay() async throws {
         guard let virtualDisplayID = virtualDisplayID else {
             throw NSError(domain: "ScreenCapture", code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "Virtual display ID not set"])
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "Virtual display ID not set")])
         }
 
         for attempt in 1...5 {
@@ -315,7 +315,7 @@ class ScreenCapture {
         }
 
         throw NSError(domain: "ScreenCapture", code: 2,
-            userInfo: [NSLocalizedDescriptionKey: "Virtual display with ID \(virtualDisplayID) not found after 5 attempts"])
+            userInfo: [NSLocalizedDescriptionKey: String(localized: "Virtual display with ID \(String(virtualDisplayID)) not found after 5 attempts")])
     }
 
     // MARK: - Stream setup
@@ -323,7 +323,7 @@ class ScreenCapture {
     private func setupStream() async throws {
         guard let display = display, virtualDisplayID != nil else {
             throw NSError(domain: "ScreenCapture", code: 2,
-                userInfo: [NSLocalizedDescriptionKey: "Display not initialized"])
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "Display not initialized")])
         }
 
         // Physical pixels for full Retina sharpness, clamped when H.264 (SCStream scales)
