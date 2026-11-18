@@ -99,7 +99,7 @@ All integers big-endian, like the existing frame header. The host also resends
 
 | Phase | Work | Gate |
 |---|---|---|
-| M1a | Android GL compositor, video only (no protocol change) | frame age and visible latency within +2 ms of SurfaceView; 120 fps holds |
+| M1a | Android GL compositor, video only (no protocol change) | frame age and visible latency within +2 ms of SurfaceView; 120 fps holds. **Passed 2026-11-18** (draw+swap 1.9 ms, decode -0.9 ms; see measurements) |
 | M1b | BGRA capture, TileTracker, types 19-21, LZ4 both ends, debug tint of lossless tiles | text tiles become lossless after `settle`; video unaffected |
 | M1c | Tune `settle`, `refineBudget`, tile size; objective check | tablet `screencap` vs Mac capture: >= 99% of still-text pixels identical |
 

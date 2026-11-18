@@ -90,9 +90,28 @@ class VideoDecoder(
         }
     }
 
+    // M1a: when enabled, decode into a GlCompositor's SurfaceTexture and let it
+    // draw onto [surface]; otherwise the codec renders onto [surface] directly.
+    private var compositor: GlCompositor? = null
+    private var codecSurface: Surface = surface
+
     private fun setupDecoder() {
         decoderThread = HandlerThread("DecoderThread", Process.THREAD_PRIORITY_DISPLAY).also { it.start() }
         decoderHandler = Handler(decoderThread!!.looper)
+
+        codecSurface = surface
+        if (GlCompositor.enabled) {
+            try {
+                val c = GlCompositor(surface)
+                c.setVideoSize(currentWidth, currentHeight)
+                compositor = c
+                codecSurface = c.inputSurface
+                diagLog("GL compositor on: decoding into SurfaceTexture")
+            } catch (e: Exception) {
+                diagLog("GL compositor failed (${e.message}); rendering directly")
+                compositor = null
+            }
+        }
 
         // Find a decoder that supports our resolution (prefer HW, fallback to SW)
         val decoderName = findBestDecoder(currentWidth, currentHeight)
@@ -161,7 +180,7 @@ class VideoDecoder(
             // the basic config below.
             format.setInteger(MediaFormat.KEY_OPERATING_RATE, Short.MAX_VALUE.toInt())
             format.setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
-            codec.configure(format, surface, null, 0)
+            codec.configure(format, codecSurface, null, 0)
             configured = true
             diagLog("Configured with full low-latency")
         } catch (e: Exception) {
@@ -181,7 +200,7 @@ class VideoDecoder(
                     )
                 basicFormat.setInteger(MediaFormat.KEY_PRIORITY, 0)
                 basicFormat.setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
-                codec.configure(basicFormat, surface, null, 0)
+                codec.configure(basicFormat, codecSurface, null, 0)
                 configured = true
                 diagLog("Configured with basic format")
             } catch (e: Exception) {
@@ -200,7 +219,7 @@ class VideoDecoder(
                         currentWidth,
                         currentHeight,
                     )
-                codec.configure(minimalFormat, surface, null, 0)
+                codec.configure(minimalFormat, codecSurface, null, 0)
                 diagLog("Configured with minimal format")
             } catch (e: Exception) {
                 diagLog("All configure attempts failed: ${e.message}")
@@ -498,6 +517,7 @@ class VideoDecoder(
 
             codec.releaseOutputBuffer(index, true)
             val renderedNs = System.nanoTime()
+            compositor?.lastReleaseNs = renderedNs
             PacingDiag.recordRender(renderedNs)
             trackFrameTiming(renderedNs)
             updateStats()
@@ -545,6 +565,8 @@ class VideoDecoder(
             decoder?.stop()
             decoder?.release()
             decoder = null
+            compositor?.release()
+            compositor = null
             decoderThread?.quitSafely()
             decoderThread = null
             decoderHandler = null

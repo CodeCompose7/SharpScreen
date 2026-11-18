@@ -119,6 +119,26 @@ Repeats delay a new frame's encode by ~2.3 ms on average, but they keep the
 tablet's decoder busy, and it decodes 1-2 ms faster at 120 inputs/s than at 60-90
 (it clocks down with load). Net difference ~1 ms, so pacing stays on.
 
+## M1a: GL compositor vs direct decoder output (2026-11-18)
+
+Same conditions (60 new + 60 repeat frames/s). GL path: decoder ->
+SurfaceTexture -> GL draw on the SurfaceView window, swap interval 0.
+
+| | Direct | GL compositor |
+|---|---|---|
+| Decode (queue -> output) | 7.5-7.8 ms | 6.6-6.8 ms |
+| Release -> frame available (handoff) | not observable | 7.1-7.5 ms |
+| Draw + swap | - | 1.8-2.0 ms (max 3-5) |
+| Two frames in one vsync (<4 ms) | 8-10% | 4-6% |
+| Frame held > 12.5 ms | 10-12% | 5-7% |
+
+The 7 ms handoff did not move when the release carried an explicit "now"
+timestamp, so it is taken to be the codec's own surface-output step, present
+on the direct path too where nothing reports it. On that assumption (not
+verified: FrameTimeline only reports dump-relative times) the GL path costs
+~1.9 ms of draw+swap, offset by ~0.9 ms faster decode, within the +2 ms gate,
+and paces frames more evenly. Picture verified upright and correct.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
