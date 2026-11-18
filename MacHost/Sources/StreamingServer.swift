@@ -261,6 +261,12 @@ class StreamingServer {
     let tileTracker = TileTracker(grid: TileGrid(width: 0, height: 0))
     private var tilesSentBytes = 0
     private var tilesSent = 0
+    /// frameQueue only: when the current tile session started, until the
+    /// whole screen is valid on the client (logs the time a full fill takes).
+    private var tileFillStartNs: UInt64?
+    private var tileFillBytes = 0
+    private var tileFillFirstNs: UInt64 = 0
+    private var tileFillBatches = 0
     private var invalidatesSent = 0
     private var clientIsAvcOnly = false
     /// Max decode size reported by the connected client (issue #41).
@@ -983,19 +989,27 @@ class StreamingServer {
     /// valid on the client yet (it clears its mask on every display config).
     func resetLosslessTiles(grid: TileGrid) {
         frameQueue.async { [weak self] in
-            self?.tileTracker.reset(grid: grid, nowNs: DispatchTime.now().uptimeNanoseconds)
+            guard let self else { return }
+            let now = DispatchTime.now().uptimeNanoseconds
+            self.tileTracker.reset(grid: grid, nowNs: now)
+            self.tileFillStartNs = now
+            self.tileFillBytes = 0
+            self.tileFillFirstNs = 0
+            self.tileFillBatches = 0
         }
     }
 
     /// Pixels changed in a frame captured at `capturedAtNs`. Runs on frameQueue
     /// so the invalidate reaches the client before that frame's video, which
-    /// is still being encoded.
+    /// is still being encoded. Recorded with or without a client: the next
+    /// tile session relies on the history (TileTracker.reset).
     func noteDirtyRects(_ rects: [CGRect], capturedAtNs: UInt64) {
-        guard clientWantsLosslessTiles, !rects.isEmpty else { return }
+        guard !rects.isEmpty else { return }
         frameQueue.async { [weak self] in
-            guard let self, let connection = self.connection, self.connectionReady, !self.isStopped else { return }
+            guard let self else { return }
             let invalid = self.tileTracker.markDirty(rects, atNs: capturedAtNs)
-            guard !invalid.isEmpty else { return }
+            guard !invalid.isEmpty, self.clientWantsLosslessTiles,
+                  let connection = self.connection, self.connectionReady, !self.isStopped else { return }
             // u16 count: split very large invalidations.
             for chunk in stride(from: 0, to: invalid.count, by: 60_000) {
                 let msg = LosslessTileCodec.invalidateMessage(Array(invalid[chunk..<min(chunk + 60_000, invalid.count)]))
@@ -1018,6 +1032,20 @@ class StreamingServer {
             connection.send(content: msg, completion: .contentProcessed { _ in })
             self.tilesSent += fresh.count
             self.tilesSentBytes += msg.count
+            if let start = self.tileFillStartNs {
+                self.tileFillBytes += msg.count
+                self.tileFillBatches += 1
+                if self.tileFillFirstNs == 0 { self.tileFillFirstNs = DispatchTime.now().uptimeNanoseconds }
+                // 99%, not all: a clock or a blinking caret keeps a few tiles
+                // changing, so a full fill may never happen.
+                let grid = self.tileTracker.grid
+                let valid = self.tileTracker.validCount
+                if valid >= grid.count - grid.count / 100 {
+                    self.tileFillStartNs = nil
+                    let ms = Double(DispatchTime.now().uptimeNanoseconds - start) / 1e6
+                    debugLog("Lossless tiles: \(valid)/\(grid.count) valid \(String(format: "%.0f", ms)) ms after reset (first tiles at \(String(format: "%.0f", Double(self.tileFillFirstNs - start) / 1e6)) ms, \(self.tileFillBatches) batches, \(self.tileFillBytes / 1024) KB, settle \(TileRefiner.settleNs / 1_000_000) ms)")
+                }
+            }
         }
     }
 

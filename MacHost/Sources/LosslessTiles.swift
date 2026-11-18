@@ -74,13 +74,18 @@ final class TileTracker {
 
     var grid: TileGrid { lock.withLock { $0.grid } }
 
-    /// Forget everything (new client, new size). Nothing is valid on the client.
+    /// A new tile session (new client, resync, new size): nothing is valid
+    /// on the client. On the same grid the change history stays: it is
+    /// recorded for every captured frame, client or not, so tiles that have
+    /// been still can be refined at once from the frame already captured. A
+    /// still screen sends no new frame, so waiting for one took up to a second.
+    /// A new grid has no history: every tile counts as changed at `nowNs`.
     func reset(grid: TileGrid, nowNs: UInt64) {
         lock.withLock { s in
-            s.grid = grid
-            // Treat every tile as just changed so a fresh client gets a full
-            // refine pass once the screen has been still for `settle`.
-            s.lastChangeNs = Array(repeating: nowNs, count: grid.count)
+            if grid != s.grid {
+                s.grid = grid
+                s.lastChangeNs = Array(repeating: nowNs, count: grid.count)
+            }
             s.valid = Array(repeating: false, count: grid.count)
         }
     }

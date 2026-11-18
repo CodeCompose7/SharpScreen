@@ -55,6 +55,27 @@ final class LosslessTilesTests: XCTestCase {
         XCTAssertEqual(t.refineCandidates(nowNs: 1_000, settleNs: 100, limit: 2), [3, 0])
     }
 
+    /// A resync on the same grid keeps what is known about changes, so a
+    /// still screen refills from the frame already captured; a new grid
+    /// starts with every tile changed.
+    func testResetKeepsChangeHistoryOnlyOnTheSameGrid() {
+        let small = TileGrid(width: 128, height: 64)   // 2 tiles
+        let t = TileTracker(grid: small)
+        t.reset(grid: small, nowNs: 0)
+        _ = t.markDirty([CGRect(x: 0, y: 0, width: 1, height: 1)], atNs: 1_000)   // tile 0
+        XCTAssertEqual(t.claimForSend([0, 1], capturedAtNs: 2_000), [0, 1])
+        t.reset(grid: small, nowNs: 50_000)
+        XCTAssertEqual(t.validCount, 0)
+        XCTAssertEqual(t.refineCandidates(nowNs: 50_000, settleNs: 100, limit: 10), [0, 1], "still tiles need no new settle")
+        XCTAssertEqual(t.claimForSend([0, 1], capturedAtNs: 2_000), [0, 1], "the old frame is still current")
+
+        let wider = TileGrid(width: 192, height: 64)   // 3 tiles
+        t.reset(grid: wider, nowNs: 60_000)
+        XCTAssertEqual(t.refineCandidates(nowNs: 60_050, settleNs: 100, limit: 10), [], "a new size settles first")
+        XCTAssertEqual(t.claimForSend([0, 1, 2], capturedAtNs: 2_000), [], "frames of the old size are out")
+        XCTAssertEqual(t.claimForSend([0, 1, 2], capturedAtNs: 60_001), [0, 1, 2])
+    }
+
     /// A tile captured before its latest change must not be sent: the client
     /// would paint old pixels over newer video.
     func testClaimRejectsTilesChangedAfterTheCapture() {
