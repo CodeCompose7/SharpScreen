@@ -21,9 +21,14 @@ be read back with:
 security find-generic-password -s sharpscreen-android-release -w
 ```
 
-0.2.0 shipped an APK signed with the Android debug key, before the release key
-existed. Anyone who installed that APK has to uninstall it once before installing
-a later version.
+The v0.2.0 Release first carried an APK signed with the Android debug key; at
+09:37 UTC on 2026-11-18 it was replaced by the same build signed with the release
+key. Anyone who installed the earlier upload has to uninstall it once before
+installing the current 0.2.0 or any later version.
+
+Back up the key alias (`sharpscreen`) with the keystore and password. The
+certificate itself is inside the keystore and its SHA-256 is derived from it, so
+neither needs a separate backup; the fingerprint above is for checking APKs.
 
 ## Steps
 

@@ -7,11 +7,11 @@ Side Screen's history up to the fork is in the git log and in
 ## [Unreleased]
 
 ### Changed
-- **Android release key.** Release APKs are now signed with a SharpScreen release
-  key (`CN=SharpScreen`) instead of the Android debug key; `scripts/build_android_release.sh`
-  builds and verifies them, and RELEASING.md documents the whole release. The 0.2.0
-  APK was debug-signed, so it has to be uninstalled once before installing the next
-  version.
+- **Android release key.** Release APKs are signed with a SharpScreen release key
+  (`CN=SharpScreen`) instead of the Android debug key; `scripts/build_android_release.sh`
+  builds and verifies them, and RELEASING.md documents the whole release. The v0.2.0
+  Release's APK was replaced with the release-key build shortly after publishing;
+  whoever installed the earlier debug-signed upload must uninstall it once.
 
 ## [0.2.0] - 2026-11-18 — Lossless text, steady 120 Hz
 
