@@ -52,7 +52,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var settings = DisplaySettings()
     var settingsWindow: SettingsWindowController?
     var statusItem: NSStatusItem?
-    private var statusMenu: NSMenu?
+    private var statusPanel: MenuBarPanelController?
     let pairedDeviceStore = PairedDeviceStore()
     let deviceProfileStore = DeviceProfileStore()
     /// Profile key of the tablet currently streaming (nil when none, or when
@@ -337,48 +337,51 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func setupMenuBar() {
-        statusItem = NSStatusBar.system.statusItem(withLength: MenuBarIcon.itemLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
-        // Items are rebuilt on every open (menuNeedsUpdate) so the menu always
-        // reflects live server/connection state.
-        let menu = NSMenu()
-        menu.delegate = self
-        menu.autoenablesItems = false
-        statusMenu = menu
+        // A popup panel rather than an NSMenu (see MenuBarPanelController).
+        statusPanel = MenuBarPanelController(
+            settings: settings,
+            actions: .init(
+                toggleServer: { [weak self] in self?.toggleServerFromMenu() },
+                showSettings: { [weak self] in self?.showSettings() },
+                quit: { NSApp.terminate(nil) }
+            )
+        )
 
         if let button = statusItem?.button {
-            button.image = MenuBarIcon.image()
-            button.imageScaling = .scaleNone
-            // Opened by hand rather than through `statusItem.menu`, which
-            // drops the menu noticeably lower than the system's own menu bar
-            // items do.
-            button.target = self
-            button.action = #selector(statusItemClicked(_:))
-            button.sendAction(on: [.leftMouseDown, .rightMouseDown])
+            button.image = MenuBarIcon.image(faint: true)
+            if #available(macOS 27.0, *), let item = statusItem {
+                // The system opens and closes the panel and draws the item as
+                // selected meanwhile (setting the highlight in code no longer
+                // shows on macOS 27).
+                item.expandedInterfaceDelegate = self
+                statusPanel?.systemManagesSelection = true
+                statusPanel?.onDismiss = { [weak item] in item?.expandedInterfaceSession?.cancel() }
+            } else {
+                button.target = self
+                button.action = #selector(statusItemClicked(_:))
+                // On release: acting on the press let the button's own
+                // mouse-up clear the selected look set while the panel is open.
+                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            }
         }
 
-        // Dim the menu bar icon while the server is stopped — at-a-glance
+        // Solid while a tablet is connected, faint otherwise: at-a-glance
         // state without opening the menu.
         settings.$isRunning
+            .combineLatest(settings.$clientConnected)
+            .map { running, connected in running && connected }
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] running in
-                self?.statusItem?.button?.appearsDisabled = !running
+            .sink { [weak self] connected in
+                self?.statusItem?.button?.image = MenuBarIcon.image(faint: !connected)
             }
             .store(in: &cancellables)
     }
 
-    /// Space between the bottom edge of the menu bar and the top of the menu
-    /// (the system's Control Center menus sit just below the bar's edge).
-    private static let statusMenuGap: CGFloat = 5
-
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
-        guard let menu = statusMenu, let barWindow = sender.window else { return }
-        // The "selected" pill is drawn while the menu is open (menuWillOpen).
-        // Screen coordinates: the status item's window spans the menu bar, so
-        // its bottom edge is the bar's edge, whatever the button's own height.
-        let buttonOnScreen = barWindow.convertToScreen(sender.convert(sender.bounds, to: nil))
-        let origin = NSPoint(x: buttonOnScreen.minX, y: barWindow.frame.minY - Self.statusMenuGap)
-        menu.popUp(positioning: nil, at: origin, in: nil)
+        statusPanel?.toggle(from: sender)
     }
 
     @objc private func toggleServerFromMenu() {
@@ -389,16 +392,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 await self?.startServer()
             }
         }
-    }
-
-    @objc private func selectUSBMode() {
-        guard settings.connectionMode != .usb else { return }
-        settings.connectionMode = .usb
-    }
-
-    @objc private func selectWirelessMode() {
-        guard settings.connectionMode != .wireless else { return }
-        settings.connectionMode = .wireless
     }
 
     func setupSettingsWindow() {
@@ -1360,82 +1353,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-// MARK: - Menu bar quick actions
-
-extension AppDelegate: NSMenuDelegate {
-    func menuWillOpen(_ menu: NSMenu) {
-        guard menu === statusMenu, let button = statusItem?.button else { return }
-        // macOS draws no selection behind an item whose menu it did not open
-        // itself, so show our own pill (and the glyph undimmed) meanwhile.
-        let dark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        button.appearsDisabled = false
-        button.image = MenuBarIcon.selectedImage(dark: dark, barThickness: NSStatusBar.system.thickness)
+@available(macOS 27.0, *)
+extension AppDelegate: NSStatusItemExpandedInterfaceDelegate {
+    func statusItem(_ statusItem: NSStatusItem, didBegin expandedInterfaceSession: NSStatusItemExpandedInterfaceSession) {
+        guard let button = statusItem.button else { return }
+        statusPanel?.show(from: button)
     }
 
-    func menuDidClose(_ menu: NSMenu) {
-        guard menu === statusMenu else { return }
-        statusItem?.button?.image = MenuBarIcon.image()
-        statusItem?.button?.appearsDisabled = !settings.isRunning
-    }
-
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        menu.removeAllItems()
-
-        // Live status line (not clickable)
-        let statusTitle: String
-        if settings.isRunning {
-            if settings.clientConnected {
-                if let device = settings.currentWirelessDevice {
-                    statusTitle = "🟢 " + String(localized: "Connected — \(device)")
-                } else {
-                    statusTitle = "🟢 " + String(localized: "Connected to tablet")
-                }
-            } else {
-                statusTitle = "🟡 " + String(localized: "Waiting for tablet on port \(String(settings.port))")
-            }
-        } else {
-            statusTitle = "⚪️ " + String(localized: "Server stopped")
-        }
-        let statusLine = NSMenuItem(title: statusTitle, action: nil, keyEquivalent: "")
-        statusLine.isEnabled = false
-        menu.addItem(statusLine)
-        menu.addItem(.separator())
-
-        // Start / Stop
-        let toggle = NSMenuItem(
-            title: settings.isRunning ? String(localized: "Stop Streaming") : String(localized: "Start Streaming"),
-            action: #selector(toggleServerFromMenu),
-            keyEquivalent: "t"
-        )
-        toggle.target = self
-        // Mirror the settings-window Start button: starting needs the Screen
-        // Recording permission, stopping is always allowed.
-        toggle.isEnabled = settings.isRunning || settings.hasScreenRecordingPermission
-        menu.addItem(toggle)
-
-        // Connection mode (switching while running restarts the server, same
-        // as changing it in the settings window)
-        let modeMenu = NSMenu()
-        modeMenu.autoenablesItems = false
-        let usb = NSMenuItem(title: ConnectionMode.usb.localizedTitle, action: #selector(selectUSBMode), keyEquivalent: "")
-        usb.target = self
-        usb.state = settings.connectionMode == .usb ? .on : .off
-        modeMenu.addItem(usb)
-        let wireless = NSMenuItem(title: ConnectionMode.wireless.localizedTitle, action: #selector(selectWirelessMode), keyEquivalent: "")
-        wireless.target = self
-        wireless.state = settings.connectionMode == .wireless ? .on : .off
-        modeMenu.addItem(wireless)
-        let modeItem = NSMenuItem(title: String(localized: "Connection Mode"), action: nil, keyEquivalent: "")
-        modeItem.submenu = modeMenu
-        menu.addItem(modeItem)
-
-        menu.addItem(.separator())
-
-        let settingsItem = NSMenuItem(title: String(localized: "Settings…"), action: #selector(showSettings), keyEquivalent: "s")
-        settingsItem.target = self
-        menu.addItem(settingsItem)
-
-        menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: String(localized: "Quit SharpScreen"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+    func statusItemDidEndExpandedInterfaceSession(_ statusItem: NSStatusItem, animated: Bool) {
+        statusPanel?.close()
     }
 }

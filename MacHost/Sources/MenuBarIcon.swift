@@ -3,13 +3,21 @@ import AppKit
 /// The menu bar glyph: the app icon's two panes in one colour. A landscape
 /// pane at half opacity with a slightly tilted tablet pane over it, cut out
 /// by a thin gap so the overlap reads without colour. A template image, so
-/// macOS tints it for light and dark menu bars and dims it when disabled.
+/// macOS tints it for light and dark menu bars.
+///
+/// `faint` is the same glyph at low opacity, shown while no tablet is
+/// connected. Swapping images (instead of dimming the button with
+/// appearsDisabled) keeps the button enabled, so macOS draws its usual
+/// selection behind it while the menu is open.
 enum MenuBarIcon {
-    static func image(pointSize: CGFloat = 18) -> NSImage {
+    static func image(pointSize: CGFloat = 18, faint: Bool = false) -> NSImage {
         let size = NSSize(width: pointSize, height: pointSize)
         let image = NSImage(size: size, flipped: true) { _ in
             guard let ctx = NSGraphicsContext.current else { return false }
             let s = pointSize / 18 // drawn on an 18 pt grid
+            ctx.cgContext.setAlpha(faint ? 0.4 : 1)
+            ctx.cgContext.beginTransparencyLayer(auxiliaryInfo: nil)
+            defer { ctx.cgContext.endTransparencyLayer() }
 
             // Landscape pane (the Mac display), upper left.
             let landscape = NSBezierPath(
@@ -40,39 +48,6 @@ enum MenuBarIcon {
             return true
         }
         image.isTemplate = true
-        image.accessibilityDescription = "SharpScreen"
-        return image
-    }
-
-    /// Width of the status item, fixed so the selection pill does not
-    /// change it (and move the neighbouring items) when the menu opens.
-    static let itemLength: CGFloat = 38
-
-    /// The glyph on the "selected" pill the system draws behind its own menu
-    /// bar items while their menu is open. Opening the menu ourselves (to
-    /// place it like the system's) loses that pill, so it is drawn here.
-    static func selectedImage(dark: Bool, barThickness: CGFloat) -> NSImage {
-        // Sized and shaded to match the system's pill (Bluetooth, Wi-Fi) on
-        // the same menu bar.
-        let height: CGFloat = 29
-        let size = NSSize(width: itemLength - 2, height: height)
-        let glyph = image()
-        let ink = dark ? NSColor.white : NSColor.black
-        let image = NSImage(size: size, flipped: false) { rect in
-            let pill = NSBezierPath(roundedRect: rect, xRadius: height * 0.46, yRadius: height * 0.46)
-            (dark ? NSColor.white.withAlphaComponent(0.12) : NSColor.black.withAlphaComponent(0.08)).setFill()
-            pill.fill()
-            let tinted = NSImage(size: glyph.size, flipped: false) { r in
-                glyph.draw(in: r)
-                ink.set()
-                r.fill(using: .sourceAtop)
-                return true
-            }
-            let g = NSRect(x: (rect.width - glyph.size.width) / 2, y: (rect.height - glyph.size.height) / 2,
-                           width: glyph.size.width, height: glyph.size.height)
-            tinted.draw(in: g)
-            return true
-        }
         image.accessibilityDescription = "SharpScreen"
         return image
     }
