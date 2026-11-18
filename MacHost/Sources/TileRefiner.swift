@@ -66,6 +66,15 @@ final class TileRefiner {
             lastDumpNs = startNs
             CaptureDiagnostics.dump(buffer, to: "/tmp/sharpscreen_frame.bgra")
         }
+        // The capture size changes when the stream does (new resolution, a new
+        // client decode limit). Follow it: a grid of the old size made every tile
+        // encode fail, which silently stopped lossless tiles until reconnect.
+        if let resized = grid.resized(width: CVPixelBufferGetWidth(buffer), height: CVPixelBufferGetHeight(buffer)) {
+            debugLog("Lossless tiles: frame is now \(resized.width)x\(resized.height), new grid \(resized.columns)x\(resized.rows)")
+            grid = resized
+            server.resetLosslessTiles(grid: resized)
+            return
+        }
         let candidates = server.tileTracker.refineCandidates(nowNs: startNs, settleNs: Self.settleNs, limit: 512)
         guard !candidates.isEmpty else { return }
 

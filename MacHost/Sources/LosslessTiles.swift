@@ -20,6 +20,11 @@ struct TileGrid: Equatable {
         self.tileSize = max(1, tileSize)
     }
 
+    /// The grid for frames of `width` x `height`, or nil when this one already fits.
+    func resized(width: Int, height: Int) -> TileGrid? {
+        width == self.width && height == self.height ? nil : TileGrid(width: width, height: height, tileSize: tileSize)
+    }
+
     var columns: Int { (width + tileSize - 1) / tileSize }
     var rows: Int { (height + tileSize - 1) / tileSize }
     var count: Int { columns * rows }

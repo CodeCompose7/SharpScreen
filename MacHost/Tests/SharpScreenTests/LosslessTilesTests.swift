@@ -17,6 +17,14 @@ final class LosslessTilesTests: XCTestCase {
         XCTAssertEqual(grid.rect(of: 1362).x, 2944)
     }
 
+    func testGridFollowsAFrameSizeChange() {
+        XCTAssertNil(grid.resized(width: 2960, height: 1848), "same size keeps the grid")
+        let smaller = grid.resized(width: 1920, height: 1200)
+        XCTAssertEqual(smaller?.columns, 30)
+        XCTAssertEqual(smaller?.rows, 19)
+        XCTAssertEqual(smaller?.tileSize, 64)
+    }
+
     func testDirtyRectMapsToTouchedTiles() {
         // A dirty rect ScreenCaptureKit reported for the moving test bar.
         let tiles = grid.tiles(covering: CGRect(x: 1464, y: 684, width: 112, height: 480))
