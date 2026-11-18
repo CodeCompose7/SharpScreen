@@ -70,6 +70,10 @@ enum CaptureDiagnostics {
         try? FileManager.default.moveItem(atPath: path + ".tmp", toPath: path)
     }
 
+    /// diag.keepCaptureColorSpace: encode 32BGRA with ScreenCaptureKit's colour
+    /// attachments untouched (the pre-fix behaviour), for comparison.
+    static var keepCaptureColorSpace: Bool { UserDefaults.standard.bool(forKey: "diag.keepCaptureColorSpace") }
+
     /// Log SCStreamFrameInfo dirty rects / scale for the first frames.
     static var logDirtyRects: Bool { UserDefaults.standard.bool(forKey: "diag.logDirtyRects") }
     private static var loggedFrames = 0

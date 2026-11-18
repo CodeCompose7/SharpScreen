@@ -157,6 +157,23 @@ tiles/s cycled between video and lossless around the moving bar and the menu
 bar, at 120-200 KB/s of tile data. 32BGRA capture adds ~1.5-2 ms of encode time
 on the host (new-frame age ~14-16 ms vs ~12-13 ms with 420v in this setup).
 
+## Video colour with 32BGRA capture (2026-11-18)
+
+Dragging a window left a dark halo: the tiles around it fall back to video,
+and the video was darker than the lossless tiles next to it. Tablet video vs the
+host's capture, mean difference by brightness (video only, still screen):
+
+| Host level | Before | After tagging BGRA as BT.709 |
+|---|---|---|
+| 96-127 | -9 to -13 | -0.3 to -0.5 |
+| 128-159 | -9 to -11 | -0.4 to -0.8 |
+| 160-191 | -8 to -9 | -0.5 to -0.9 |
+| 224-255 | -1.5 | -1.3 |
+
+ScreenCaptureKit's 32BGRA buffers carry the display colour space; against the
+session's BT.709 tags VideoToolbox also converted the transfer function. With the
+buffers tagged BT.709 only the matrix applies, which is what the tablet inverts.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
