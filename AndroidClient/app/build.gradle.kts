@@ -19,11 +19,15 @@ android {
         versionName = appVersion
     }
 
-    // Release signing: reads the upload key from env vars (set as GitHub Secrets in CI,
-    // or exported locally). Falls back to the debug key when they are absent so that
-    // `./gradlew assembleRelease` keeps working on a fresh checkout.
+    // Release signing: reads the release key from env vars (scripts/build_android_release.sh
+    // sets them from ~/.android/sharpscreen-release.jks and the keychain). Falls back to the
+    // debug key when they are absent so `./gradlew assembleRelease` works on a fresh checkout,
+    // but such an APK must never be published: users could not update it to a release-key build.
     val keystorePath = System.getenv("SHARPSCREEN_KEYSTORE_PATH")
     val hasReleaseKey = keystorePath != null && File(keystorePath).exists()
+    if (!hasReleaseKey && gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }) {
+        logger.warn("SharpScreen: no release keystore, so the release build is signed with the DEBUG key. Use scripts/build_android_release.sh to publish.")
+    }
 
     signingConfigs {
         if (hasReleaseKey) {
