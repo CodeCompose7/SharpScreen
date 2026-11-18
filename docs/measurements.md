@@ -40,6 +40,19 @@ USB, 1480x924 HiDPI, 120 Hz, 300 Mbps, Quality High (2026-11-18):
 
 Same behaviour as Side Screen 1.1.1, so the fork changed nothing on the hot path.
 
+## Frame pacing and panel refresh (2026-11-18)
+
+- Mac `FramePacer`: one frame per 1/120 s slot. Still screen 120-121 fps
+  (ScreenCaptureKit itself sends ~1-3 new frames + ~72 idle ticks a second);
+  window drag 119-121 fps, of which 72-108 are new frames and the rest repeats;
+  0 frames skipped for a busy encoder; frame age 5.7-9.6 ms.
+- Tablet panel: Samsung adaptive refresh had dropped to **96 Hz** under the
+  120 fps stream, which caused visible stutter. With `preferredDisplayModeId`
+  set while streaming it stays at 120 Hz (5/5 samples during motion).
+- macOS renders a dragged window at up to ~108 distinct frames a second on
+  the virtual display, so that, not the link or encoder, bounds motion
+  smoothness now.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
