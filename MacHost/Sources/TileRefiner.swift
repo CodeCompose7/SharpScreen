@@ -14,7 +14,12 @@ import os
 final class TileRefiner {
     static let settleNs: UInt64 = 100_000_000          // 100 ms without change
     static let tickNs: UInt64 = 8_333_333              // 1/120 s
-    static let maxBytesPerTick = 512 * 1024            // ~60 MB/s, ~20% of adb's measured ~300 MB/s
+    /// 1 MB/tick: a full 2560x1600 photo-wallpaper fill took 76-95 ms instead
+    /// of 111-136 ms at 512 KB, video frame age unchanged (max < 20 ms). Past
+    /// ~750 KB the 4 ms work cap binds, so 2 MB gained nothing. Peaks at ~40%
+    /// of adb's measured ~300 MB/s only while a fill runs. diag.tileKBPerTick
+    /// overrides.
+    static let maxBytesPerTick = CaptureDiagnostics.tileBytesPerTick
     static let maxWorkNsPerTick: UInt64 = 4_000_000    // leave the queue idle half the tick
 
     private struct Latest {
