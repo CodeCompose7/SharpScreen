@@ -121,6 +121,13 @@ class MainActivity : AppCompatActivity() {
 
         // Keep screen on
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // Diagnostics: `adb shell am start -n io.sharpscreen.app.debug/io.sharpscreen.app.MainActivity
+        // --ez diag.glCompositor true|false` switches the M1a GL compositor and remembers it.
+        val diagPrefs = getSharedPreferences("diag", MODE_PRIVATE)
+        intent?.takeIf { it.hasExtra("diag.glCompositor") }?.let {
+            diagPrefs.edit().putBoolean("glCompositor", it.getBooleanExtra("diag.glCompositor", false)).apply()
+        }
+        GlCompositor.enabled = diagPrefs.getBoolean("glCompositor", false)
 
         // Enable edge-to-edge display (draw behind system bars and cutout)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
