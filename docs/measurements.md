@@ -215,6 +215,40 @@ With the tile stream, video against the host's BGRA is within 1-2 levels per
 brightness bin (one colour edge bin at +7 R, chroma subsampling); tiles stay
 1274/1282 pixel exact (text/UI 602/604).
 
+## Vsync-aligned presentation (2026-11-18)
+
+Measured with atrace on the tablet while a scripted window swept the virtual
+display: SurfaceFlinger's latch and present of each SurfaceView buffer, mapped
+to the host content time the app writes into the trace at each swap
+(`ssPresent n=… host=…`, only while app tracing is on). A "step" is two
+consecutive frames with new content; it is off when the time between their
+presents differs from the time between their content on the Mac by more than
+half a vsync.
+
+| | Steps off | Content never shown | Content -> present (p50, relative) |
+|---|---|---|---|
+| Present when drawn (before) | 48.5%, 50.9% | 9, 8 of ~240 | 0 |
+| Scheduled, p50 offset | **11.9%, 10.0%, 14.3%, 15.9%** | 14, 9, 17, 14 | -6 to 0 ms |
+| Scheduled, p70 | 17.1%, 15.4% | 13, 15 | +8 ms |
+| Scheduled, p85 | 9.9%, 4.8% | 18, 15 | +8 ms |
+
+- The host now sends each frame's content time (ScreenCaptureKit's
+  presentation time; a repeat carries its source's) instead of its encode
+  start. Content arrives on the Mac's 8.33 ms grid.
+- The client asks for the first vsync at or after content time + the median
+  of how soon recent frames could make a vsync (Choreographer.FrameData
+  deadlines), never the same vsync as the frame before.
+- A first version used the 90th percentile: frames waited 13-32 ms in the
+  window's queue, which holds only a few (`a:3` in the trace), and newer
+  frames pushed waiting ones out unseen.
+- Lossless tile messages presented on their own (one extra present per
+  invalidate or tile batch). That backed the queue up: queued -> shown 26 ms
+  with tiles vs 19-20 ms without, and more frames never shown. They now ride
+  on the next video frame (12 ms fallback).
+
+`diag.vsyncPresent=false` and `diag.presentPercentile=N` are per-launch tablet
+extras for A/B.
+
 ## Video colour with 32BGRA capture (2026-11-18)
 
 Dragging a window left a dark halo: the tiles around it fall back to video,

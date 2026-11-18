@@ -31,7 +31,7 @@ final class VideoEncoderSettingsTests: XCTestCase {
         let encoder = try makeEncoder()
         let frame = makeFrame()
         let outputs = OutputCounter()
-        encoder.onEncodedFrame = { _, _, _, _ in outputs.increment() }
+        encoder.onEncodedFrame = { _, _, _, _, _ in outputs.increment() }
 
         let streaming = expectation(description: "frames keep flowing")
         let captureQueue = DispatchQueue(label: "test.capture", qos: .userInteractive)

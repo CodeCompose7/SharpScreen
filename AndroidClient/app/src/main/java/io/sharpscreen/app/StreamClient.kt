@@ -789,6 +789,8 @@ class StreamClient(
         // Capture timestamp after full frame received for accurate age tracking.
         val receiveTimestamp = System.nanoTime()
         PacingDiag.recordArrival(receiveTimestamp, hostCaptureNs)
+        // The decoder's PTS is receiveTimestamp / 1000 µs (MainActivity -> decode).
+        FrameContentTimes.note(receiveTimestamp / 1000, hostCaptureNs)
         checkKeyframeFreshness(receiveTimestamp, isKeyframe)
         diagFrameCount++
         if (diagFrameCount == 1L) {
