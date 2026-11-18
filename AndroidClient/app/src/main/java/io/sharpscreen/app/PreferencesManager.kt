@@ -45,6 +45,15 @@ class PreferencesManager(
         get() = ConnectionMode.fromName(prefs.getString("connection_mode", null))
         set(value) = prefs.edit().putString("connection_mode", value.name).apply()
 
+    /** USB mode endpoint (adb reverse on the Mac side). Edited in SettingsActivity. */
+    var usbHost: String
+        get() = prefs.getString("usb_host", null) ?: DEFAULT_USB_HOST
+        set(value) = prefs.edit().putString("usb_host", value).apply()
+
+    var usbPort: Int
+        get() = prefs.getInt("usb_port", DEFAULT_USB_PORT)
+        set(value) = prefs.edit().putInt("usb_port", value).apply()
+
     /**
      * Stable identity sent to the Mac (wire type 18) so the host can bring back this tablet's
      * settings every time. Random, generated once; survives reconnects and
@@ -57,4 +66,12 @@ class PreferencesManager(
             prefs.edit().putString("device_id", fresh).apply()
             return fresh
         }
+
+    companion object {
+        const val DEFAULT_USB_HOST = "127.0.0.1"
+        const val DEFAULT_USB_PORT = 54321
+
+        /** The port typed in Settings, or null when it is not a valid TCP port. */
+        fun parsePort(text: String): Int? = text.trim().toIntOrNull()?.takeIf { it in 1..65535 }
+    }
 }

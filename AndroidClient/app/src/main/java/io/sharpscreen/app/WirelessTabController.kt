@@ -82,7 +82,7 @@ class WirelessTabController(
                     transition(State.FIRST_TIME)
                     return@setOnClickListener
                 }
-            showConnecting("Reconnecting to ${entry.macName}", "${entry.host}:${entry.port}")
+            showConnecting(activity.getString(R.string.wireless_reconnecting_to, entry.macName), "${entry.host}:${entry.port}")
             attemptAutoConnect(entry)
         }
     }
@@ -142,7 +142,7 @@ class WirelessTabController(
         val parsed = PairingURL.parse(url) ?: return
         val deviceName = defaultDeviceName(activity)
         storage.save(PairedHostStorage.Entry(parsed.host, parsed.port, parsed.token, parsed.macName))
-        showConnecting("Connecting to ${parsed.macName}", "${parsed.host}:${parsed.port}")
+        showConnecting(activity.getString(R.string.wireless_connecting_to, parsed.macName), "${parsed.host}:${parsed.port}")
         onConnectRequested(parsed.host, parsed.port, parsed.token, deviceName, parsed.macName)
     }
 
@@ -158,7 +158,7 @@ class WirelessTabController(
     ) {
         val deviceName = defaultDeviceName(activity)
         storage.save(PairedHostStorage.Entry(host, port, token, macName))
-        showConnecting("Connecting to $macName", "$host:$port")
+        showConnecting(activity.getString(R.string.wireless_connecting_to, macName), "$host:$port")
         onConnectRequested(host, port, token, deviceName, macName)
     }
 
@@ -166,32 +166,28 @@ class WirelessTabController(
         val cached = storage.load()
         when (error) {
             is StreamClient.WirelessConnectError.NetworkUnreachable -> {
-                views.repairTitle.text = "⚠ Couldn't reach Mac"
+                views.repairTitle.setText(R.string.wireless_unreachable_title)
                 views.repairMessage.text =
                     if (cached != null) {
-                        "No response from ${cached.macName} at ${cached.host}:${cached.port}.\n\n" +
-                            "The Mac may have switched WiFi networks, changed its port, or is not " +
-                            "running. Open SharpScreen on the Mac and scan the new QR to re-pair."
+                        activity.getString(R.string.wireless_unreachable_cached, cached.macName, cached.host, cached.port)
                     } else {
-                        "No response from your Mac. Make sure both devices are on the same WiFi " +
-                            "and the Mac app is running, then scan the QR again."
+                        activity.getString(R.string.wireless_unreachable)
                     }
                 transition(State.REPAIR_NEEDED)
             }
             is StreamClient.WirelessConnectError.TokenRejected -> {
-                views.repairTitle.text = "⚠ Re-pair required"
+                views.repairTitle.setText(R.string.wireless_token_title)
                 views.repairMessage.text =
                     if (cached != null) {
-                        "${cached.macName} reset its pairing token (e.g. Reset Token clicked, or " +
-                            "reinstalled). Scan the new QR to pair again."
+                        activity.getString(R.string.wireless_token_cached, cached.macName)
                     } else {
-                        "The Mac reset its pairing token. Scan the new QR to pair again."
+                        activity.getString(R.string.wireless_token)
                     }
                 transition(State.REPAIR_NEEDED)
             }
             is StreamClient.WirelessConnectError.ProtocolError -> {
-                views.repairTitle.text = "⚠ Connection error"
-                views.repairMessage.text = "Couldn't complete the secure handshake with the Mac. Scan the QR again."
+                views.repairTitle.setText(R.string.wireless_protocol_title)
+                views.repairMessage.setText(R.string.wireless_protocol)
                 transition(State.REPAIR_NEEDED)
             }
         }
