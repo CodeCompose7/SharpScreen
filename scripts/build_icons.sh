@@ -11,6 +11,7 @@
 #   MacHost/Resources/AppIcon.icns (+ AppIcon.iconset)
 #   AndroidClient/app/src/main/res/mipmap-*/ic_launcher_foreground.png, ic_launcher.png
 #   AndroidClient/app/src/debug/res/mipmap-*/ic_launcher_foreground.png  (DEV badge)
+#   AndroidClient/app/src/main/res/drawable-nodpi/logo.png  (in-app logo)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -56,3 +57,8 @@ for spec in mdpi:1 hdpi:1.5 xhdpi:2 xxhdpi:3 xxxhdpi:4; do
     magick "$TMP/legacy.png" -filter Lanczos -resize "${legacy}x${legacy}" "$RES/mipmap-$density/ic_launcher.png"
 done
 echo "Android: mipmap-*/ic_launcher_foreground.png (main + debug), ic_launcher.png"
+
+# In-app logo above the app name: the macOS tile cropped to its edges, transparent corners.
+magick "$TMP/mac-1024.png" -crop 824x824+100+100 +repage -filter Lanczos -resize 512x512 \
+    "$RES/drawable-nodpi/logo.png"
+echo "Android: drawable-nodpi/logo.png"

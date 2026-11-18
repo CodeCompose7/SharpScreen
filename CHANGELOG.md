@@ -12,7 +12,14 @@ Side Screen's history up to the fork is in the git log and in
   Wi-Fi low-latency lock while streaming wirelessly; lossless tiles go out in
   smaller bursts over Wi-Fi (128 KB per tick).
 
+### Fixed
+- The tablet's "USB cable connected" check was red while plugged in whenever
+  the battery was not charging (Samsung battery protection stops at ~90%, or a
+  Mac port gives little power); it now checks the plug, not charging.
+
 ### Added
+- The tablet app shows its version beside the name, and its in-app logo is the
+  new icon.
 - The Mac's wireless settings warn when AWDL (AirDrop, Handoff, Universal
   Control) is on: it took the Mac's Wi-Fi off-channel twice a second, ~80 ms
   each time (ping p99 72 ms -> 8 ms with it off).
