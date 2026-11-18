@@ -270,27 +270,42 @@ extension ConnectionMode {
     }
 }
 
-/// USB / Wireless switch. The selected segment is lifted *above* the track:
+/// Segmented control whose selected segment is lifted *above* the track:
 /// white with a shadow in light mode, a brighter wash in dark mode (the stock
 /// segmented control renders it darker than the track there).
-struct ModeSegmentedControl: View {
-    @Binding var selection: ConnectionMode
+struct PillSegmentedControl<Value: Hashable>: View {
+    struct Option {
+        let value: Value
+        let title: LocalizedStringKey
+        var symbol: String?
+    }
+
+    @Binding var selection: Value
+    let options: [Option]
+    var width: CGFloat?
+    var height: CGFloat = 24
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         HStack(spacing: 2) {
-            ForEach(ConnectionMode.allCases, id: \.self) { mode in
-                let selected = selection == mode
-                Button(action: { selection = mode }) {
+            ForEach(options.indices, id: \.self) { index in
+                let option = options[index]
+                let selected = selection == option.value
+                Button(action: { selection = option.value }) {
                     HStack(spacing: 5) {
-                        Image(systemName: mode.symbol)
-                            .font(.system(size: 11, weight: .medium))
-                        Text(mode.title)
+                        if let symbol = option.symbol {
+                            Image(systemName: symbol)
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        Text(option.title)
                             .font(.system(size: 12, weight: selected ? .semibold : .regular))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                     .foregroundColor(selected ? .primary : .secondary)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 24)
+                    .frame(height: height)
                     .background {
                         if selected {
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -305,7 +320,7 @@ struct ModeSegmentedControl: View {
             }
         }
         .padding(2)
-        .frame(width: 240)
+        .frame(width: width)
         .background {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color.primary.opacity(0.06))
@@ -314,6 +329,24 @@ struct ModeSegmentedControl: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
         }
+        .opacity(isEnabled ? 1 : 0.45)
+    }
+}
+
+/// USB / Wireless switch (Connection pane).
+struct ModeSegmentedControl: View {
+    @Binding var selection: ConnectionMode
+    var width: CGFloat = 240
+    var showSymbols = true
+
+    var body: some View {
+        PillSegmentedControl(
+            selection: $selection,
+            options: ConnectionMode.allCases.map {
+                .init(value: $0, title: $0.title, symbol: showSymbols ? $0.symbol : nil)
+            },
+            width: width
+        )
     }
 }
 

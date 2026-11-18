@@ -93,7 +93,8 @@ struct ConnectionPane: View {
     private var networkSection: some View {
         SettingsSection("Network") {
             SettingsRow("Server Port") {
-                TextField("Port", value: $settings.port, format: .number)
+                // No digit grouping: a port reads "54321", not "54,321".
+                TextField("Port", value: $settings.port, format: .number.grouping(.never))
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 80)
                     .disabled(settings.isRunning)
@@ -594,14 +595,12 @@ struct StreamingPane: View {
     private var qualitySection: some View {
         SettingsSection("Quality") {
             SettingsBlock {
-                Picker("", selection: $settings.quality) {
-                    Text("Ultra Low").tag("ultralow")
-                    Text("Low").tag("low")
-                    Text("Medium").tag("medium")
-                    Text("High").tag("high")
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+                PillSegmentedControl(selection: $settings.quality, options: [
+                    .init(value: "ultralow", title: "Ultra Low"),
+                    .init(value: "low", title: "Low"),
+                    .init(value: "medium", title: "Medium"),
+                    .init(value: "high", title: "High")
+                ])
                 .disabled(settings.gamingBoost)
 
                 if settings.gamingBoost {
@@ -715,14 +714,8 @@ struct GeneralPane: View {
             RowDivider()
 
             SettingsRow("Startup mode", subtitle: "Which connection mode to start in when auto-starting.") {
-                Picker("", selection: $settings.startupMode) {
-                    Text("USB").tag(ConnectionMode.usb)
-                    Text("Wireless").tag(ConnectionMode.wireless)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 150)
-                .disabled(!settings.autoStartStreamingOnLaunch)
+                ModeSegmentedControl(selection: $settings.startupMode, width: 150, showSymbols: false)
+                    .disabled(!settings.autoStartStreamingOnLaunch)
             }
         }
         .onAppear {
