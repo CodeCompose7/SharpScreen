@@ -3,4 +3,23 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="ic_launcher_background">#FFFFFF</color>
+
+    <!-- Dark UI palette (accents come from the app icon's orange and pink panes) -->
+    <color name="ss_bg">#0F0F12</color>
+    <color name="ss_card">#1A1A1F</color>
+    <color name="ss_card_border">#2A2A31</color>
+    <color name="ss_card_inner">#23232A</color>
+    <color name="ss_outline">#3A3A42</color>
+    <color name="ss_text_primary">#F2F2F5</color>
+    <color name="ss_text_secondary">#8A8A94</color>
+    <color name="ss_success">#5BC98A</color>
+    <color name="ss_warning">#F3A46E</color>
+    <color name="ss_danger">#FF8A8A</color>
+    <color name="ss_danger_outline">#4A2A2E</color>
+    <color name="ss_accent">#EE7A7F</color>
+    <color name="ss_accent_tint">#33EE7A7F</color>
+    <color name="ss_on_accent">#2A0E12</color>
+    <color name="ss_segment_track">#1C1C22</color>
+    <color name="ss_segment_selected">#F2F2F5</color>
+    <color name="ss_segment_selected_text">#111111</color>
 </resources>

@@ -55,7 +55,7 @@ class QRScannerActivity : AppCompatActivity() {
                 provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, analyzer)
             } catch (e: Exception) {
                 Log.e(TAG, "Camera bind failed", e)
-                Toast.makeText(this, "QR scanning unavailable on this device — use USB mode", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, R.string.qr_unavailable, Toast.LENGTH_LONG).show()
                 finishCanceled()
             }
         }, ContextCompat.getMainExecutor(this))
@@ -76,7 +76,7 @@ class QRScannerActivity : AppCompatActivity() {
                     alreadyDelivered = true
                     val parsed = PairingURL.parse(raw)
                     if (parsed == null) {
-                        Toast.makeText(this, "Invalid QR, expected SharpScreen pairing code", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, R.string.qr_invalid, Toast.LENGTH_SHORT).show()
                         alreadyDelivered = false
                     } else {
                         setResult(RESULT_OK, Intent().putExtra(EXTRA_URL, raw))

@@ -1,24 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="The code is shown under the QR in SharpScreen on your Mac."
-        android:textColor="#99A0AF"
-        android:textSize="13sp"
+        android:text="@string/pair_code_intro"
+        android:textColor="@color/ss_text_secondary"
+        android:textSize="14sp"
         android:layout_marginBottom="16dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Mac address"
-        android:textColor="#99A0AF"
-        android:textSize="11sp"
+        android:text="@string/pair_code_mac_address"
+        android:textColor="@color/ss_text_secondary"
+        android:textSize="12sp"
         android:layout_marginBottom="4dp" />
 
     <EditText
@@ -28,16 +32,19 @@
         android:hint="192.168.1.24"
         android:inputType="text"
         android:digits="0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-"
-        android:textSize="15sp"
+        android:textColor="@color/ss_text_primary"
+        android:textColorHint="#5A5A63"
+        android:textSize="16sp"
         android:layout_marginBottom="12dp"
-        android:importantForAutofill="no" />
+        android:importantForAutofill="no"
+        tools:ignore="HardcodedText" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Port"
-        android:textColor="#99A0AF"
-        android:textSize="11sp"
+        android:text="@string/pair_code_port"
+        android:textColor="@color/ss_text_secondary"
+        android:textSize="12sp"
         android:layout_marginBottom="4dp" />
 
     <EditText
@@ -46,16 +53,18 @@
         android:layout_height="wrap_content"
         android:text="8888"
         android:inputType="number"
-        android:textSize="15sp"
+        android:textColor="@color/ss_text_primary"
+        android:textSize="16sp"
         android:layout_marginBottom="12dp"
-        android:importantForAutofill="no" />
+        android:importantForAutofill="no"
+        tools:ignore="HardcodedText" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Pairing code"
-        android:textColor="#99A0AF"
-        android:textSize="11sp"
+        android:text="@string/pair_code_code"
+        android:textColor="@color/ss_text_secondary"
+        android:textSize="12sp"
         android:layout_marginBottom="4dp" />
 
     <EditText
@@ -66,26 +75,29 @@
         android:inputType="number"
         android:digits="0123456789- "
         android:maxLength="10"
-        android:textSize="18sp"
+        android:textColor="@color/ss_text_primary"
+        android:textColorHint="#5A5A63"
+        android:textSize="20sp"
         android:letterSpacing="0.2"
         android:gravity="center"
         android:typeface="monospace"
-        android:importantForAutofill="no" />
+        android:importantForAutofill="no"
+        tools:ignore="HardcodedText" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="With or without the dash — both work."
-        android:textColor="#7C8494"
-        android:textSize="11sp"
+        android:text="@string/pair_code_dash_hint"
+        android:textColor="@color/ss_text_secondary"
+        android:textSize="12sp"
         android:layout_marginTop="4dp" />
 
     <TextView
         android:id="@+id/codePairError"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="#FCA5A5"
-        android:textSize="12sp"
+        android:textColor="@color/ss_danger"
+        android:textSize="13sp"
         android:layout_marginTop="10dp"
         android:visibility="gone" />
 </LinearLayout>
