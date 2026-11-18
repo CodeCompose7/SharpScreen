@@ -118,8 +118,12 @@ class PresentScheduler {
         val offset = offsetNs
         if (offset == Long.MIN_VALUE) return null.also { lastRequestNs = null }
         val wanted = vsyncAtOrAfter(hostContentNs + offset)
-        // Never two new frames on one vsync: the earlier would never be seen.
-        val target = maxOf(wanted, earliest, lastTargetNs + periodNs)
+        // Never two new frames on one vsync (the earlier would never be seen),
+        // but only by pushing one vsync: Wi-Fi delivers frames in bursts, and
+        // spacing a burst out one by one chained up to 42 ms of extra wait.
+        val floor = maxOf(wanted, earliest)
+        var target = maxOf(floor, lastTargetNs + periodNs)
+        if (target - floor > periodNs) target = floor
         lastTargetNs = target
         scheduled++
         if (earliest > wanted) late++
