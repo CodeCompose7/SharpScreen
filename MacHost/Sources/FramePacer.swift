@@ -77,6 +77,8 @@ final class FramePacer {
 
     private struct State {
         var lastBuffer: CVPixelBuffer?
+        /// When lastBuffer's pixels were composited (host ns), 0 if unknown.
+        var lastContentNs: UInt64 = 0
         var lastSubmitNs: UInt64 = 0
         var lastPtsUs: Int64 = 0
         var counters = Counters()
@@ -87,7 +89,10 @@ final class FramePacer {
 
     private let state = OSAllocatedUnfairLock(initialState: State())
     private let encodeQueue: DispatchQueue
-    private let encode: (CVPixelBuffer, CMTime, Bool) -> Void
+    /// buffer, pts, isRepeat, content time (host ns when the pixels were
+    /// composited; a repeat carries its source's, so the client can show
+    /// frames on the source's own cadence).
+    private let encode: (CVPixelBuffer, CMTime, Bool, UInt64) -> Void
     private var timer: DispatchSourceTimer?
     private var statsTimer: DispatchSourceTimer?
     private var previousTickNs: UInt64 = 0  // touched only on the timer queue
@@ -95,7 +100,7 @@ final class FramePacer {
     let pacingEnabled: Bool
 
     init(fps: Int, encodeQueue: DispatchQueue, pacingEnabled: Bool = FramePacer.isEnabled,
-         encode: @escaping (CVPixelBuffer, CMTime, Bool) -> Void) {
+         encode: @escaping (CVPixelBuffer, CMTime, Bool, UInt64) -> Void) {
         self.policy = Policy(fps: fps)
         self.encodeQueue = encodeQueue
         self.pacingEnabled = pacingEnabled
@@ -128,8 +133,12 @@ final class FramePacer {
             return false
         }
         let nowNs = DispatchTime.now().uptimeNanoseconds
-        let job: (CVPixelBuffer, CMTime, Bool)? = state.withLockUnchecked { s in
-            if let buffer { s.lastBuffer = buffer }
+        let contentNs: UInt64 = capturePts.isValid && capturePts.seconds > 0 ? UInt64(capturePts.seconds * 1e9) : nowNsForContent()
+        let job: (CVPixelBuffer, CMTime, Bool, UInt64)? = state.withLockUnchecked { s in
+            if let buffer {
+                s.lastBuffer = buffer
+                s.lastContentNs = contentNs
+            }
             guard s.pending < Self.maxPendingEncodes else {
                 s.counters.skippedBusy += 1
                 return nil
@@ -145,15 +154,17 @@ final class FramePacer {
             case .repeated: s.counters.repeated += 1
             case .replay: s.counters.replay += 1
             }
-            return (frame, CMTime(value: us, timescale: 1_000_000), kind != .captured)
+            return (frame, CMTime(value: us, timescale: 1_000_000), kind != .captured, s.lastContentNs)
         }
-        guard let (frame, pts, isRepeat) = job else { return false }
+        guard let (frame, pts, isRepeat, frameContentNs) = job else { return false }
         encodeQueue.async { [encode, state] in
-            encode(frame, pts, isRepeat)
+            encode(frame, pts, isRepeat, frameContentNs)
             state.withLock { $0.pending -= 1 }
         }
         return true
     }
+
+    private func nowNsForContent() -> UInt64 { DispatchTime.now().uptimeNanoseconds }
 
     /// Start the gap-filling timer (no-op when pacing is disabled).
     func start() {

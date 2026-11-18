@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SharpScreen app icon. Regenerate the app assets with scripts/build_icons.sh. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#000"/><path d="M285 100 H739 Q924 100 924 285 V739 Q924 924 739 924 H285 Q100 924 100 739 V285 Q100 100 285 100 Z" fill="#FFF"/></svg>

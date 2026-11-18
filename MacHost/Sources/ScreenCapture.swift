@@ -26,6 +26,8 @@ private class StreamDelegate: NSObject, SCStreamDelegate {
 class ScreenCapture {
     private var stream: SCStream?
     private var streamConfig: SCStreamConfiguration?
+    private var tileStream: SCStream?
+    private var tileStreamOutput: StreamOutput?
     private let tileRefiner = TileRefiner()
     private var streamOutput: StreamOutput?
     private var streamDelegate: StreamDelegate?
@@ -358,9 +360,9 @@ class ScreenCapture {
         // flag, which clips full-range highlights to white and crushes
         // shadows (#55). Limited range is what every decoder/GPU assumes by
         // default, so it renders identically everywhere.
-        // 32BGRA once a client composites lossless tiles (see enableLosslessTiles):
-        // the tiles need RGB, and VideoToolbox converts for HEVC itself.
-        config.pixelFormat = (CaptureDiagnostics.captureBGRA || tileRefiner.isActive)
+        // 32BGRA only when lossless tiles take pixels from this stream
+        // (diag.tileStream=false); by default they have a stream of their own.
+        config.pixelFormat = (CaptureDiagnostics.captureBGRA || (tileRefiner.isActive && !CaptureDiagnostics.tileStream))
             ? kCVPixelFormatType_32BGRA
             : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
         config.showsCursor = true
@@ -386,8 +388,8 @@ class ScreenCapture {
         let queue = DispatchQueue(label: "encodeQueue.\(label)", qos: .userInteractive)
         encodeQueue = queue
         pacer?.stop()
-        let newPacer = FramePacer(fps: refreshRate, encodeQueue: queue) { [weak self] buffer, pts, isRepeat in
-            self?.encoder?.encode(pixelBuffer: buffer, presentationTimeStamp: pts, isRepeat: isRepeat)
+        let newPacer = FramePacer(fps: refreshRate, encodeQueue: queue) { [weak self] buffer, pts, isRepeat, contentNs in
+            self?.encoder?.encode(pixelBuffer: buffer, presentationTimeStamp: pts, isRepeat: isRepeat, contentNs: contentNs)
         }
         pacer = newPacer
         newPacer.start()
@@ -418,7 +420,9 @@ class ScreenCapture {
                 if self.tileRefiner.isActive {
                     let capturedAtNs = DispatchTime.now().uptimeNanoseconds
                     self.currentServer?.noteDirtyRects(TileRefiner.dirtyRects(of: sampleBuffer), capturedAtNs: capturedAtNs)
-                    self.tileRefiner.noteFrame(imageBuffer, capturedAtNs: capturedAtNs)
+                    if CVPixelBufferGetPixelFormatType(imageBuffer) == kCVPixelFormatType_32BGRA {
+                        self.tileRefiner.noteFrame(imageBuffer, capturedAtNs: capturedAtNs)
+                    }
                 }
                 newPacer.submit(imageBuffer, kind: .captured,
                                 capturePts: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
@@ -448,8 +452,8 @@ class ScreenCapture {
         let (width, height) = encodeSize(for: codec)
 
         encoder = VideoEncoder(width: width, height: height, codec: codec, bitrateMbps: bitrateMbps, quality: quality, gamingBoost: gamingBoost, frameRate: frameRate)
-        encoder?.onEncodedFrame = { [weak server] data, timestamp, isKeyframe, isRepeat in
-            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe, isRepeat: isRepeat)
+        encoder?.onEncodedFrame = { [weak server] data, timestamp, isKeyframe, isRepeat, contentNs in
+            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe, isRepeat: isRepeat, contentNs: contentNs)
         }
 
         // Apply any keyframe request that arrived before the encoder existed
@@ -469,6 +473,9 @@ class ScreenCapture {
         }
 
         configureFrameHandler(label: "initial")
+        if CaptureDiagnostics.tileStream, let server {
+            startLosslessTracking(server)
+        }
 
         Task {
             if CaptureDiagnostics.forceCGDisplayStream {
@@ -492,14 +499,21 @@ class ScreenCapture {
 
     // MARK: - Lossless tiles (M1b)
 
-    /// The client composites lossless tiles: capture 32BGRA from now on and
-    /// start refining still tiles. Called from the server's receive queue.
+    /// The client composites lossless tiles: start refining still tiles, from
+    /// a 32BGRA stream of their own (default) or by switching video to 32BGRA
+    /// (diag.tileStream=false). Called from the server's receive queue.
     func enableLosslessTiles() {
-        guard let server = currentServer, !tileRefiner.isActive else { return }
+        guard let server = currentServer else { return }
+        if CaptureDiagnostics.tileStream {
+            // Normally already tracking since streaming started.
+            if !tileRefiner.isActive { startLosslessTracking(server) }
+            return
+        }
+        guard !tileRefiner.isActive else { return }
         let (w, h) = encodeSize(for: encoder?.codec ?? .hevc)
         let grid = TileGrid(width: w, height: h)
-        server.resetLosslessTiles(grid: grid)
         tileRefiner.start(server: server, grid: grid)
+        server.resetLosslessTiles(grid: grid)
         if let stream, let config = streamConfig, config.pixelFormat != kCVPixelFormatType_32BGRA {
             config.pixelFormat = kCVPixelFormatType_32BGRA
             stream.updateConfiguration(config) { error in
@@ -511,6 +525,89 @@ class ScreenCapture {
             }
         }
         debugLog("Lossless tiles on: grid \(grid.columns)x\(grid.rows) of \(grid.tileSize) px over \(w)x\(h)")
+    }
+
+    /// With the tile stream, changes are tracked and BGRA frames captured
+    /// from the start of streaming, before any client. Starting a capture
+    /// stream makes the video stream report the whole screen dirty once
+    /// (~50 ms later) while the tile stream gets no new frame for it, so a
+    /// still screen had nothing to refine from until something moved
+    /// (0.3-1.6 s on the first connection). Starting early takes that hit
+    /// before a client is there to wait for it.
+    private func startLosslessTracking(_ server: StreamingServer) {
+        let (w, h) = encodeSize(for: codec)
+        let grid = TileGrid(width: w, height: h)
+        tileRefiner.start(server: server, grid: grid)
+        // Capture only once the new grid's "everything changed now" is in
+        // place: a frame taken before it could serve no tile.
+        server.resetLosslessTiles(grid: grid) {
+            DispatchQueue.main.async { [weak self] in self?.startTileStream(width: w, height: h) }
+        }
+        debugLog("Lossless tiles: tracking \(grid.columns)x\(grid.rows) tiles of \(grid.tileSize) px over \(w)x\(h), pixels from a \(CaptureDiagnostics.tileStreamFps) fps BGRA stream")
+    }
+
+    /// Lossless tiles' own capture: 32BGRA at the encoded size, at most
+    /// tileStreamFps. Video stays 420v, so VideoToolbox skips an RGB->YUV
+    /// conversion on every frame. (On-demand screenshots were tried first:
+    /// each one made the video stream report the whole screen dirty.)
+    private func startTileStream(width: Int, height: Int) {
+        // Main thread (as stopStreaming); lossless may have stopped meanwhile.
+        guard let display, tileRefiner.isActive, tileStream == nil else { return }
+        let config = SCStreamConfiguration()
+        config.width = width
+        config.height = height
+        config.pixelFormat = kCVPixelFormatType_32BGRA
+        config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(CaptureDiagnostics.tileStreamFps))
+        config.queueDepth = 3
+        config.showsCursor = true
+        config.scalesToFit = false
+        config.backgroundColor = .clear
+        let output = StreamOutput()
+        var loggedClock = false
+        // Set right before startCapture, read on the sample queue after it.
+        let startedNs = OSAllocatedUnfairLock(initialState: UInt64.max)
+        output.onFrameReceived = { [weak self] sample in
+            guard let self, let buffer = CMSampleBufferGetImageBuffer(sample) else { return }
+            // The sample's presentation time is when its pixels were composited
+            // (host clock, the clock uptimeNanoseconds reads). Changes are
+            // marked when the video stream delivers them, which is later than
+            // they happened, so "changed before this frame" stays conservative.
+            // The first frame is the latest composite when capture started and
+            // carries that composite's older time; it is current as of the
+            // start, and counting it from there lets a still screen refine at
+            // once instead of waiting for the next change (measured 0.3-1.6 s).
+            let nowNs = DispatchTime.now().uptimeNanoseconds
+            let pts = CMSampleBufferGetPresentationTimeStamp(sample)
+            let ptsNs = pts.isValid ? UInt64(max(0, pts.seconds * 1e9)) : 0
+            let started = startedNs.withLock { $0 }
+            var takenNs = ptsNs > 0 && ptsNs <= nowNs ? ptsNs : nowNs - min(nowNs, 50_000_000)
+            if started <= nowNs { takenNs = max(takenNs, started) }
+            if !loggedClock {
+                loggedClock = true
+                debugLog("Lossless tiles: tile stream frame \(String(format: "%.1f", Double(nowNs) / 1e6 - Double(ptsNs) / 1e6)) ms after its presentation time")
+            }
+            self.tileRefiner.noteFrame(buffer, capturedAtNs: takenNs)
+        }
+        let stream = SCStream(filter: SCContentFilter(display: display, excludingWindows: []), configuration: config, delegate: nil)
+        do {
+            try stream.addStreamOutput(output, type: .screen, sampleHandlerQueue: DispatchQueue(label: "SCStream.tiles", qos: .userInitiated))
+        } catch {
+            debugLog("Lossless tiles: tile stream setup failed: \(error)")
+            return
+        }
+        tileStreamOutput = output
+        tileStream = stream
+        startedNs.withLock { $0 = DispatchTime.now().uptimeNanoseconds }
+        stream.startCapture { error in
+            if let error { debugLog("Lossless tiles: tile stream start failed: \(error)") }
+        }
+    }
+
+    private func stopTileStream() {
+        guard let stream = tileStream else { return }
+        tileStream = nil
+        tileStreamOutput = nil
+        stream.stopCapture { _ in }
     }
 
     private var motionPattern: MotionPatternWindow?
@@ -649,6 +746,12 @@ class ScreenCapture {
 
                 debugLog("SCStream restarted — starting frame flow monitor")
                 startFrameMonitor()
+                // The tile stream must follow: same display object, same size.
+                if tileStream != nil {
+                    stopTileStream()
+                    let (w, h) = encodeSize(for: encoder?.codec ?? .hevc)
+                    startTileStream(width: w, height: h)
+                }
             } catch {
                 debugLog("SCStream restart failed: \(error) — falling back to CGDisplayStream")
                 if isStreaming, gen == streamGeneration {
@@ -843,14 +946,18 @@ class ScreenCapture {
             debugLog("Encode size \(sizeBefore.width)x\(sizeBefore.height) -> \(sizeAfter.width)x\(sizeAfter.height) (client decoder limit: \(limitDesc))")
         }
         rebuildEncoder()
+        if sizeBefore != sizeAfter, tileStream != nil, let server = currentServer {
+            stopTileStream()
+            startLosslessTracking(server)
+        }
     }
 
     private func rebuildEncoder() {
         let (width, height) = encodeSize(for: codec)
         let server = currentServer
         let newEncoder = VideoEncoder(width: width, height: height, codec: codec, bitrateMbps: currentBitrateMbps, quality: currentQuality, gamingBoost: currentGamingBoost, frameRate: currentFrameRate)
-        newEncoder.onEncodedFrame = { [weak server] data, timestamp, isKeyframe, isRepeat in
-            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe, isRepeat: isRepeat)
+        newEncoder.onEncodedFrame = { [weak server] data, timestamp, isKeyframe, isRepeat, contentNs in
+            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe, isRepeat: isRepeat, contentNs: contentNs)
         }
         newEncoder.requestKeyframe()
         encoder = newEncoder
@@ -869,6 +976,7 @@ class ScreenCapture {
         // Cancel frame flow monitor and pacing
         stopFrameMonitor()
         tileRefiner.stop()
+        stopTileStream()
         pacer?.stop()
         pacer = nil
         DispatchQueue.main.async {

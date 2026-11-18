@@ -5,12 +5,15 @@ import android.opengl.EGL14
 import android.opengl.EGLConfig
 import android.opengl.EGLContext
 import android.opengl.EGLDisplay
+import android.opengl.EGLExt
 import android.opengl.EGLSurface
+import android.os.Build
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Process
+import android.os.Trace
 import android.view.Surface
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -59,6 +62,22 @@ class GlCompositor(
     private var tilesApplied = 0
     private var tilesInvalidated = 0
     private lateinit var surfaceTexture: SurfaceTexture
+    // Vsync-aligned presentation (API 33+), GL thread only.
+    private var scheduler: PresentScheduler? = null
+    private var pendingPresentNs: Long? = null
+    private var unknownContent = 0
+    // Tile messages wait for the next video frame (they come every ~8 ms,
+    // repeats included) instead of presenting on their own: an extra present
+    // per message backed the window's queue up (queued -> shown 26 ms instead
+    // of 19 ms) and pushed out frames that were then never shown.
+    private var composePending = false
+    private val deferredCompose =
+        Runnable {
+            composePending = false
+            compose()
+        }
+    private var traceHostNs = 0L // content time of the frame being composed, for atrace
+    private var swapCount = 0L
     private val texMatrix = FloatArray(16)
     private var released = false
 
@@ -123,7 +142,7 @@ class GlCompositor(
             tilesInvalidated += tiles.size
             if (changed) {
                 maskDirty = true
-                compose()
+                requestCompose()
             }
         }
     }
@@ -151,7 +170,7 @@ class GlCompositor(
             }
             tilesApplied += tiles.size
             maskDirty = true
-            compose()
+            requestCompose()
         }
     }
 
@@ -176,6 +195,7 @@ class GlCompositor(
             if (!released) {
                 released = true
                 try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) scheduler?.stop()
                     if (::surfaceTexture.isInitialized) {
                         surfaceTexture.setOnFrameAvailableListener(null)
                         inputSurface.release()
@@ -257,13 +277,26 @@ class GlCompositor(
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
 
+        if (vsyncPresent && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            scheduler = PresentScheduler().also { it.start() }
+        }
         surfaceTexture = SurfaceTexture(oesTexture)
         surfaceTexture.setOnFrameAvailableListener({ drawFrame() }, handler)
         inputSurface = Surface(surfaceTexture)
     }
 
+    private fun requestCompose() {
+        if (composePending) return
+        composePending = true
+        handler.postDelayed(deferredCompose, COMPOSE_DEFER_MS)
+    }
+
     private fun drawFrame() {
         if (released) return
+        if (composePending) {
+            handler.removeCallbacks(deferredCompose)
+            composePending = false
+        }
         val startNs = System.nanoTime()
         val released = lastReleaseNs
         if (released in 1..startNs && startNs - released < 100_000_000L) {
@@ -275,12 +308,22 @@ class GlCompositor(
         surfaceTexture.updateTexImage()
         surfaceTexture.getTransformMatrix(texMatrix)
         hasVideoFrame = true
-        compose()
+        val host = FrameContentTimes.take(surfaceTexture.timestamp / 1000)
+        traceHostNs = host ?: 0L
+        val s = scheduler
+        if (s != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (host == null) {
+                unknownContent++
+            } else {
+                pendingPresentNs = s.presentTimeFor(host, startNs + drawEstimateNs())
+            }
+        }
+        compose(fromVideo = true)
         recordTiming(startNs, System.nanoTime())
     }
 
     /** Draw video with the lossless layer on top and present. GL thread. */
-    private fun compose() {
+    private fun compose(fromVideo: Boolean = false) {
         if (released || !hasVideoFrame) return
         val g = grid
         if (maskDirty && g != null) {
@@ -328,8 +371,27 @@ class GlCompositor(
         GLES20.glEnableVertexAttribArray(aTexCoord)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
 
+        // A tile or invalidate compose goes with the newest video frame: same
+        // present time while that frame waits for its vsync, else at once.
+        val presentAt = pendingPresentNs
+        if (presentAt != null) {
+            if (presentAt > System.nanoTime()) {
+                EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, presentAt)
+            } else {
+                pendingPresentNs = null
+            }
+        }
+        // Measurement (docs/measurements.md): with app tracing on, tag each swap
+        // with its content time so atrace frame numbers map to source frames.
+        val tracing = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Trace.isEnabled()
+        swapCount++
+        if (tracing) Trace.beginSection("ssPresent n=$swapCount v=${if (fromVideo) 1 else 0} host=$traceHostNs req=${pendingPresentNs ?: 0}")
         EGL14.eglSwapBuffers(eglDisplay, eglSurface)
+        if (tracing) Trace.endSection()
     }
+
+    /** Recent draw+swap time, for "queued by" when picking a vsync. */
+    private fun drawEstimateNs(): Long = if (frames > 0) maxOf(1_000_000L, drawSumNs / frames + 500_000L) else 2_000_000L
 
     private fun recordTiming(
         startNs: Long,
@@ -346,7 +408,7 @@ class GlCompositor(
                 "frames=$frames handoff avg=${"%.2f".format(if (handoffSamples > 0) handoffSumNs / handoffSamples / 1e6 else 0.0)}ms " +
                     "max=${"%.2f".format(handoffMaxNs / 1e6)}ms, draw+swap avg=${"%.2f".format(drawSumNs / frames / 1e6)}ms " +
                     "max=${"%.2f".format(drawMaxNs / 1e6)}ms, tiles applied=$tilesApplied invalidated=$tilesInvalidated " +
-                    "lossless now=${mask.count { it != 0.toByte() }}/${mask.size}",
+                    "lossless now=${mask.count { it != 0.toByte() }}/${mask.size}" + schedulerStats(),
             )
             frames = 0
             drawSumNs = 0
@@ -358,6 +420,17 @@ class GlCompositor(
             tilesInvalidated = 0
             statWindowStartNs = endNs
         }
+    }
+
+    private fun schedulerStats(): String {
+        val s = scheduler ?: return ", vsync present off"
+        val line =
+            ", vsync present: offset=${"%.1f".format(s.currentOffsetMs)}ms scheduled=${s.scheduled} " +
+                "late=${s.late} avg wait=${"%.2f".format(if (s.scheduled > 0) s.addedSumNs / s.scheduled / 1e6 else 0.0)}ms" +
+                " no content time=$unknownContent"
+        s.resetStats()
+        unknownContent = 0
+        return line
     }
 
     private fun buildProgram(
@@ -390,6 +463,16 @@ class GlCompositor(
         /** On by default since M1a passed its latency gate; diag.glCompositor=false turns it off. */
         @Volatile
         var enabled = false
+
+        /** Diagnostics: false never asks the host for tiles (GL path, video only). */
+        @Volatile
+        var losslessTiles = true
+
+        private const val COMPOSE_DEFER_MS = 12L
+
+        /** Present each frame on the host's cadence (PresentScheduler); diag.vsyncPresent=false turns it off. */
+        @Volatile
+        var vsyncPresent = true
 
         /** Diagnostics: receive tiles but keep showing video (HEVC-only baseline). */
         @Volatile

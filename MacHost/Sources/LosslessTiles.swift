@@ -20,6 +20,11 @@ struct TileGrid: Equatable {
         self.tileSize = max(1, tileSize)
     }
 
+    /// The grid for frames of `width` x `height`, or nil when this one already fits.
+    func resized(width: Int, height: Int) -> TileGrid? {
+        width == self.width && height == self.height ? nil : TileGrid(width: width, height: height, tileSize: tileSize)
+    }
+
     var columns: Int { (width + tileSize - 1) / tileSize }
     var rows: Int { (height + tileSize - 1) / tileSize }
     var count: Int { columns * rows }
@@ -69,13 +74,18 @@ final class TileTracker {
 
     var grid: TileGrid { lock.withLock { $0.grid } }
 
-    /// Forget everything (new client, new size). Nothing is valid on the client.
+    /// A new tile session (new client, resync, new size): nothing is valid
+    /// on the client. On the same grid the change history stays: it is
+    /// recorded for every captured frame, client or not, so tiles that have
+    /// been still can be refined at once from the frame already captured. A
+    /// still screen sends no new frame, so waiting for one took up to a second.
+    /// A new grid has no history: every tile counts as changed at `nowNs`.
     func reset(grid: TileGrid, nowNs: UInt64) {
         lock.withLock { s in
-            s.grid = grid
-            // Treat every tile as just changed so a fresh client gets a full
-            // refine pass once the screen has been still for `settle`.
-            s.lastChangeNs = Array(repeating: nowNs, count: grid.count)
+            if grid != s.grid {
+                s.grid = grid
+                s.lastChangeNs = Array(repeating: nowNs, count: grid.count)
+            }
             s.valid = Array(repeating: false, count: grid.count)
         }
     }
@@ -101,6 +111,12 @@ final class TileTracker {
     /// Tiles not valid on the client that have not changed for `settleNs`,
     /// most recently changed first (what the user just looked at).
     func refineCandidates(nowNs: UInt64, settleNs: UInt64, limit: Int) -> [Int] {
+        refineCandidateChanges(nowNs: nowNs, settleNs: settleNs, limit: limit).map(\.tile)
+    }
+
+    /// refineCandidates with each tile's last change, to tell which a given
+    /// capture can serve (changed before it) and which need a newer one.
+    func refineCandidateChanges(nowNs: UInt64, settleNs: UInt64, limit: Int) -> [(tile: Int, changedNs: UInt64)] {
         lock.withLock { s in
             var c: [(Int, UInt64)] = []
             for t in 0..<s.grid.count where !s.valid[t] {
@@ -108,7 +124,7 @@ final class TileTracker {
                 if nowNs >= changed, nowNs - changed >= settleNs { c.append((t, changed)) }
             }
             c.sort { $0.1 > $1.1 }
-            return c.prefix(limit).map(\.0)
+            return c.prefix(limit).map { (tile: $0.0, changedNs: $0.1) }
         }
     }
 

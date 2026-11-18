@@ -157,6 +157,98 @@ tiles/s cycled between video and lossless around the moving bar and the menu
 bar, at 120-200 KB/s of tile data. 32BGRA capture adds ~1.5-2 ms of encode time
 on the host (new-frame age ~14-16 ms vs ~12-13 ms with 420v in this setup).
 
+### Time to a full lossless screen after a reset
+
+From a tile reset (reconnect or client resync) until 99% of tiles are valid
+(a menu bar clock keeps a few changing), logged by the host:
+
+| | Still 2960x1848 desktop |
+|---|---|
+| Reset marks every tile changed now | 135-988 ms (6 runs) |
+| Reset keeps the change history | **27-38 ms (14 runs)** |
+
+The transfer itself was ~25 ms; the rest was waiting for a frame captured
+after the reset, which a still screen only sends when something small
+changes. The host now records changes with or without a client, so the
+frame it already holds is known to be current.
+
+Photo wallpaper at 2560x1600 barely compresses with LZ4 (~6.8 MB per full
+screen), so the per-tick byte cap binds. 4 reconnects per cap:
+
+| Cap per 8.3 ms tick | Full fill | Video frame age during fill |
+|---|---|---|
+| 512 KB | 111-136 ms | avg 11-12 ms, max 12-22 ms |
+| **1 MB** | 76-95 ms | avg 8-12 ms, max 11-20 ms |
+| 2 MB | 73-92 ms | avg 8-11 ms, max 11-19 ms |
+
+Past ~750 KB the 4 ms work cap binds instead, so 2 MB gains nothing. Encoding
+tiles on several cores would lift that, but only saves ~20 ms on photo-heavy
+full fills. A display rebuilt mid-connection (2960x1848 to 2560x1600 by
+profile switch) went on with a 40x25 grid, 994/1000 tiles valid.
+
+### Dragging with lossless tiles: a separate BGRA stream
+
+A scripted window sweep on the virtual display (1200 pt/s, display-link
+driven, ~112 moves/s, 8 s per run), tablet launched with and without
+`diag.lossless`. Mac capture-to-send of new frames:
+
+| | Lossless off | Lossless on |
+|---|---|---|
+| Video stream switched to 32BGRA | 5.7 ms | 7.1 ms |
+| Video 420v + 30 fps BGRA tile stream | 6.15 ms | 6.01 ms |
+
+Tablet frame pacing, decoder handoff (~7 ms, as in M1a) and draw+swap did not
+differ with tiles on or off. Tile traffic while dragging: ~600 KB/s.
+
+Two ScreenCaptureKit behaviours shaped it:
+
+- On-demand screenshots (SCScreenshotManager, ~38 ms each) made the video
+  stream report the whole screen dirty after each one, so tiles never stayed
+  valid: dropped.
+- Starting the tile stream does the same once (~50 ms later) without a new
+  tile frame, and the stream's first frame carries the older time of the last
+  composite. Starting tile tracking with streaming, before any client, and
+  counting frames from the stream start: every connection fills in 17-35 ms
+  (20 runs), the first one after an app start included.
+
+With the tile stream, video against the host's BGRA is within 1-2 levels per
+brightness bin (one colour edge bin at +7 R, chroma subsampling); tiles stay
+1274/1282 pixel exact (text/UI 602/604).
+
+## Vsync-aligned presentation (2026-11-18)
+
+Measured with atrace on the tablet while a scripted window swept the virtual
+display: SurfaceFlinger's latch and present of each SurfaceView buffer, mapped
+to the host content time the app writes into the trace at each swap
+(`ssPresent n=… host=…`, only while app tracing is on). A "step" is two
+consecutive frames with new content; it is off when the time between their
+presents differs from the time between their content on the Mac by more than
+half a vsync.
+
+| | Steps off | Content never shown | Content -> present (p50, relative) |
+|---|---|---|---|
+| Present when drawn (before) | 48.5%, 50.9% | 9, 8 of ~240 | 0 |
+| Scheduled, p50 offset | **11.9%, 10.0%, 14.3%, 15.9%** | 14, 9, 17, 14 | -6 to 0 ms |
+| Scheduled, p70 | 17.1%, 15.4% | 13, 15 | +8 ms |
+| Scheduled, p85 | 9.9%, 4.8% | 18, 15 | +8 ms |
+
+- The host now sends each frame's content time (ScreenCaptureKit's
+  presentation time; a repeat carries its source's) instead of its encode
+  start. Content arrives on the Mac's 8.33 ms grid.
+- The client asks for the first vsync at or after content time + the median
+  of how soon recent frames could make a vsync (Choreographer.FrameData
+  deadlines), never the same vsync as the frame before.
+- A first version used the 90th percentile: frames waited 13-32 ms in the
+  window's queue, which holds only a few (`a:3` in the trace), and newer
+  frames pushed waiting ones out unseen.
+- Lossless tile messages presented on their own (one extra present per
+  invalidate or tile batch). That backed the queue up: queued -> shown 26 ms
+  with tiles vs 19-20 ms without, and more frames never shown. They now ride
+  on the next video frame (12 ms fallback).
+
+`diag.vsyncPresent=false` and `diag.presentPercentile=N` are per-launch tablet
+extras for A/B.
+
 ## Video colour with 32BGRA capture (2026-11-18)
 
 Dragging a window left a dark halo: the tiles around it fall back to video,
