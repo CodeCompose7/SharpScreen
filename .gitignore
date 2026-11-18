@@ -51,8 +51,7 @@ dist/
 .env.local
 *.pem
 
-# Docs (local design docs)
-docs/
+# docs/ is tracked in SharpScreen (design docs and measurements live there)
 
 # Temporary
 tmp/
