@@ -18,6 +18,9 @@ jobs:
           swift build -c release --arch arm64 --arch x86_64
           lipo -archs "$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/SharpScreen"
 
+      - name: Localization (en/ko keys and format specifiers)
+        run: python3 scripts/check_localization.py
+
       - name: Lint
         run: |
           brew install swiftlint

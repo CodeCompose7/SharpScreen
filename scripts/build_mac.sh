@@ -55,12 +55,26 @@ if [ -f "$ROOT_DIR/MacHost/Resources/AppIcon.icns" ]; then
     echo "  ✓ App icon copied"
 fi
 
+# Localizations (Localizable.strings, InfoPlist.strings per language)
+for LPROJ in "$ROOT_DIR"/MacHost/Resources/*.lproj; do
+    [ -d "$LPROJ" ] || continue
+    cp -R "$LPROJ" "$APP_DIR/Contents/Resources/"
+done
+echo "  ✓ Localizations copied: $(cd "$APP_DIR/Contents/Resources" && ls -d *.lproj | tr '\n' ' ')"
+
 # Create Info.plist
 cat > "$APP_DIR/Contents/Info.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>ko</string>
+    </array>
     <key>CFBundleExecutable</key>
     <string>$APP_NAME</string>
     <key>CFBundleIconFile</key>
@@ -90,7 +104,7 @@ cat > "$APP_DIR/Contents/Info.plist" << EOF
     <key>NSScreenCaptureUsageDescription</key>
     <string>SharpScreen needs screen recording access to capture your virtual display and stream it to your Android device.</string>
     <key>NSLocalNetworkUsageDescription</key>
-    <string>SharpScreen needs Local Network access so your Android tablet can connect to the Mac over WiFi for wireless mode. Without this, only USB-tethered connections work.</string>
+    <string>SharpScreen needs Local Network access so your Android tablet can connect to the Mac over Wi-Fi for wireless mode. Without this, only USB-tethered connections work.</string>
     <key>NSBonjourServices</key>
     <array>
         <string>_sharpscreen._tcp</string>

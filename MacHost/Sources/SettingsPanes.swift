@@ -41,7 +41,7 @@ struct ConnectionPane: View {
     }
 
     private var usbSection: some View {
-        let port = Int(settings.port)
+        let port = String(settings.port)
         return SettingsSection("USB Setup",
                                footer: "Connect the tablet with a USB cable and allow USB debugging when asked. SharpScreen sets up adb reverse automatically when you click Start.") {
             StatusRow(title: "ADB installed",
@@ -154,7 +154,7 @@ struct ConnectionStatusCard: View {
             String(localized: "\(settings.effectiveRefreshRate) Hz")
         ]
         if settings.isRunning {
-            parts.append(String(localized: "Port \(Int(settings.port))"))
+            parts.append(String(localized: "Port \(String(settings.port))"))
         }
         return parts.joined(separator: " · ")
     }
@@ -551,7 +551,7 @@ struct StreamingPane: View {
                     Text("Target bitrate")
                         .font(.system(size: 13))
                     Spacer()
-                    Text("\(settings.effectiveBitrate) Mbps")
+                    Text("\(String(settings.effectiveBitrate)) Mbps")
                         .font(.system(size: 13, weight: .semibold, design: .monospaced))
                         .foregroundColor(.sharpAccent)
                 }
@@ -1017,7 +1017,7 @@ struct WirelessSection: View {
                             .multilineTextAlignment(.center)
                         Group {
                             if let ip = LANAddressResolver.primaryIPv4() {
-                                Text("Listening: \(ip):\(Int(settings.port))")
+                                Text("Listening: \(ip):\(String(settings.port))")
                             } else {
                                 Text("Wi-Fi disconnected — no LAN address")
                             }
