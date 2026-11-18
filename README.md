@@ -20,7 +20,7 @@ Pixel-sharp text without giving up smooth motion:
 
 | Milestone | Scope | State |
 |---|---|---|
-| M0 | Fork, own identity (`io.sharpscreen.mac`, `io.sharpscreen.app`), baseline measurements | in progress |
+| M0 | Fork, own identity (`io.sharpscreen.mac`, `io.sharpscreen.app`), baseline measurements | done ([measurements](docs/measurements.md)) |
 | M1 | Lossless LZ4 region updates on Mac and Android | planned |
 | M2 | Automatic HEVC / lossless switching | planned |
 
