@@ -936,7 +936,7 @@ class StreamingServer {
         inputBuffer.removeSubrange(inputBuffer.startIndex..<endIndex)
     }
 
-    func sendFrame(_ data: Data, timestamp: UInt64, isKeyframe: Bool = false) {
+    func sendFrame(_ data: Data, timestamp: UInt64, isKeyframe: Bool = false, isRepeat: Bool = false) {
         guard let connection = connection, !isStopped, connectionReady else { return }
 
         // With short-GOP encoding, a fresh client must start on a keyframe —
@@ -972,7 +972,7 @@ class StreamingServer {
 
             // Track frame age at send time for pipeline profiling
             let sendAge = DispatchTime.now().uptimeNanoseconds - timestamp
-            self.updateStats(bytes: data.count, frameAgeNs: sendAge)
+            self.updateStats(bytes: data.count, frameAgeNs: sendAge, isRepeat: isRepeat)
         }
     }
 
@@ -1008,8 +1008,11 @@ class StreamingServer {
     private var maxFrameAgeNs: UInt64 = 0
     private var lateFrames = 0          // frame age > 20 ms
     private var maxSendDoneNs: UInt64 = 0
+    private var newFrameAgeNs: UInt64 = 0   // frames with new pixels only
+    private var newFrames: UInt64 = 0
+    private var maxNewFrameAgeNs: UInt64 = 0
 
-    private func updateStats(bytes: Int, frameAgeNs: UInt64 = 0) {
+    private func updateStats(bytes: Int, frameAgeNs: UInt64 = 0, isRepeat: Bool = false) {
         bytesSent += UInt64(bytes)
         frameCount += 1
         if frameAgeNs > 0 {
@@ -1017,6 +1020,11 @@ class StreamingServer {
             profiledFrameCount += 1
             if frameAgeNs > maxFrameAgeNs { maxFrameAgeNs = frameAgeNs }
             if frameAgeNs > 20_000_000 { lateFrames += 1 }
+            if !isRepeat {
+                newFrameAgeNs += frameAgeNs
+                newFrames += 1
+                if frameAgeNs > maxNewFrameAgeNs { maxNewFrameAgeNs = frameAgeNs }
+            }
         }
 
         let now = DispatchTime.now()
@@ -1030,7 +1038,7 @@ class StreamingServer {
             // Log pipeline latency profile
             if profiledFrameCount > 0 {
                 let avgAgeMs = Double(totalFrameAgeNs) / Double(profiledFrameCount) / 1_000_000.0
-                debugLog("Pipeline: \(String(format: "%.1f", fps))fps, \(String(format: "%.1f", mbps))Mbps, avg frame age: \(String(format: "%.1f", avgAgeMs))ms, max \(String(format: "%.1f", Double(maxFrameAgeNs) / 1e6))ms, >20ms: \(lateFrames), max send-done \(String(format: "%.1f", Double(maxSendDoneNs) / 1e6))ms, dropped: \(droppedFrames)")
+                debugLog("Pipeline: \(String(format: "%.1f", fps))fps, \(String(format: "%.1f", mbps))Mbps, avg frame age: \(String(format: "%.1f", avgAgeMs))ms, max \(String(format: "%.1f", Double(maxFrameAgeNs) / 1e6))ms, >20ms: \(lateFrames), max send-done \(String(format: "%.1f", Double(maxSendDoneNs) / 1e6))ms, new frames: \(newFrames) avg \(String(format: "%.1f", newFrames > 0 ? Double(newFrameAgeNs) / Double(newFrames) / 1e6 : 0))ms max \(String(format: "%.1f", Double(maxNewFrameAgeNs) / 1e6))ms, dropped: \(droppedFrames)")
             }
 
             bytesSent = 0
@@ -1041,6 +1049,9 @@ class StreamingServer {
             maxFrameAgeNs = 0
             lateFrames = 0
             maxSendDoneNs = 0
+            newFrameAgeNs = 0
+            newFrames = 0
+            maxNewFrameAgeNs = 0
             lastStatsTime = now
         }
     }

@@ -95,6 +95,30 @@ Linux's delayed-ACK timer: adbd's local TCP socket to the app keeps Nagle on,
 the app only receives, so its bare ACKs were delayed and adbd's small writes
 waited for them.
 
+## Latency budget after the fixes (2026-11-18)
+
+Steady 60 new frames/s from the test window, Tab S11 Ultra over USB.
+
+### Decoder
+
+| Decoder | Operating rate | Decode (queue -> output) avg / max |
+|---|---|---|
+| c2.mtk.hevc.decoder (first in MediaCodecList) | 120 | 9.4-9.6 / 11-14 ms |
+| c2.mtk.hevc.decoder.lowlatency | 120 | 9.1-9.5 / 12-13 ms |
+| c2.mtk.hevc.decoder.lowlatency | Short.MAX_VALUE | **7.1-7.6 / 9-11 ms** |
+
+### Repeat frames: cost and benefit roughly cancel
+
+| Mode | Mac age of new frames avg / max | Decode avg | Sum | Panel |
+|---|---|---|---|---|
+| Pacing on (default) | 7.2-8.3 / 11-13 ms | 7.3-7.7 ms | ~15.3 ms | 120 fps |
+| Pacing off (idle ticks encoded) | 5.4-5.7 / 6-8 ms | 8.4-8.6 ms | ~14.0 ms | ~90 fps |
+| No repeats (`diag.noRepeats`) | 5.4-9.0 / 7-13 ms | 9.2-9.8 ms | ~15.1 ms | 60-70 fps |
+
+Repeats delay a new frame's encode by ~2.3 ms on average, but they keep the
+tablet's decoder busy, and it decodes 1-2 ms faster at 120 inputs/s than at 60-90
+(it clocks down with load). Net difference ~1 ms, so pacing stays on.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
