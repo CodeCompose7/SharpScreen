@@ -206,6 +206,23 @@ class VideoEncoder {
         debugLog("VideoToolbox encoder configured (\(codec == .hevc ? "H.265" : "H.264"), \(bitrateMbps)Mbps, \(frameRate)fps, \(mode))")
     }
 
+    /// A 32BGRA capture (lossless tiles on) carries the display's colour space
+    /// (sRGB-like). Against the session's BT.709 tags VideoToolbox then also
+    /// converted the transfer function, which darkened mid-tones by ~9-13
+    /// levels: video tiles around a dragged window showed as a dark halo next
+    /// to the lossless tiles. The tablet maps YUV back with the BT.709 matrix
+    /// alone, so tag the pixels as BT.709 and let only the matrix apply, as the
+    /// 420v capture path effectively does.
+    static func tagAsBT709IfRGB(_ buffer: CVPixelBuffer) {
+        guard CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_32BGRA else { return }
+        if CaptureDiagnostics.keepCaptureColorSpace { return }
+        CVBufferRemoveAttachment(buffer, kCVImageBufferCGColorSpaceKey)
+        CVBufferRemoveAttachment(buffer, kCVImageBufferICCProfileKey)
+        CVBufferSetAttachment(buffer, kCVImageBufferColorPrimariesKey, kCVImageBufferColorPrimaries_ITU_R_709_2, .shouldPropagate)
+        CVBufferSetAttachment(buffer, kCVImageBufferTransferFunctionKey, kCVImageBufferTransferFunction_ITU_R_709_2, .shouldPropagate)
+        CVBufferSetAttachment(buffer, kCVImageBufferYCbCrMatrixKey, kCVImageBufferYCbCrMatrix_ITU_R_709_2, .shouldPropagate)
+    }
+
     /// Force the next encoded frame to be an IDR (sync) frame.
     /// Used when a fresh client connects so its decoder can start immediately
     /// instead of waiting up to one full GOP for the next scheduled keyframe.
@@ -232,6 +249,7 @@ class VideoEncoder {
 
     private func encodeOnSessionQueue(pixelBuffer: CVPixelBuffer, presentationTimeStamp: CMTime, isRepeat: Bool) {
         guard let session = compressionSession else { return }
+        Self.tagAsBT709IfRGB(pixelBuffer)
 
         let duration = CMTime(value: 1, timescale: CMTimeScale(frameRate))
 
