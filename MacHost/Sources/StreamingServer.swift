@@ -956,10 +956,17 @@ class StreamingServer {
             guard let self = self else { return }
 
             let packet = self.makeFramePacket(data, timestamp: timestamp, isKeyframe: isKeyframe)
+            let sendCallNs = DispatchTime.now().uptimeNanoseconds
 
             connection.send(content: packet, completion: .contentProcessed { error in
                 if error != nil {
                     self.droppedFrames += 1
+                }
+                // How long Network.framework held the frame before handing it
+                // on; reported with the per-second pipeline line.
+                let doneNs = DispatchTime.now().uptimeNanoseconds - sendCallNs
+                self.frameQueue.async {
+                    if doneNs > self.maxSendDoneNs { self.maxSendDoneNs = doneNs }
                 }
             })
 
@@ -998,6 +1005,9 @@ class StreamingServer {
     // Pipeline profiling: track frame age at send time
     private var totalFrameAgeNs: UInt64 = 0
     private var profiledFrameCount: UInt64 = 0
+    private var maxFrameAgeNs: UInt64 = 0
+    private var lateFrames = 0          // frame age > 20 ms
+    private var maxSendDoneNs: UInt64 = 0
 
     private func updateStats(bytes: Int, frameAgeNs: UInt64 = 0) {
         bytesSent += UInt64(bytes)
@@ -1005,6 +1015,8 @@ class StreamingServer {
         if frameAgeNs > 0 {
             totalFrameAgeNs += frameAgeNs
             profiledFrameCount += 1
+            if frameAgeNs > maxFrameAgeNs { maxFrameAgeNs = frameAgeNs }
+            if frameAgeNs > 20_000_000 { lateFrames += 1 }
         }
 
         let now = DispatchTime.now()
@@ -1018,7 +1030,7 @@ class StreamingServer {
             // Log pipeline latency profile
             if profiledFrameCount > 0 {
                 let avgAgeMs = Double(totalFrameAgeNs) / Double(profiledFrameCount) / 1_000_000.0
-                debugLog("Pipeline: \(String(format: "%.1f", fps))fps, \(String(format: "%.1f", mbps))Mbps, avg frame age: \(String(format: "%.1f", avgAgeMs))ms, dropped: \(droppedFrames)")
+                debugLog("Pipeline: \(String(format: "%.1f", fps))fps, \(String(format: "%.1f", mbps))Mbps, avg frame age: \(String(format: "%.1f", avgAgeMs))ms, max \(String(format: "%.1f", Double(maxFrameAgeNs) / 1e6))ms, >20ms: \(lateFrames), max send-done \(String(format: "%.1f", Double(maxSendDoneNs) / 1e6))ms, dropped: \(droppedFrames)")
             }
 
             bytesSent = 0
@@ -1026,6 +1038,9 @@ class StreamingServer {
             droppedFrames = 0
             totalFrameAgeNs = 0
             profiledFrameCount = 0
+            maxFrameAgeNs = 0
+            lateFrames = 0
+            maxSendDoneNs = 0
             lastStatsTime = now
         }
     }
