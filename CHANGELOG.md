@@ -18,6 +18,16 @@ Side Screen's history up to the fork is in the git log and in
   Mac port gives little power); it now checks the plug, not charging.
 
 ### Added
+- **Korean and English.** Both apps are fully translated. The Mac app follows
+  the macOS language (per-app language works too); the tablet app has its own
+  language setting (System default, English, 한국어).
+- **Redesigned apps.** The Mac settings window has tabs (Connection, Display,
+  Streaming, General, About) and a status card with Start/Stop; the tablet app
+  has a darker look in the icon's colours, a pill USB/Wireless switch, a
+  checklist that says what to do, and a Settings screen (language, USB host and
+  port, which are now saved, and About).
+- The Mac menu bar icon is the app icon's two panes in one colour, and its menu
+  opens right under the menu bar.
 - The tablet app shows its version beside the name, and its in-app logo is the
   new icon.
 - The Mac's wireless settings warn when AWDL (AirDrop, Handoff, Universal

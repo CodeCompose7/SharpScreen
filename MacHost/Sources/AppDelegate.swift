@@ -52,6 +52,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var settings = DisplaySettings()
     var settingsWindow: SettingsWindowController?
     var statusItem: NSStatusItem?
+    private var statusMenu: NSMenu?
     let pairedDeviceStore = PairedDeviceStore()
     let deviceProfileStore = DeviceProfileStore()
     /// Profile key of the tablet currently streaming (nil when none, or when
@@ -336,18 +337,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func setupMenuBar() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-
-        if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "display.2", accessibilityDescription: "SharpScreen")
-        }
+        statusItem = NSStatusBar.system.statusItem(withLength: MenuBarIcon.itemLength)
 
         // Items are rebuilt on every open (menuNeedsUpdate) so the menu always
         // reflects live server/connection state.
         let menu = NSMenu()
         menu.delegate = self
         menu.autoenablesItems = false
-        statusItem?.menu = menu
+        statusMenu = menu
+
+        if let button = statusItem?.button {
+            button.image = MenuBarIcon.image()
+            button.imageScaling = .scaleNone
+            // Opened by hand rather than through `statusItem.menu`, which
+            // drops the menu noticeably lower than the system's own menu bar
+            // items do.
+            button.target = self
+            button.action = #selector(statusItemClicked(_:))
+            button.sendAction(on: [.leftMouseDown, .rightMouseDown])
+        }
 
         // Dim the menu bar icon while the server is stopped — at-a-glance
         // state without opening the menu.
@@ -357,6 +365,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.statusItem?.button?.appearsDisabled = !running
             }
             .store(in: &cancellables)
+    }
+
+    /// Space between the bottom edge of the menu bar and the top of the menu
+    /// (the system's Control Center menus sit just below the bar's edge).
+    private static let statusMenuGap: CGFloat = 5
+
+    @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
+        guard let menu = statusMenu, let barWindow = sender.window else { return }
+        // The "selected" pill is drawn while the menu is open (menuWillOpen).
+        // Screen coordinates: the status item's window spans the menu bar, so
+        // its bottom edge is the bar's edge, whatever the button's own height.
+        let buttonOnScreen = barWindow.convertToScreen(sender.convert(sender.bounds, to: nil))
+        let origin = NSPoint(x: buttonOnScreen.minX, y: barWindow.frame.minY - Self.statusMenuGap)
+        menu.popUp(positioning: nil, at: origin, in: nil)
     }
 
     @objc private func toggleServerFromMenu() {
@@ -533,15 +555,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let alert = NSAlert()
         if isMacOS26 {
-            alert.messageText = "Screen & System Audio Recording Permission Required"
-            alert.informativeText = "Please grant Screen & System Audio Recording permission in System Settings > Privacy & Security."
+            alert.messageText = String(localized: "Screen & System Audio Recording Permission Required")
+            alert.informativeText = String(localized: "Please grant Screen & System Audio Recording permission in System Settings > Privacy & Security.")
         } else {
-            alert.messageText = "Screen Recording Permission Required"
-            alert.informativeText = "Please grant Screen Recording permission in System Settings > Privacy & Security."
+            alert.messageText = String(localized: "Screen Recording Permission Required")
+            alert.informativeText = String(localized: "Please grant Screen Recording permission in System Settings > Privacy & Security.")
         }
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Open System Settings")
-        alert.addButton(withTitle: "Later")
+        alert.addButton(withTitle: String(localized: "Open System Settings"))
+        alert.addButton(withTitle: String(localized: "Later"))
 
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
@@ -678,7 +700,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 throw NSError(
                     domain: "SideScreen.Startup",
                     code: 2,
-                    userInfo: [NSLocalizedDescriptionKey: "The streaming server could not be created."]
+                    userInfo: [NSLocalizedDescriptionKey: String(localized: "The streaming server could not be created.")]
                 )
             }
             try await server.start()
@@ -695,7 +717,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.tearDownServerResources(saveDisplayPosition: false)
 
                 let alert = NSAlert()
-                alert.messageText = "Failed to Start Server"
+                alert.messageText = String(localized: "Failed to Start Server")
                 alert.informativeText = error.localizedDescription
                 alert.alertStyle = .critical
                 alert.runModal()
@@ -733,7 +755,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             throw NSError(
                 domain: "SideScreen.Startup",
                 code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "The virtual display was created without a display ID."]
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "The virtual display was created without a display ID.")]
             )
         }
         let capture = try await ScreenCapture()
@@ -1341,6 +1363,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 // MARK: - Menu bar quick actions
 
 extension AppDelegate: NSMenuDelegate {
+    func menuWillOpen(_ menu: NSMenu) {
+        guard menu === statusMenu, let button = statusItem?.button else { return }
+        // macOS draws no selection behind an item whose menu it did not open
+        // itself, so show our own pill (and the glyph undimmed) meanwhile.
+        let dark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        button.appearsDisabled = false
+        button.image = MenuBarIcon.selectedImage(dark: dark, barThickness: NSStatusBar.system.thickness)
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        guard menu === statusMenu else { return }
+        statusItem?.button?.image = MenuBarIcon.image()
+        statusItem?.button?.appearsDisabled = !settings.isRunning
+    }
+
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
@@ -1348,13 +1385,16 @@ extension AppDelegate: NSMenuDelegate {
         let statusTitle: String
         if settings.isRunning {
             if settings.clientConnected {
-                let device = settings.currentWirelessDevice ?? "tablet"
-                statusTitle = "🟢 Connected — \(device)"
+                if let device = settings.currentWirelessDevice {
+                    statusTitle = "🟢 " + String(localized: "Connected — \(device)")
+                } else {
+                    statusTitle = "🟢 " + String(localized: "Connected to tablet")
+                }
             } else {
-                statusTitle = "🟡 Waiting for tablet on port \(settings.port)"
+                statusTitle = "🟡 " + String(localized: "Waiting for tablet on port \(String(settings.port))")
             }
         } else {
-            statusTitle = "⚪️ Server stopped"
+            statusTitle = "⚪️ " + String(localized: "Server stopped")
         }
         let statusLine = NSMenuItem(title: statusTitle, action: nil, keyEquivalent: "")
         statusLine.isEnabled = false
@@ -1363,7 +1403,7 @@ extension AppDelegate: NSMenuDelegate {
 
         // Start / Stop
         let toggle = NSMenuItem(
-            title: settings.isRunning ? "Stop Streaming" : "Start Streaming",
+            title: settings.isRunning ? String(localized: "Stop Streaming") : String(localized: "Start Streaming"),
             action: #selector(toggleServerFromMenu),
             keyEquivalent: "t"
         )
@@ -1377,25 +1417,25 @@ extension AppDelegate: NSMenuDelegate {
         // as changing it in the settings window)
         let modeMenu = NSMenu()
         modeMenu.autoenablesItems = false
-        let usb = NSMenuItem(title: "USB", action: #selector(selectUSBMode), keyEquivalent: "")
+        let usb = NSMenuItem(title: ConnectionMode.usb.localizedTitle, action: #selector(selectUSBMode), keyEquivalent: "")
         usb.target = self
         usb.state = settings.connectionMode == .usb ? .on : .off
         modeMenu.addItem(usb)
-        let wireless = NSMenuItem(title: "Wireless", action: #selector(selectWirelessMode), keyEquivalent: "")
+        let wireless = NSMenuItem(title: ConnectionMode.wireless.localizedTitle, action: #selector(selectWirelessMode), keyEquivalent: "")
         wireless.target = self
         wireless.state = settings.connectionMode == .wireless ? .on : .off
         modeMenu.addItem(wireless)
-        let modeItem = NSMenuItem(title: "Connection Mode", action: nil, keyEquivalent: "")
+        let modeItem = NSMenuItem(title: String(localized: "Connection Mode"), action: nil, keyEquivalent: "")
         modeItem.submenu = modeMenu
         menu.addItem(modeItem)
 
         menu.addItem(.separator())
 
-        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: "s")
+        let settingsItem = NSMenuItem(title: String(localized: "Settings…"), action: #selector(showSettings), keyEquivalent: "s")
         settingsItem.target = self
         menu.addItem(settingsItem)
 
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit SharpScreen", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: String(localized: "Quit SharpScreen"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 }
