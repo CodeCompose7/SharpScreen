@@ -6,6 +6,31 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-19 — Korean, a redesign, steadier frames
+
+Includes everything in 0.3.0-beta.1 below. Measurements are in
+[docs/measurements.md](docs/measurements.md).
+
+### Added
+- **Korean and English.** Both apps are fully translated. The Mac app follows
+  the macOS language (per-app language works too); the tablet app has its own
+  language setting (System default, English, 한국어).
+- **Redesigned apps.** The Mac settings window has tabs (Connection, Display,
+  Streaming, General, About) and a status card with Start/Stop. The tablet app
+  has a darker look in the icon's colours, a pill USB/Wireless switch, a
+  checklist that says what to do, and a Settings screen (language, USB host and
+  port, which are now saved, and About).
+- **Menu bar popup.** The Mac menu bar item opens a small panel (status with a
+  start/stop switch, USB/Wireless, Settings, Quit) right under the menu bar, and
+  stays selected while it is open (macOS 27's expanded-interface session). Its
+  icon is the app icon's two panes in one colour: solid while a tablet is
+  connected, faint otherwise.
+- The Mac's wireless settings warn when AWDL (AirDrop, Handoff, Universal
+  Control) is on: it took the Mac's Wi-Fi off-channel twice a second, ~80 ms
+  each time (ping p99 72 ms -> 8 ms with it off).
+- The tablet app shows its version beside the name, and its in-app logo is the
+  new icon.
+
 ### Changed
 - **Wireless latency.** Vsync-aligned presentation no longer spaces a Wi-Fi
   burst out one frame per vsync (extra wait 42 ms -> 7 ms); the tablet holds a
@@ -16,23 +41,6 @@ Side Screen's history up to the fork is in the git log and in
 - The tablet's "USB cable connected" check was red while plugged in whenever
   the battery was not charging (Samsung battery protection stops at ~90%, or a
   Mac port gives little power); it now checks the plug, not charging.
-
-### Added
-- **Korean and English.** Both apps are fully translated. The Mac app follows
-  the macOS language (per-app language works too); the tablet app has its own
-  language setting (System default, English, 한국어).
-- **Redesigned apps.** The Mac settings window has tabs (Connection, Display,
-  Streaming, General, About) and a status card with Start/Stop; the tablet app
-  has a darker look in the icon's colours, a pill USB/Wireless switch, a
-  checklist that says what to do, and a Settings screen (language, USB host and
-  port, which are now saved, and About).
-- The Mac menu bar icon is the app icon's two panes in one colour, and its menu
-  opens right under the menu bar.
-- The tablet app shows its version beside the name, and its in-app logo is the
-  new icon.
-- The Mac's wireless settings warn when AWDL (AirDrop, Handoff, Universal
-  Control) is on: it took the Mac's Wi-Fi off-channel twice a second, ~80 ms
-  each time (ping p99 72 ms -> 8 ms with it off).
 
 ## [0.3.0-beta.1] - 2026-11-18 — Even frame pacing, lighter lossless
 
