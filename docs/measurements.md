@@ -53,6 +53,48 @@ Same behaviour as Side Screen 1.1.1, so the fork changed nothing on the hot path
   the virtual display, so that, not the link or encoder, bounds motion
   smoothness now.
 
+## Why motion felt unlike a real display (2026-11-18)
+
+### Not the virtual display's frame rate
+
+New frames per second captured while a window is dragged:
+
+| Captured display | New frames/s |
+|---|---|
+| Main physical monitor, 2560x1600 @120 Hz | 88-108 (mostly 100-107) |
+| SharpScreen virtual display @120 Hz | 72-108 |
+
+macOS draws a window drag at ~100 fps on either, so the virtual display is not
+the bottleneck here. (A synthetic test window animated from an NSView display
+link at 120 ticks/s yielded only ~60 captured frames on both displays, so that
+pattern's own Core Animation updates are capped; it is useful as a steady 60 fps
+source, not as a probe of the compositor.) Queue depth 4 vs 8, a serial vs
+concurrent sample queue, `minimumFrameInterval`, the undocumented
+`CGVirtualDisplaySettings.refreshDeadline`, CGDisplayStream instead of
+ScreenCaptureKit and IOPMAssertionDeclareUserActivity changed nothing.
+Reports of a 60 Hz cap on CGVirtualDisplay (BetterDisplay discussions #121,
+#133, #4280) did not reproduce for window drags on macOS 27.2.
+
+### Burst arrival on the tablet: Nagle + delayed ACK
+
+`PacingDiag` on the tablet (2 s windows, steady 60 new + 60 repeat frames/s):
+
+| | before | TCP_QUICKACK per message |
+|---|---|---|
+| transit jitter p99 | 33-45 ms | **11-15 ms** |
+| transit jitter max | 37-50 ms | **11-16 ms** |
+| render interval max | 45-60 ms | **18-24 ms** |
+| two frames in one vsync (<4 ms) | 11-30% | **2-9%** |
+| a frame held > 12.5 ms | 8-19% | 4-10% |
+
+Ruled out on the way: 1 s keyframes (60 s changed nothing), the Mac side
+(worst frame age ~20 ms, Network.framework send completion <= 0.3 ms), adb's USB
+transport (raw 120 Hz echo: p99 3.8 ms at 16 B, 12.4 ms at 50 KB), and the
+receive thread's priority. The 40-50 ms gaps and the ~42 ms ping RTT matched
+Linux's delayed-ACK timer: adbd's local TCP socket to the app keeps Nagle on,
+the app only receives, so its bare ACKs were delayed and adbd's small writes
+waited for them.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
