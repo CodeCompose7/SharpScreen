@@ -424,7 +424,7 @@ class StreamClient(
     fun requestLosslessTileResync() {
         // Not gated on isConnected: the decoder (and so the compositor) is built
         // when the display config arrives, before the connection counts as up.
-        if (!GlCompositor.enabled || socket == null) return
+        if (!GlCompositor.enabled || !GlCompositor.losslessTiles || socket == null) return
         touchScope.launch {
             try {
                 socket?.getOutputStream()?.let { out ->
@@ -438,7 +438,7 @@ class StreamClient(
 
     /** Type 19, before type 8 like the other opt-ins: only when the GL compositor can show tiles. */
     private fun advertiseLosslessTilesSupport() {
-        if (!GlCompositor.enabled) return
+        if (!GlCompositor.enabled || !GlCompositor.losslessTiles) return
         outputStream?.let { out ->
             out.writeByte(LosslessTileWire.CLIENT_SUPPORTS_LOSSLESS_TILES)
             out.writeByte(LosslessTileWire.PROTOCOL_BYTE)

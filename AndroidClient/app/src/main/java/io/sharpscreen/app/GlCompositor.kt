@@ -391,6 +391,10 @@ class GlCompositor(
         @Volatile
         var enabled = false
 
+        /** Diagnostics: false never asks the host for tiles (GL path, video only). */
+        @Volatile
+        var losslessTiles = true
+
         /** Diagnostics: receive tiles but keep showing video (HEVC-only baseline). */
         @Volatile
         var showTiles = true
