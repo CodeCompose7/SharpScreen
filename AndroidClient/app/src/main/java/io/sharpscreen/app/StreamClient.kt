@@ -422,7 +422,9 @@ class StreamClient(
      * so the host must stop treating earlier tiles as present and resend.
      */
     fun requestLosslessTileResync() {
-        if (!GlCompositor.enabled || !isConnected) return
+        // Not gated on isConnected: the decoder (and so the compositor) is built
+        // when the display config arrives, before the connection counts as up.
+        if (!GlCompositor.enabled || socket == null) return
         touchScope.launch {
             try {
                 socket?.getOutputStream()?.let { out ->
