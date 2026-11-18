@@ -337,7 +337,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func setupMenuBar() {
-        statusItem = NSStatusBar.system.statusItem(withLength: MenuBarIcon.itemLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         // Items are rebuilt on every open (menuNeedsUpdate) so the menu always
         // reflects live server/connection state.
@@ -347,8 +347,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusMenu = menu
 
         if let button = statusItem?.button {
-            button.image = MenuBarIcon.image()
-            button.imageScaling = .scaleNone
+            button.image = MenuBarIcon.image(faint: true)
             // Opened by hand rather than through `statusItem.menu`, which
             // drops the menu noticeably lower than the system's own menu bar
             // items do.
@@ -357,12 +356,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.sendAction(on: [.leftMouseDown, .rightMouseDown])
         }
 
-        // Dim the menu bar icon while the server is stopped — at-a-glance
+        // Solid while a tablet is connected, faint otherwise: at-a-glance
         // state without opening the menu.
         settings.$isRunning
+            .combineLatest(settings.$clientConnected)
+            .map { running, connected in running && connected }
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] running in
-                self?.statusItem?.button?.appearsDisabled = !running
+            .sink { [weak self] connected in
+                self?.statusItem?.button?.image = MenuBarIcon.image(faint: !connected)
             }
             .store(in: &cancellables)
     }
@@ -373,7 +375,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
         guard let menu = statusMenu, let barWindow = sender.window else { return }
-        // The "selected" pill is drawn while the menu is open (menuWillOpen).
         // Screen coordinates: the status item's window spans the menu bar, so
         // its bottom edge is the bar's edge, whatever the button's own height.
         let buttonOnScreen = barWindow.convertToScreen(sender.convert(sender.bounds, to: nil))
@@ -1363,21 +1364,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 // MARK: - Menu bar quick actions
 
 extension AppDelegate: NSMenuDelegate {
-    func menuWillOpen(_ menu: NSMenu) {
-        guard menu === statusMenu, let button = statusItem?.button else { return }
-        // macOS draws no selection behind an item whose menu it did not open
-        // itself, so show our own pill (and the glyph undimmed) meanwhile.
-        let dark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        button.appearsDisabled = false
-        button.image = MenuBarIcon.selectedImage(dark: dark, barThickness: NSStatusBar.system.thickness)
-    }
-
-    func menuDidClose(_ menu: NSMenu) {
-        guard menu === statusMenu else { return }
-        statusItem?.button?.image = MenuBarIcon.image()
-        statusItem?.button?.appearsDisabled = !settings.isRunning
-    }
-
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
