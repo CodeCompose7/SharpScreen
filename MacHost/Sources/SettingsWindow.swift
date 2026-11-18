@@ -111,7 +111,7 @@ struct SettingsView: View {
                             .scaleEffect(headerHovered ? 1.05 : 1)
                     }
                     .buttonStyle(.plain)
-                    .help("About Side Screen")
+                    .help("About SharpScreen")
                     .animation(.spring(response: 0.3), value: headerHovered)
                     .onHover { headerHovered = $0 }
                     .popover(isPresented: $showAboutFromLogo, arrowEdge: .bottom) {
@@ -120,7 +120,7 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text("Side Screen")
+                            Text("SharpScreen")
                                 .font(.system(size: 20, weight: .bold, design: .rounded))
                             Text("v\(AppInfo.version)")
                                 .font(.system(size: 11, weight: .semibold, design: .rounded))
@@ -146,8 +146,8 @@ struct SettingsView: View {
                             }
                     }
                     .buttonStyle(.plain)
-                    .help("About Side Screen")
-                    .accessibilityLabel("About Side Screen")
+                    .help("About SharpScreen")
+                    .accessibilityLabel("About SharpScreen")
                     .popover(isPresented: $showAbout, arrowEdge: .bottom) {
                         AboutPopover(updater: updater)
                     }
@@ -167,7 +167,7 @@ struct SettingsView: View {
                         Button("Cancel", role: .cancel) { }
                         Button("Reset", role: .destructive) {
                             settings.resetToDefaults()
-                            if let window = NSApp.windows.first(where: { $0.title == "Side Screen" }) {
+                            if let window = NSApp.windows.first(where: { $0.title == "SharpScreen" }) {
                                 window.center()
                             }
                         }
@@ -1031,7 +1031,7 @@ struct SettingsView: View {
                                 }
                         }
                         .buttonStyle(.plain)
-                        .help("Quit Side Screen (⌘Q)")
+                        .help("Quit SharpScreen (⌘Q)")
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 14)
@@ -1078,7 +1078,7 @@ struct AboutPopover: View {
                     .resizable()
                     .frame(width: 44, height: 44)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Side Screen")
+                    Text("SharpScreen")
                         .font(.system(size: 15, weight: .semibold))
                     Text("Version \(AppInfo.version)")
                         .font(.system(size: 12))
@@ -1090,7 +1090,7 @@ struct AboutPopover: View {
                 }
                 .disabled(!updater.canCheckForUpdates)
                 .help(updater.canCheckForUpdates
-                      ? "Look for a newer version now. Side Screen also checks once a day."
+                      ? "Look for a newer version now. SharpScreen also checks once a day."
                       : "Update checks are only available in the released build.")
             }
 
@@ -1100,32 +1100,13 @@ struct AboutPopover: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             // Justified: first link flush left, last flush right, equal gaps between.
-            HStack(spacing: 0) {
-                Link("Website", destination: AppInfo.website)
-                Spacer()
-                Link("GitHub", destination: AppInfo.github)
-                Spacer()
-                Link("What's New", destination: AppInfo.changelog)
-                Spacer()
-                Link("Report a Problem", destination: AppInfo.reportProblem)
-            }
-            .font(.system(size: 12))
-
             Divider()
 
-            Text("If you find Side Screen useful, [support the developer](https://sidescreen.dev/donate.html) — it keeps me motivated to build more useful things.")
-                .font(.system(size: 12))
+            // SharpScreen is a hard fork; credit the project it is built on.
+            Text("Based on [Side Screen](\(AppInfo.upstream.absoluteString)) by Tran Vuong Quoc Dat, MIT License.")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-
-            HStack(spacing: 4) {
-                Spacer()
-                Text("Developed by Tran Vuong Quoc Dat with")
-                Image(systemName: "heart.fill")
-                    .foregroundColor(.red)
-                Spacer()
-            }
-            .font(.system(size: 11))
-            .foregroundColor(.secondary)
         }
         .padding(16)
         .frame(width: 400)
@@ -1556,7 +1537,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
             defer: false
         )
 
-        window.title = "Side Screen"
+        window.title = "SharpScreen"
         window.titlebarAppearsTransparent = true
         window.backgroundColor = .windowBackgroundColor
         window.isMovableByWindowBackground = true
@@ -1664,7 +1645,7 @@ struct WirelessSection: View {
                     } else {
                         Text("Generating QR…").foregroundColor(.secondary)
                     }
-                    Text("Scan this QR from Side Screen Android (Wireless tab)")
+                    Text("Scan this QR from SharpScreen Android (Wireless tab)")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)

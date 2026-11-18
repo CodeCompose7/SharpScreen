@@ -1,7 +1,7 @@
 import XCTest
 import CoreMedia
 import CoreVideo
-@testable import SideScreen
+@testable import SharpScreen
 
 /// Changing the bitrate while streaming rebuilt the compression session on the
 /// main thread under frames being encoded on the capture queue. VideoToolbox

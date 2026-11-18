@@ -1,7 +1,7 @@
 import Foundation
 import Network
 import XCTest
-@testable import SideScreen
+@testable import SharpScreen
 
 final class DeviceProfileStoreTests: XCTestCase {
     private func freshStore() -> DeviceProfileStore {

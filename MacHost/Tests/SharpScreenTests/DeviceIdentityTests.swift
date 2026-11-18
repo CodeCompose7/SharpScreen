@@ -1,5 +1,5 @@
 import XCTest
-@testable import SideScreen
+@testable import SharpScreen
 
 final class DeviceIdentityCodecTests: XCTestCase {
     private let sample = DeviceIdentity(id: "0f8fad5b-d9cb-469f-a165-70867728950e", name: "SM-X710")

@@ -7,13 +7,16 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Read version
 VERSION=$(cat "$ROOT_DIR/VERSION" | tr -d '[:space:]')
-echo "Building version $VERSION..."
+APP_NAME="SharpScreen"
+BUNDLE_ID="io.sharpscreen.mac"
+DISPLAY_NAME="SharpScreen"
+echo "Building $DISPLAY_NAME $VERSION..."
 
 cd "$ROOT_DIR/MacHost"
 
 # Kill running instance
-echo "Stopping running Side Screen..."
-pkill -f SideScreen 2>/dev/null || true
+echo "Stopping running $DISPLAY_NAME..."
+pkill -f "$APP_NAME.app/Contents/MacOS/$APP_NAME" 2>/dev/null || true
 sleep 0.5
 
 # Clean old build
@@ -26,11 +29,10 @@ echo "Building macOS Host (universal)..."
 swift build -c release --arch arm64 --arch x86_64
 BIN_DIR=$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)
 mkdir -p ".build/release-universal"
-cp "$BIN_DIR/SideScreen" .build/release-universal/SideScreen
-lipo -archs .build/release-universal/SideScreen
+cp "$BIN_DIR/$APP_NAME" ".build/release-universal/$APP_NAME"
+lipo -archs ".build/release-universal/$APP_NAME"
 
 # Create .app bundle
-APP_NAME="SideScreen"
 APP_DIR="$ROOT_DIR/$APP_NAME.app"
 
 echo "Creating app bundle..."
@@ -39,7 +41,7 @@ mkdir -p "$APP_DIR/Contents/MacOS"
 mkdir -p "$APP_DIR/Contents/Resources"
 
 # Copy universal binary
-cp .build/release-universal/SideScreen "$APP_DIR/Contents/MacOS/"
+cp ".build/release-universal/$APP_NAME" "$APP_DIR/Contents/MacOS/"
 
 # Sparkle (auto-update) ships as a framework next to the binary
 mkdir -p "$APP_DIR/Contents/Frameworks"
@@ -60,15 +62,15 @@ cat > "$APP_DIR/Contents/Info.plist" << EOF
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>SideScreen</string>
+    <string>$APP_NAME</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
-    <string>com.sidescreen.app</string>
+    <string>$BUNDLE_ID</string>
     <key>CFBundleName</key>
-    <string>Side Screen</string>
+    <string>$DISPLAY_NAME</string>
     <key>CFBundleDisplayName</key>
-    <string>Side Screen</string>
+    <string>$DISPLAY_NAME</string>
     <key>CFBundleVersion</key>
     <string>$VERSION</string><!-- VERSION -->
     <key>CFBundleShortVersionString</key>
@@ -79,38 +81,34 @@ cat > "$APP_DIR/Contents/Info.plist" << EOF
     <string>13.0</string>
     <key>LSUIElement</key>
     <false/>
-    <key>SUFeedURL</key>
-    <string>https://github.com/tranvuongquocdat/SideScreen/releases/latest/download/appcast.xml</string>
-    <key>SUPublicEDKey</key>
-    <string>7bJdS/tTNvOEUEobUTrH7IxJsg/FBZcmSHyzY4ZU97I=</string>
-    <key>SUEnableAutomaticChecks</key>
-    <true/>
+    <!-- No SUFeedURL yet: AppUpdater disables Sparkle until SharpScreen
+         publishes its own appcast (never point at Side Screen's). -->
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>NSScreenCaptureUsageDescription</key>
-    <string>Side Screen needs screen recording access to capture your virtual display and stream it to your Android device.</string>
+    <string>SharpScreen needs screen recording access to capture your virtual display and stream it to your Android device.</string>
     <key>NSLocalNetworkUsageDescription</key>
-    <string>Side Screen needs Local Network access so your Android tablet can connect to the Mac over WiFi for wireless mode. Without this, only USB-tethered connections work.</string>
+    <string>SharpScreen needs Local Network access so your Android tablet can connect to the Mac over WiFi for wireless mode. Without this, only USB-tethered connections work.</string>
     <key>NSBonjourServices</key>
     <array>
-        <string>_sidescreen._tcp</string>
+        <string>_sharpscreen._tcp</string>
     </array>
 </dict>
 </plist>
 EOF
 
-# Developer ID signing when SIDESCREEN_SIGN_IDENTITY is set (same flags as CI),
+# Developer ID signing when SHARPSCREEN_SIGN_IDENTITY is set (same flags as CI),
 # otherwise ad-hoc — Gatekeeper then needs `xattr -cr` after install.
-if [ -n "${SIDESCREEN_SIGN_IDENTITY:-}" ]; then
-    echo "Signing as $SIDESCREEN_SIGN_IDENTITY..."
-    "$ROOT_DIR/scripts/sign_app.sh" "$APP_DIR" "$SIDESCREEN_SIGN_IDENTITY"
+if [ -n "${SHARPSCREEN_SIGN_IDENTITY:-}" ]; then
+    echo "Signing as $SHARPSCREEN_SIGN_IDENTITY..."
+    "$ROOT_DIR/scripts/sign_app.sh" "$APP_DIR" "$SHARPSCREEN_SIGN_IDENTITY"
     if [ -n "${APPSTORE_API_KEY_P8:-}" ]; then
         "$ROOT_DIR/scripts/notarize.sh" "$APP_DIR"
     fi
 else
-    echo "Ad-hoc signing (set SIDESCREEN_SIGN_IDENTITY for Developer ID)..."
+    echo "Ad-hoc signing (set SHARPSCREEN_SIGN_IDENTITY for Developer ID)..."
     "$ROOT_DIR/scripts/sign_app.sh" "$APP_DIR" -
 fi
 echo "  ✓ App signed"
@@ -127,10 +125,10 @@ echo "Creating DMG..."
 DMG_DIR=$(mktemp -d)
 cp -R "$APP_DIR" "$DMG_DIR/"
 ln -s /Applications "$DMG_DIR/Applications"
-DMG_PATH="$ROOT_DIR/SideScreen-${VERSION}-mac-universal.dmg"
-hdiutil create -volname "Side Screen" -srcfolder "$DMG_DIR" -ov -format UDZO "$DMG_PATH"
-if [ -n "${SIDESCREEN_SIGN_IDENTITY:-}" ]; then
-    codesign --sign "$SIDESCREEN_SIGN_IDENTITY" --timestamp "$DMG_PATH"
+DMG_PATH="$ROOT_DIR/$APP_NAME-${VERSION}-mac-universal.dmg"
+hdiutil create -volname "$DISPLAY_NAME" -srcfolder "$DMG_DIR" -ov -format UDZO "$DMG_PATH"
+if [ -n "${SHARPSCREEN_SIGN_IDENTITY:-}" ]; then
+    codesign --sign "$SHARPSCREEN_SIGN_IDENTITY" --timestamp "$DMG_PATH"
     [ -n "${APPSTORE_API_KEY_P8:-}" ] && "$ROOT_DIR/scripts/notarize.sh" "$DMG_PATH"
 fi
 rm -rf "$DMG_DIR"

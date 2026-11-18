@@ -1,5 +1,5 @@
 import XCTest
-@testable import SideScreen
+@testable import SharpScreen
 
 final class PairedDeviceStoreTests: XCTestCase {
     private func freshStore() -> PairedDeviceStore {
