@@ -249,6 +249,28 @@ half a vsync.
 `diag.vsyncPresent=false` and `diag.presentPercentile=N` are per-launch tablet
 extras for A/B.
 
+## Wi-Fi (2026-11-18)
+
+Tablet (802.11ac, RSSI -41, 780 Mbps link) and Mac both on Wi-Fi to the same
+5 GHz access point, so every packet crosses the air twice. Release builds,
+scripted window sweep:
+
+| | Baseline | After the fixes below |
+|---|---|---|
+| Wait added by vsync scheduling (avg) | 42-45 ms | 7-9 ms |
+| Tablet display gap, max | 85-96 ms | 84-91 ms |
+| Mac send completion, max (dragging) | 53-89 ms | 18-80 ms |
+
+- Vsync scheduling spaced every frame of a Wi-Fi burst onto its own vsync,
+  chaining up to 42 ms of wait; it may now push a frame by one vsync at most.
+- The tablet holds a Wi-Fi low-latency lock while connected wirelessly.
+- Tiles are capped at 128 KB per refine tick on Wi-Fi (1 MB over USB).
+
+The ~90 ms gaps are not the app's: plain ping from the Mac shows the same
+spikes every ~440 ms, to the tablet (p50 7.4, p99 74.8, max 78.9 ms) and to
+the router alone (p50 4.0, p99 72.4, max 75.8 ms), with AWDL (AirDrop,
+Handoff, Universal Control) active on the Mac.
+
 ## Video colour with 32BGRA capture (2026-11-18)
 
 Dragging a window left a dark halo: the tiles around it fall back to video,

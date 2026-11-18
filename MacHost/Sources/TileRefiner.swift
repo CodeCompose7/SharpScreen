@@ -23,6 +23,7 @@ final class TileRefiner {
     /// of adb's measured ~300 MB/s only while a fill runs. diag.tileKBPerTick
     /// overrides.
     static let maxBytesPerTick = CaptureDiagnostics.tileBytesPerTick
+    static let maxBytesPerTickWireless = CaptureDiagnostics.tileBytesPerTickWireless
     static let maxWorkNsPerTick: UInt64 = 4_000_000    // leave the queue idle half the tick
 
     private struct Latest {
@@ -97,7 +98,7 @@ final class TileRefiner {
             guard let tile = LosslessTileCodec.encodeTile(index, grid: grid, buffer: buffer) else { return }
             batch.append(tile)
             bytes += tile.payload.count + 10
-            if bytes >= Self.maxBytesPerTick || DispatchTime.now().uptimeNanoseconds - startNs >= Self.maxWorkNsPerTick {
+            if bytes >= (server.clientIsOverUSB ? Self.maxBytesPerTick : Self.maxBytesPerTickWireless) || DispatchTime.now().uptimeNanoseconds - startNs >= Self.maxWorkNsPerTick {
                 break
             }
         }

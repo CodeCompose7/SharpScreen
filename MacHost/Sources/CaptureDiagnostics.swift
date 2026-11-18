@@ -39,6 +39,13 @@ enum CaptureDiagnostics {
         return (v > 0 ? v : 1024) * 1024
     }
 
+    /// The same over Wi-Fi (stock 128): a 1 MB burst takes 10-20 ms of air
+    /// time there, and video frames queue behind it. diag.tileKBPerTickWireless.
+    static var tileBytesPerTickWireless: Int {
+        let v = UserDefaults.standard.integer(forKey: "diag.tileKBPerTickWireless")
+        return (v > 0 ? v : 128) * 1024
+    }
+
     /// SCStreamConfiguration.minimumFrameInterval. Stock: 1/fps.
     /// diag.minFrameIntervalHz = 0 means no limit (CMTime.zero), N means 1/N s.
     static func minimumFrameInterval(fps: Int) -> CMTime {

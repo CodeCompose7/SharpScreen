@@ -388,6 +388,7 @@ class StreamClient(
                 advertiseLosslessTilesSupport()
                 advertiseFrameMetadataSupport()
                 isConnected = true
+                acquireWifiLowLatency()
                 diagLog("Wireless connected to $host:$port")
                 onConnectionStatus?.invoke(true)
                 receiveData()
@@ -839,7 +840,45 @@ class StreamClient(
         Log.d(TAG, "Disconnected")
     }
 
+    /**
+     * Wi-Fi power save holds packets for the next beacon (~100 ms): measured
+     * as ~90 ms display gaps even on a still screen. The low-latency lock
+     * (API 29+, foreground with the screen on) keeps the radio awake.
+     */
+    private var wifiLock: android.net.wifi.WifiManager.WifiLock? = null
+
+    @Suppress("DEPRECATION")
+    private fun acquireWifiLowLatency() {
+        if (wifiLock != null) return
+        try {
+            val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as android.net.wifi.WifiManager
+            val mode =
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    android.net.wifi.WifiManager.WIFI_MODE_FULL_LOW_LATENCY
+                } else {
+                    android.net.wifi.WifiManager.WIFI_MODE_FULL_HIGH_PERF
+                }
+            wifiLock =
+                wm.createWifiLock(mode, "SharpScreen:stream").apply {
+                    setReferenceCounted(false)
+                    acquire()
+                }
+            diagLog("Wi-Fi low-latency lock held (mode=$mode)")
+        } catch (e: Exception) {
+            diagLog("Wi-Fi low-latency lock failed: ${e.message}")
+        }
+    }
+
+    private fun releaseWifiLowLatency() {
+        try {
+            wifiLock?.takeIf { it.isHeld }?.release()
+        } catch (_: Exception) {
+        }
+        wifiLock = null
+    }
+
     private fun cleanup() {
+        releaseWifiLowLatency()
         try {
             outputStream?.close()
             inputStream?.close()

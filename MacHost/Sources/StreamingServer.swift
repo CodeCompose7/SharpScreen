@@ -421,7 +421,12 @@ class StreamingServer {
         connection?.start(queue: networkQueue)
     }
 
+    /// The client is over USB (adb reverse, loopback) rather than Wi-Fi.
+    private let clientOverUSB = OSAllocatedUnfairLock(initialState: true)
+    var clientIsOverUSB: Bool { clientOverUSB.withLock { $0 } }
+
     private func onConnectionReady(_ conn: NWConnection) {
+        clientOverUSB.withLock { $0 = conn.endpoint.isLoopback }
         if conn.endpoint.isLoopback {
             debugLog("Client connected via loopback (USB) — skipping auth")
             beginExistingProtocol(on: conn)
