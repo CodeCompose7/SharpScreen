@@ -271,6 +271,16 @@ spikes every ~440 ms, to the tablet (p50 7.4, p99 74.8, max 78.9 ms) and to
 the router alone (p50 4.0, p99 72.4, max 75.8 ms), with AWDL (AirDrop,
 Handoff, Universal Control) active on the Mac.
 
+With AWDL off (`sudo ifconfig awdl0 down`, until reboot or the next AirDrop):
+
+| | AWDL on | AWDL off |
+|---|---|---|
+| Ping Mac -> router p99 / max | 72.4 / 75.8 ms | 8.3 / 11.7 ms |
+| Ping Mac -> tablet p99 / max | 74.8 / 78.9 ms | 13.9 / 38.1 ms |
+| Tablet display gap, max | 84-96 ms | 17-49 ms |
+| Mac send completion, max | 18-89 ms | 0.4-1.0 ms |
+| Transit jitter while dragging, p90 / p99 | 36-78 / 75-108 ms | 12 / 20-21 ms |
+
 ## Video colour with 32BGRA capture (2026-11-18)
 
 Dragging a window left a dark halo: the tiles around it fall back to video,
