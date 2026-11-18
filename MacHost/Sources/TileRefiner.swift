@@ -6,11 +6,14 @@ import os
 
 /// Sends lossless copies of tiles that stopped changing (M1b).
 ///
-/// Every 8 ms it takes the newest captured 32BGRA frame, asks the server's
-/// TileTracker for tiles that have been still for `settleNs` and are not yet
-/// valid on the client, LZ4-encodes them and hands them to the server, which
-/// re-checks each against later changes right before writing it. Work per
-/// tick is capped by bytes and time so refining never crowds out video.
+/// Every 8 ms it asks the server's TileTracker for tiles that have been still
+/// for `settleNs` and are not yet valid on the client, LZ4-encodes them from a
+/// 32BGRA capture taken after their last change and hands them to the server,
+/// which re-checks each against later changes right before writing it. Work
+/// per tick is capped by bytes and time so refining never crowds out video.
+///
+/// Frames come from a 32BGRA capture stream of their own (ScreenCapture's
+/// tile stream) or, with diag.tileStream=false, the video stream in 32BGRA.
 final class TileRefiner {
     static let settleNs: UInt64 = 100_000_000          // 100 ms without change
     static let tickNs: UInt64 = 8_333_333              // 1/120 s
@@ -55,7 +58,9 @@ final class TileRefiner {
         latest.withLockUnchecked { $0 = Latest() }
     }
 
-    /// Called for every captured frame with new pixels, in capture order.
+    /// Called for every captured 32BGRA frame with new pixels, in capture
+    /// order. `capturedAtNs` must not be later than the moment the frame's
+    /// pixels were taken (see ScreenCapture's tile stream).
     func noteFrame(_ buffer: CVPixelBuffer, capturedAtNs: UInt64) {
         latest.withLockUnchecked { $0 = Latest(buffer: buffer, capturedAtNs: capturedAtNs) }
     }
@@ -80,7 +85,10 @@ final class TileRefiner {
             server.resetLosslessTiles(grid: resized)
             return
         }
-        let candidates = server.tileTracker.refineCandidates(nowNs: startNs, settleNs: Self.settleNs, limit: 512)
+        let changes = server.tileTracker.refineCandidateChanges(nowNs: startNs, settleNs: Self.settleNs, limit: 512)
+        // Only a frame taken after a tile's last change can serve it; the
+        // server would drop the others anyway, after they cost an encode.
+        let candidates = changes.filter { $0.changedNs < frame.capturedAtNs }.map(\.tile)
         guard !candidates.isEmpty else { return }
 
         var batch: [EncodedTile] = []

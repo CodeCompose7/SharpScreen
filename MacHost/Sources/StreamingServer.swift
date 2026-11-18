@@ -791,6 +791,8 @@ class StreamingServer {
                 }
                 if version >= 1, !wasOn {
                     debugLog("Client composites lossless tiles (protocol \(version))")
+                    // A new client holds nothing yet, whatever the last one had.
+                    resetLosslessTiles(grid: tileTracker.grid)
                     onLosslessTilesRequested?()
                 } else if version >= 1 {
                     // Sent again when the client rebuilds its compositor (new
@@ -987,9 +989,11 @@ class StreamingServer {
 
     /// Start a fresh tile session for frames of `grid`'s size: nothing is
     /// valid on the client yet (it clears its mask on every display config).
-    func resetLosslessTiles(grid: TileGrid) {
+    /// `then` runs on frameQueue once the reset is in place.
+    func resetLosslessTiles(grid: TileGrid, then: (() -> Void)? = nil) {
         frameQueue.async { [weak self] in
             guard let self else { return }
+            defer { then?() }
             let now = DispatchTime.now().uptimeNanoseconds
             self.tileTracker.reset(grid: grid, nowNs: now)
             self.tileFillStartNs = now
