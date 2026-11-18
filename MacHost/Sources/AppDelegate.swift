@@ -366,15 +366,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .store(in: &cancellables)
     }
 
-    /// Space between the menu bar and the top of the menu.
-    private static let statusMenuGap: CGFloat = 4
+    /// Space between the bottom edge of the menu bar and the top of the menu
+    /// (the system's Control Center menus sit just below the bar's edge).
+    private static let statusMenuGap: CGFloat = 5
 
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
-        guard let menu = statusMenu else { return }
+        guard let menu = statusMenu, let barWindow = sender.window else { return }
+        // Keep the "selected" pill behind the icon while the menu is open.
+        sender.isHighlighted = true
         sender.highlight(true)
-        let y = sender.isFlipped ? sender.bounds.maxY + Self.statusMenuGap : sender.bounds.minY - Self.statusMenuGap
-        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: y), in: sender)
-        sender.highlight(false)
+        defer {
+            sender.highlight(false)
+            sender.isHighlighted = false
+        }
+        // Screen coordinates: the status item's window spans the menu bar, so
+        // its bottom edge is the bar's edge, whatever the button's own height.
+        let buttonOnScreen = barWindow.convertToScreen(sender.convert(sender.bounds, to: nil))
+        let origin = NSPoint(x: buttonOnScreen.minX, y: barWindow.frame.minY - Self.statusMenuGap)
+        menu.popUp(positioning: nil, at: origin, in: nil)
     }
 
     @objc private func toggleServerFromMenu() {
