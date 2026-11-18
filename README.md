@@ -8,6 +8,18 @@ HiDPI, rotation, custom resolutions, up to 120 Hz, touch input, USB via `adb rev
 Wi-Fi pairing) and owns both ends of the stream, so the Mac host and the Android client
 can change together.
 
+## Download
+
+Grab the Mac app (`SharpScreen-<version>.dmg`) and the Android app
+(`SharpScreen-<version>.apk`) from [Releases](https://github.com/CodeCompose7/SharpScreen/releases).
+
+- **Mac** (macOS 13+): open the DMG and drag SharpScreen to Applications. Builds are
+  signed with a Developer ID but not notarized yet, so the first launch needs
+  right-click > Open (or System Settings > Privacy & Security > Open Anyway). Grant
+  Screen Recording when asked.
+- **Android** (8+): enable "Install unknown apps" for your browser or file manager and
+  open the APK. USB mode needs Developer options > USB debugging on the tablet.
+
 ## Goal
 
 Pixel-sharp text without giving up smooth motion:
@@ -21,8 +33,8 @@ Pixel-sharp text without giving up smooth motion:
 | Milestone | Scope | State |
 |---|---|---|
 | M0 | Fork, own identity (`io.sharpscreen.mac`, `io.sharpscreen.app`), baseline measurements | done ([measurements](docs/measurements.md)) |
-| M1 | Lossless LZ4 region updates on Mac and Android | planned |
-| M2 | Automatic HEVC / lossless switching | planned |
+| M1 | Lossless LZ4 tiles over HEVC on Mac and Android ([design](docs/design/M1-lossless-tiles.md)) | done in 0.2.0 |
+| M2 | Tuning, separate tile capture, rotation support | planned |
 
 ## Build
 
