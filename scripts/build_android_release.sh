@@ -35,7 +35,12 @@ if echo "$CERTS" | grep -q "CN=Android Debug"; then
 fi
 echo "$CERTS" | grep -E "certificate DN|certificate SHA-256"
 
-OUT="$ROOT_DIR/dist/$VERSION"
+OUT="${SHARPSCREEN_DIST_DIR:-$ROOT_DIR/dist/$VERSION}"
 mkdir -p "$OUT"
+# Never replace a published APK: a test build once overwrote dist/0.2.0.
+if [ -e "$OUT/SharpScreen-$VERSION.apk" ]; then
+    echo "$OUT/SharpScreen-$VERSION.apk exists; not overwriting. APK left at $APK (set SHARPSCREEN_DIST_DIR for another folder)." >&2
+    exit 1
+fi
 cp "$APK" "$OUT/SharpScreen-$VERSION.apk"
-echo "APK: dist/$VERSION/SharpScreen-$VERSION.apk"
+echo "APK: $OUT/SharpScreen-$VERSION.apk"
