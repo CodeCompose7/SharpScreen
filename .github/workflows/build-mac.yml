@@ -16,7 +16,7 @@ jobs:
         run: |
           cd MacHost
           swift build -c release --arch arm64 --arch x86_64
-          lipo -archs "$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/SideScreen"
+          lipo -archs "$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/SharpScreen"
 
       - name: Lint
         run: |

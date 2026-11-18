@@ -25,6 +25,8 @@ private class StreamDelegate: NSObject, SCStreamDelegate {
 
 class ScreenCapture {
     private var stream: SCStream?
+    private var streamConfig: SCStreamConfiguration?
+    private let tileRefiner = TileRefiner()
     private var streamOutput: StreamOutput?
     private var streamDelegate: StreamDelegate?
     private var encoder: VideoEncoder?
@@ -76,8 +78,10 @@ class ScreenCapture {
 
     // Encoding pipeline state (captured by frame handler closure)
     private var encodeQueue: DispatchQueue?
-    private var pendingEncodes: Int32 = 0
-    private var lastPixelBuffer: CVPixelBuffer?
+    /// Every SCStream-path encode goes through the pacer: it limits frames in
+    /// flight, keeps timestamps increasing and fills gaps up to the frame rate.
+    private var pacer: FramePacer?
+    private var lastPixelBuffer: CVPixelBuffer? { pacer?.lastBuffer }
 
     /// Callback when capture method changes (e.g. SCStream → CGDisplayStream fallback)
     var onCaptureMethodChanged: ((String) -> Void)?
@@ -112,16 +116,8 @@ class ScreenCapture {
 
         requestKeyframe()
 
-        guard let encoder, let cached = lastPixelBuffer else { return }
-
-        let pts = CMTime(
-            value: CMTimeValue(DispatchTime.now().uptimeNanoseconds / 1000),
-            timescale: 1_000_000
-        )
-
-        encodeQueue?.async {
-            encoder.encode(pixelBuffer: cached, presentationTimeStamp: pts)
-        }
+        guard encoder != nil, lastPixelBuffer != nil else { return }
+        pacer?.submit(nil, kind: .replay)
     }
 
     var displayWidth: Int {
@@ -298,6 +294,12 @@ class ScreenCapture {
 
             debugLog("SCShareableContent returned \(content.displays.count) displays: \(content.displays.map { $0.displayID })")
 
+            if CaptureDiagnostics.captureMainDisplay,
+               let main = content.displays.first(where: { $0.displayID == CGMainDisplayID() }) {
+                display = main
+                debugLog("diag.captureMainDisplay: capturing main display \(main.width)x\(main.height) (ID: \(main.displayID))")
+                return
+            }
             if let virtualDisplay = content.displays.first(where: { $0.displayID == virtualDisplayID }) {
                 display = virtualDisplay
                 debugLog("Capturing virtual display: \(virtualDisplay.width)x\(virtualDisplay.height) (ID: \(virtualDisplayID))")
@@ -348,7 +350,7 @@ class ScreenCapture {
         let config = SCStreamConfiguration()
         config.width = width
         config.height = height
-        config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(fps))
+        config.minimumFrameInterval = CaptureDiagnostics.minimumFrameInterval(fps: fps)
         // Video-range (16-235) rather than full-range (0-255). VideoToolbox
         // derives the bitstream's VUI full_range_flag from the pixel format,
         // and several Android vendor display paths (Xiaomi/HyperOS among
@@ -356,18 +358,26 @@ class ScreenCapture {
         // flag, which clips full-range highlights to white and crushes
         // shadows (#55). Limited range is what every decoder/GPU assumes by
         // default, so it renders identically everywhere.
-        config.pixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+        // 32BGRA once a client composites lossless tiles (see enableLosslessTiles):
+        // the tiles need RGB, and VideoToolbox converts for HEVC itself.
+        config.pixelFormat = (CaptureDiagnostics.captureBGRA || tileRefiner.isActive)
+            ? kCVPixelFormatType_32BGRA
+            : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
         config.showsCursor = true
-        config.queueDepth = 4
+        config.queueDepth = CaptureDiagnostics.queueDepth
         config.capturesAudio = false
         config.backgroundColor = .clear
         config.scalesToFit = false
 
         let scStream = SCStream(filter: filter, configuration: config, delegate: delegate)
-        try scStream.addStreamOutput(output, type: .screen, sampleHandlerQueue: .global(qos: .userInteractive))
+        // Serial: lossless tiles track changes in capture order. (A concurrent
+        // queue measured no faster; diag.serialSampleQueue is now the default.)
+        let sampleQueue = DispatchQueue(label: "SCStream.samples", qos: .userInteractive)
+        try scStream.addStreamOutput(output, type: .screen, sampleHandlerQueue: sampleQueue)
 
         stream = scStream
-        debugLog("Stream configured: \(width)x\(height) @ \(fps)fps (with delegate)")
+        streamConfig = config
+        debugLog("Stream configured: \(width)x\(height) @ \(fps)fps (with delegate), queueDepth=\(config.queueDepth), minInterval=\(config.minimumFrameInterval.seconds), pixelFormat=\(config.pixelFormat == kCVPixelFormatType_32BGRA ? "BGRA" : "420v")")
     }
 
     // MARK: - Shared frame handler (used by both startStreaming and restartStream)
@@ -375,8 +385,13 @@ class ScreenCapture {
     private func configureFrameHandler(label: String) {
         let queue = DispatchQueue(label: "encodeQueue.\(label)", qos: .userInteractive)
         encodeQueue = queue
-        pendingEncodes = 0
-        lastPixelBuffer = nil
+        pacer?.stop()
+        let newPacer = FramePacer(fps: refreshRate, encodeQueue: queue) { [weak self] buffer, pts, isRepeat in
+            self?.encoder?.encode(pixelBuffer: buffer, presentationTimeStamp: pts, isRepeat: isRepeat)
+        }
+        pacer = newPacer
+        newPacer.start()
+        debugLog("Frame pacing \(newPacer.pacingEnabled ? "on" : "off") at \(refreshRate) fps (\(label))")
 
         streamOutput?.onFrameReceived = { [weak self] sampleBuffer in
             guard let self = self else { return }
@@ -396,27 +411,19 @@ class ScreenCapture {
                 self.onCaptureMethodChanged?("SCStream")
             }
 
-            let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-
-            // Backpressure: skip if encode queue already has 2+ frames pending
-            let pending = OSAtomicAdd32(0, &self.pendingEncodes)
-            if pending >= 2 {
-                return
-            }
-
+            // New pixels go out at once; a tick without pixels re-sends the
+            // cached frame. The pacer drops it when 2 encodes are in flight.
             if let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-                self.lastPixelBuffer = imageBuffer
-                OSAtomicIncrement32(&self.pendingEncodes)
-                queue.async {
-                    self.encoder?.encode(pixelBuffer: imageBuffer, presentationTimeStamp: pts)
-                    OSAtomicDecrement32(&self.pendingEncodes)
+                if CaptureDiagnostics.logDirtyRects { CaptureDiagnostics.logFrameInfo(sampleBuffer, imageBuffer) }
+                if self.tileRefiner.isActive {
+                    let capturedAtNs = DispatchTime.now().uptimeNanoseconds
+                    self.currentServer?.noteDirtyRects(TileRefiner.dirtyRects(of: sampleBuffer), capturedAtNs: capturedAtNs)
+                    self.tileRefiner.noteFrame(imageBuffer, capturedAtNs: capturedAtNs)
                 }
-            } else if let cached = self.lastPixelBuffer {
-                OSAtomicIncrement32(&self.pendingEncodes)
-                queue.async {
-                    self.encoder?.encode(pixelBuffer: cached, presentationTimeStamp: pts)
-                    OSAtomicDecrement32(&self.pendingEncodes)
-                }
+                newPacer.submit(imageBuffer, kind: .captured,
+                                capturePts: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
+            } else {
+                newPacer.submit(nil, kind: .idle)
             }
         }
     }
@@ -441,8 +448,8 @@ class ScreenCapture {
         let (width, height) = encodeSize(for: codec)
 
         encoder = VideoEncoder(width: width, height: height, codec: codec, bitrateMbps: bitrateMbps, quality: quality, gamingBoost: gamingBoost, frameRate: frameRate)
-        encoder?.onEncodedFrame = { [weak server] data, timestamp, isKeyframe in
-            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe)
+        encoder?.onEncodedFrame = { [weak server] data, timestamp, isKeyframe, isRepeat in
+            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe, isRepeat: isRepeat)
         }
 
         // Apply any keyframe request that arrived before the encoder existed
@@ -464,15 +471,67 @@ class ScreenCapture {
         configureFrameHandler(label: "initial")
 
         Task {
+            if CaptureDiagnostics.forceCGDisplayStream {
+                debugLog("diag.forceCGDisplayStream: capturing with CGDisplayStream instead of SCStream")
+                attemptFallbackCapture()
+                showMotionPatternIfRequested()
+                return
+            }
             do {
                 try await stream?.startCapture()
                 debugLog("SCStream capture started — starting frame flow monitor (3s interval, 5s timeout)")
                 startFrameMonitor()
+                showMotionPatternIfRequested()
             } catch {
                 debugLog("Failed to start SCStream capture: \(error)")
                 debugLog("Attempting CGDisplayStream fallback due to start failure")
                 attemptFallbackCapture()
             }
+        }
+    }
+
+    // MARK: - Lossless tiles (M1b)
+
+    /// The client composites lossless tiles: capture 32BGRA from now on and
+    /// start refining still tiles. Called from the server's receive queue.
+    func enableLosslessTiles() {
+        guard let server = currentServer, !tileRefiner.isActive else { return }
+        let (w, h) = encodeSize(for: encoder?.codec ?? .hevc)
+        let grid = TileGrid(width: w, height: h)
+        server.resetLosslessTiles(grid: grid)
+        tileRefiner.start(server: server, grid: grid)
+        if let stream, let config = streamConfig, config.pixelFormat != kCVPixelFormatType_32BGRA {
+            config.pixelFormat = kCVPixelFormatType_32BGRA
+            stream.updateConfiguration(config) { error in
+                if let error {
+                    debugLog("Lossless tiles: switching capture to BGRA failed: \(error)")
+                } else {
+                    debugLog("Lossless tiles: capture switched to BGRA")
+                }
+            }
+        }
+        debugLog("Lossless tiles on: grid \(grid.columns)x\(grid.rows) of \(grid.tileSize) px over \(w)x\(h)")
+    }
+
+    private var motionPattern: MotionPatternWindow?
+    private var activityPinger: UserActivityPinger?
+
+    private func showMotionPatternIfRequested() {
+        if UserActivityPinger.enabled {
+            DispatchQueue.main.async {
+                self.activityPinger?.stop()
+                let pinger = UserActivityPinger()
+                pinger.start()
+                self.activityPinger = pinger
+            }
+        }
+        guard CaptureDiagnostics.motionPattern,
+              let id = CaptureDiagnostics.captureMainDisplay ? CGMainDisplayID() : virtualDisplayID else { return }
+        DispatchQueue.main.async {
+            self.motionPattern?.hide()
+            let pattern = MotionPatternWindow()
+            pattern.show(on: id)
+            self.motionPattern = pattern
         }
     }
 
@@ -508,16 +567,10 @@ class ScreenCapture {
             if stalled {
                 let hasHadFrames = self.stateLock.withLock { $0.hasReceivedFirstFrame }
 
-                if hasHadFrames, let lastBuffer = self.lastPixelBuffer {
+                if hasHadFrames, self.lastPixelBuffer != nil {
                     // Screen is idle — SCStream is healthy but not delivering frames (macOS optimization).
                     // Re-send the last captured frame as a keepalive so the tablet stays connected.
-                    let pts = CMTime(
-                        value: CMTimeValue(DispatchTime.now().uptimeNanoseconds / 1000),
-                        timescale: 1_000_000
-                    )
-                    self.encodeQueue?.async {
-                        self.encoder?.encode(pixelBuffer: lastBuffer, presentationTimeStamp: pts)
-                    }
+                    self.pacer?.submit(nil, kind: .replay)
                     self.stateLock.withLock { $0.lastFrameTime = DispatchTime.now() }
                     // Keep monitoring — real errors are handled by the SCStream error delegate
                 } else {
@@ -619,7 +672,7 @@ class ScreenCapture {
     /// stopStreaming.
     private func createDisplaySleepAssertion() {
         guard !hasDisplaySleepAssertion else { return }
-        let reason = "Side Screen is streaming to an external tablet display" as CFString
+        let reason = "SharpScreen is streaming to an external tablet display" as CFString
         let result = IOPMAssertionCreateWithName(
             kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
             IOPMAssertionLevel(kIOPMAssertionLevelOn),
@@ -647,6 +700,8 @@ class ScreenCapture {
     // MARK: - CGDisplayStream fallback
 
     private func attemptFallbackCapture() {
+        // The fallback encodes on its own clock; repeats would interleave.
+        pacer?.stop()
         guard let displayID = virtualDisplayID else {
             debugLog("Fallback skipped — no displayID")
             return
@@ -686,7 +741,12 @@ class ScreenCapture {
         // composites the cursor at all (the key defaults to false), so any
         // session that degrades to CGDisplayStream loses the pointer on the
         // tablet even when WindowServer is healthy.
-        let streamProps = [CGDisplayStream.showCursor as String: true] as CFDictionary
+        let streamProps = [
+            CGDisplayStream.showCursor as String: true,
+            CGDisplayStream.minimumFrameTime as String: 1.0 / Double(max(1, refreshRate)),
+        ] as CFDictionary
+        var cgFrames = 0
+        var cgWindowStart = DispatchTime.now().uptimeNanoseconds
 
         guard let displayStream = CGDisplayStream(
             dispatchQueueDisplay: displayID,
@@ -695,7 +755,16 @@ class ScreenCapture {
             pixelFormat: pixelFormat,
             properties: streamProps,
             queue: queue,
-            handler: { [weak self] _, _, frameSurface, _ in
+            handler: { [weak self] status, _, frameSurface, _ in
+                if status == .frameComplete {
+                    cgFrames += 1
+                    let now = DispatchTime.now().uptimeNanoseconds
+                    if now - cgWindowStart >= 1_000_000_000 {
+                        debugLog("CGDisplayStream: \(cgFrames) complete frames/s")
+                        cgFrames = 0
+                        cgWindowStart = now
+                    }
+                }
                 guard let self = self, let surface = frameSurface else { return }
 
                 var unmanagedPB: Unmanaged<CVPixelBuffer>?
@@ -780,8 +849,8 @@ class ScreenCapture {
         let (width, height) = encodeSize(for: codec)
         let server = currentServer
         let newEncoder = VideoEncoder(width: width, height: height, codec: codec, bitrateMbps: currentBitrateMbps, quality: currentQuality, gamingBoost: currentGamingBoost, frameRate: currentFrameRate)
-        newEncoder.onEncodedFrame = { [weak server] data, timestamp, isKeyframe in
-            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe)
+        newEncoder.onEncodedFrame = { [weak server] data, timestamp, isKeyframe, isRepeat in
+            server?.sendFrame(data, timestamp: timestamp, isKeyframe: isKeyframe, isRepeat: isRepeat)
         }
         newEncoder.requestKeyframe()
         encoder = newEncoder
@@ -797,8 +866,15 @@ class ScreenCapture {
         isStreaming = false
         streamGeneration &+= 1
 
-        // Cancel frame flow monitor
+        // Cancel frame flow monitor and pacing
         stopFrameMonitor()
+        tileRefiner.stop()
+        pacer?.stop()
+        pacer = nil
+        DispatchQueue.main.async {
+            self.motionPattern?.hide(); self.motionPattern = nil
+            self.activityPinger?.stop(); self.activityPinger = nil
+        }
 
         // Let the display idle-sleep normally again once we stop streaming.
         releaseDisplaySleepAssertion()

@@ -1,0 +1,181 @@
+# Measurements
+
+Hardware: MacBook Pro M5 Max (macOS 27.2), Galaxy Tab S11 Ultra (SM-X930,
+MT6991, Android 17, panel 2960x1848 @120 Hz) over a USB4 40 Gbps cable.
+The tablet's USB-C port negotiates USB 3.2 Gen 1 (5 Gbps) with the Mac.
+
+## USB link
+
+| What | Result | How |
+|---|---|---|
+| Negotiated link | 5 Gb/s (USB 3.2 Gen 1) | `system_profiler SPUSBHostDataType` |
+| `adb reverse` throughput, Mac -> tablet | **~2.4 Gbit/s (~300 MB/s)**, 3 runs of 512 MiB: 2477 / 2370 / 2353 Mbit/s | `scripts/measure_adb_throughput.py` (2026-11-18) |
+
+At 300 MB/s a full 2960x1848 BGRA frame (21.9 MB) fits about 14 times per
+second uncompressed, ~55/s at 4:1 LZ4 and ~137/s at 10:1. Lossless updates
+therefore have to be limited to changed regions and still content; full-screen
+motion stays on HEVC.
+
+## Encoder (Side Screen 1.1.1 pipeline, 2960x1848 @120 fps, HEVC)
+
+"frame age" is the host's own metric: encoder submit to network send.
+
+| Rate control | Encoder | frame age | fps (content dependent) |
+|---|---|---|---|
+| Stock VBR + Quality | `ave.hevc` | **5-7 ms** | 86-109 |
+| Low-latency rate control | `hevc.rtvc` | 30-50 ms | 89-99 |
+
+Low-latency rate control halves the 1 s keyframe peak (2.5 MB -> 1.4 MB in a
+synthetic probe) but costs 25-45 ms here, so SharpScreen keeps the stock
+encoder. It also hangs VideoToolbox at an AverageBitRate of exactly Int32.max.
+
+## SharpScreen 0.1.0 end to end (M0)
+
+Mac `io.sharpscreen.mac` 0.1.0 + Android `io.sharpscreen.app.debug` 0.1.0 over
+USB, 1480x924 HiDPI, 120 Hz, 300 Mbps, Quality High (2026-11-18):
+
+- Stream 2960x1848 @120 fps, HEVC on `ave.hevc`, no "Encode size" downscale
+  (pixel-exact with the panel), decoder limit reported 2960x1848.
+- Pipeline: 70-94 fps (content dependent), frame age 5.5-12 ms, 0 dropped.
+
+Same behaviour as Side Screen 1.1.1, so the fork changed nothing on the hot path.
+
+## Frame pacing and panel refresh (2026-11-18)
+
+- Mac `FramePacer`: one frame per 1/120 s slot. Still screen 120-121 fps
+  (ScreenCaptureKit itself sends ~1-3 new frames + ~72 idle ticks a second);
+  window drag 119-121 fps, of which 72-108 are new frames and the rest repeats;
+  0 frames skipped for a busy encoder; frame age 5.7-9.6 ms.
+- Tablet panel: Samsung adaptive refresh had dropped to **96 Hz** under the
+  120 fps stream, which caused visible stutter. With `preferredDisplayModeId`
+  set while streaming it stays at 120 Hz (5/5 samples during motion).
+- macOS renders a dragged window at up to ~108 distinct frames a second on
+  the virtual display, so that, not the link or encoder, bounds motion
+  smoothness now.
+
+## Why motion felt unlike a real display (2026-11-18)
+
+### Not the virtual display's frame rate
+
+New frames per second captured while a window is dragged:
+
+| Captured display | New frames/s |
+|---|---|
+| Main physical monitor, 2560x1600 @120 Hz | 88-108 (mostly 100-107) |
+| SharpScreen virtual display @120 Hz | 72-108 |
+
+macOS draws a window drag at ~100 fps on either, so the virtual display is not
+the bottleneck here. (A synthetic test window animated from an NSView display
+link at 120 ticks/s yielded only ~60 captured frames on both displays, so that
+pattern's own Core Animation updates are capped; it is useful as a steady 60 fps
+source, not as a probe of the compositor.) Queue depth 4 vs 8, a serial vs
+concurrent sample queue, `minimumFrameInterval`, the undocumented
+`CGVirtualDisplaySettings.refreshDeadline`, CGDisplayStream instead of
+ScreenCaptureKit and IOPMAssertionDeclareUserActivity changed nothing.
+Reports of a 60 Hz cap on CGVirtualDisplay (BetterDisplay discussions #121,
+#133, #4280) did not reproduce for window drags on macOS 27.2.
+
+### Burst arrival on the tablet: Nagle + delayed ACK
+
+`PacingDiag` on the tablet (2 s windows, steady 60 new + 60 repeat frames/s):
+
+| | before | TCP_QUICKACK per message |
+|---|---|---|
+| transit jitter p99 | 33-45 ms | **11-15 ms** |
+| transit jitter max | 37-50 ms | **11-16 ms** |
+| render interval max | 45-60 ms | **18-24 ms** |
+| two frames in one vsync (<4 ms) | 11-30% | **2-9%** |
+| a frame held > 12.5 ms | 8-19% | 4-10% |
+
+Ruled out on the way: 1 s keyframes (60 s changed nothing), the Mac side
+(worst frame age ~20 ms, Network.framework send completion <= 0.3 ms), adb's USB
+transport (raw 120 Hz echo: p99 3.8 ms at 16 B, 12.4 ms at 50 KB), and the
+receive thread's priority. The 40-50 ms gaps and the ~42 ms ping RTT matched
+Linux's delayed-ACK timer: adbd's local TCP socket to the app keeps Nagle on,
+the app only receives, so its bare ACKs were delayed and adbd's small writes
+waited for them.
+
+## Latency budget after the fixes (2026-11-18)
+
+Steady 60 new frames/s from the test window, Tab S11 Ultra over USB.
+
+### Decoder
+
+| Decoder | Operating rate | Decode (queue -> output) avg / max |
+|---|---|---|
+| c2.mtk.hevc.decoder (first in MediaCodecList) | 120 | 9.4-9.6 / 11-14 ms |
+| c2.mtk.hevc.decoder.lowlatency | 120 | 9.1-9.5 / 12-13 ms |
+| c2.mtk.hevc.decoder.lowlatency | Short.MAX_VALUE | **7.1-7.6 / 9-11 ms** |
+
+### Repeat frames: cost and benefit roughly cancel
+
+| Mode | Mac age of new frames avg / max | Decode avg | Sum | Panel |
+|---|---|---|---|---|
+| Pacing on (default) | 7.2-8.3 / 11-13 ms | 7.3-7.7 ms | ~15.3 ms | 120 fps |
+| Pacing off (idle ticks encoded) | 5.4-5.7 / 6-8 ms | 8.4-8.6 ms | ~14.0 ms | ~90 fps |
+| No repeats (`diag.noRepeats`) | 5.4-9.0 / 7-13 ms | 9.2-9.8 ms | ~15.1 ms | 60-70 fps |
+
+Repeats delay a new frame's encode by ~2.3 ms on average, but they keep the
+tablet's decoder busy, and it decodes 1-2 ms faster at 120 inputs/s than at 60-90
+(it clocks down with load). Net difference ~1 ms, so pacing stays on.
+
+## M1a: GL compositor vs direct decoder output (2026-11-18)
+
+Same conditions (60 new + 60 repeat frames/s). GL path: decoder ->
+SurfaceTexture -> GL draw on the SurfaceView window, swap interval 0.
+
+| | Direct | GL compositor |
+|---|---|---|
+| Decode (queue -> output) | 7.5-7.8 ms | 6.6-6.8 ms |
+| Release -> frame available (handoff) | not observable | 7.1-7.5 ms |
+| Draw + swap | - | 1.8-2.0 ms (max 3-5) |
+| Two frames in one vsync (<4 ms) | 8-10% | 4-6% |
+| Frame held > 12.5 ms | 10-12% | 5-7% |
+
+The 7 ms handoff did not move when the release carried an explicit "now"
+timestamp, so it is taken to be the codec's own surface-output step, present
+on the direct path too where nothing reports it. On that assumption (not
+verified: FrameTimeline only reports dump-relative times) the GL path costs
+~1.9 ms of draw+swap, offset by ~0.9 ms faster decode, within the +2 ms gate,
+and paces frames more evenly. Picture verified upright and correct.
+
+## M1b: lossless tiles (2026-11-18)
+
+Still desktop on the virtual display, tablet screenshot (`adb screencap`)
+against the host's own 32BGRA capture of the same moment, per 64x64 tile
+(stats overlay, settings button and menu bar excluded):
+
+| | HEVC only | Lossless tiles shown |
+|---|---|---|
+| Tiles 100% pixel-exact | 70 / 1282 (5%) | **1274 / 1282 (99.4%)** |
+| Text/UI tiles 100% exact | **0 / 655** | **653 / 655** |
+| Median pixel-exact share per tile | 40.6% | 100% |
+| Mean absolute error | 2.07 | 0.61 |
+
+With the test window animating, 1318 of 1363 tiles were lossless and ~290
+tiles/s cycled between video and lossless around the moving bar and the menu
+bar, at 120-200 KB/s of tile data. 32BGRA capture adds ~1.5-2 ms of encode time
+on the host (new-frame age ~14-16 ms vs ~12-13 ms with 420v in this setup).
+
+## Video colour with 32BGRA capture (2026-11-18)
+
+Dragging a window left a dark halo: the tiles around it fall back to video,
+and the video was darker than the lossless tiles next to it. Tablet video vs the
+host's capture, mean difference by brightness (video only, still screen):
+
+| Host level | Before | After tagging BGRA as BT.709 |
+|---|---|---|
+| 96-127 | -9 to -13 | -0.3 to -0.5 |
+| 128-159 | -9 to -11 | -0.4 to -0.8 |
+| 160-191 | -8 to -9 | -0.5 to -0.9 |
+| 224-255 | -1.5 | -1.3 |
+
+ScreenCaptureKit's 32BGRA buffers carry the display colour space; against the
+session's BT.709 tags VideoToolbox also converted the transfer function. With the
+buffers tagged BT.709 only the matrix applies, which is what the tablet inverts.
+
+## Tablet decoders
+
+`c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
+HEVC and AV1 advertise 3840x2160 @120. The client reports a decode limit of
+2960x1848 at 30/60/120 fps. The Mac has no hardware AV1 encoder.

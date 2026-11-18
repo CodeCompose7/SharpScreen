@@ -10,7 +10,7 @@ let sourcesPath = URL(fileURLWithPath: #filePath)
     .path
 
 let package = Package(
-    name: "SideScreen",
+    name: "SharpScreen",
     platforms: [
         // Floor is ScreenCaptureKit basics (12.3) + OSAllocatedUnfairLock /
         // SCStreamConfiguration.capturesAudio (13.0). CGVirtualDisplay is a
@@ -19,8 +19,8 @@ let package = Package(
     ],
     products: [
         .executable(
-            name: "SideScreen",
-            targets: ["SideScreen"])
+            name: "SharpScreen",
+            targets: ["SharpScreen"])
     ],
     dependencies: [
         // Auto-update. The framework is copied into Contents/Frameworks by the
@@ -29,7 +29,7 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "SideScreen",
+            name: "SharpScreen",
             dependencies: [
                 .product(name: "Sparkle", package: "Sparkle")
             ],
@@ -44,9 +44,9 @@ let package = Package(
                 .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])
             ]),
         .testTarget(
-            name: "SideScreenTests",
-            dependencies: ["SideScreen"],
-            path: "Tests/SideScreenTests",
+            name: "SharpScreenTests",
+            dependencies: ["SharpScreen"],
+            path: "Tests/SharpScreenTests",
             cSettings: [
                 .unsafeFlags(["-I", sourcesPath])
             ],

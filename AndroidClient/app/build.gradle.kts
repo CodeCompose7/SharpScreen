@@ -5,14 +5,14 @@ plugins {
 
 val appVersion = rootProject.file("../VERSION").readText().trim()
 val versionParts = appVersion.split(".")
-val computedVersionCode = versionParts[0].toInt() * 10000 + versionParts[1].toInt() * 100 + versionParts[2].toInt()
+val computedVersionCode = versionParts[0].toInt() * 10000 + versionParts[1].toInt() * 100 + versionParts[2].takeWhile { it.isDigit() }.toInt()
 
 android {
-    namespace = "com.sidescreen.app"
+    namespace = "io.sharpscreen.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.sidescreen.app"
+        applicationId = "io.sharpscreen.app"
         minSdk = 26
         targetSdk = 36
         versionCode = computedVersionCode
@@ -22,22 +22,22 @@ android {
     // Release signing: reads the upload key from env vars (set as GitHub Secrets in CI,
     // or exported locally). Falls back to the debug key when they are absent so that
     // `./gradlew assembleRelease` keeps working on a fresh checkout.
-    val keystorePath = System.getenv("SIDESCREEN_KEYSTORE_PATH")
+    val keystorePath = System.getenv("SHARPSCREEN_KEYSTORE_PATH")
     val hasReleaseKey = keystorePath != null && File(keystorePath).exists()
 
     signingConfigs {
         if (hasReleaseKey) {
             create("release") {
                 storeFile = File(keystorePath!!)
-                storePassword = System.getenv("SIDESCREEN_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("SIDESCREEN_KEY_ALIAS")
-                keyPassword = System.getenv("SIDESCREEN_KEY_PASSWORD")
+                storePassword = System.getenv("SHARPSCREEN_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("SHARPSCREEN_KEY_ALIAS")
+                keyPassword = System.getenv("SHARPSCREEN_KEY_PASSWORD")
             }
         }
     }
 
     buildTypes {
-        // Separate package so a debug build installs next to the Play Store build
+        // Separate package so a debug build installs next to a release build
         // (different signing keys would otherwise force an uninstall).
         debug {
             applicationIdSuffix = ".debug"
@@ -52,7 +52,7 @@ android {
             signingConfig = if (hasReleaseKey) {
                 signingConfigs.getByName("release")
             } else {
-                logger.warn("SIDESCREEN_KEYSTORE_PATH not set: signing release with the debug key (not suitable for Play Store).")
+                logger.warn("SHARPSCREEN_KEYSTORE_PATH not set: signing release with the debug key (not suitable for Play Store).")
                 signingConfigs.getByName("debug")
             }
         }

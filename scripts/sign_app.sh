@@ -1,16 +1,16 @@
 #!/bin/bash
-# Sign SideScreen.app for distribution. Sparkle's nested helpers are signed
+# Sign SharpScreen.app for distribution. Sparkle's nested helpers are signed
 # first, then the framework, then the app — `codesign --deep` is deprecated
 # and does not get that order right.
 #
-#   scripts/sign_app.sh SideScreen.app "Developer ID Application: ..."   # hardened runtime + timestamp
-#   scripts/sign_app.sh SideScreen.app -                                  # ad-hoc (forks, local builds)
+#   scripts/sign_app.sh SharpScreen.app "Developer ID Application: ..."   # hardened runtime + timestamp
+#   scripts/sign_app.sh SharpScreen.app -                                  # ad-hoc (forks, local builds)
 set -euo pipefail
 
-APP="${1:?usage: sign_app.sh <SideScreen.app> <identity|->}"
-IDENTITY="${2:?usage: sign_app.sh <SideScreen.app> <identity|->}"
+APP="${1:?usage: sign_app.sh <SharpScreen.app> <identity|->}"
+IDENTITY="${2:?usage: sign_app.sh <SharpScreen.app> <identity|->}"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-ENTITLEMENTS="$ROOT_DIR/MacHost/SideScreen.entitlements"
+ENTITLEMENTS="$ROOT_DIR/MacHost/SharpScreen.entitlements"
 
 FLAGS=(--force --options runtime)
 if [ "$IDENTITY" != "-" ]; then

@@ -25,7 +25,7 @@ class VideoEncoder {
     private let sessionQueue = DispatchQueue(label: "VideoEncoder.session", qos: .userInteractive)
 
     private var compressionSession: VTCompressionSession?
-    var onEncodedFrame: ((Data, UInt64, Bool) -> Void)?  // data, timestamp, isKeyframe
+    var onEncodedFrame: ((Data, UInt64, Bool, Bool) -> Void)?  // data, timestamp, isKeyframe, isRepeat
     private var width: Int
     private var height: Int
     let codec: StreamCodec
@@ -163,8 +163,9 @@ class VideoEncoder {
         // starving Mac WindowServer with encoder load. Short-GOP IPP gives 99% of
         // the resilience (frame loss recovery within 1 second) at a fraction of
         // the per-frame cost. TCP over USB-C rarely drops, so 1s GOP is safe.
-        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameInterval, value: frameRate as CFNumber)
-        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: 1.0 as CFNumber)
+        let keyframeSeconds = CaptureDiagnostics.keyframeIntervalSeconds
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameInterval, value: Int(Double(frameRate) * keyframeSeconds) as CFNumber)
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: keyframeSeconds as CFNumber)
 
         // Critical for low latency - NO frame reordering (no B-frames)
         VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AllowFrameReordering, value: kCFBooleanFalse)
@@ -205,6 +206,23 @@ class VideoEncoder {
         debugLog("VideoToolbox encoder configured (\(codec == .hevc ? "H.265" : "H.264"), \(bitrateMbps)Mbps, \(frameRate)fps, \(mode))")
     }
 
+    /// A 32BGRA capture (lossless tiles on) carries the display's colour space
+    /// (sRGB-like). Against the session's BT.709 tags VideoToolbox then also
+    /// converted the transfer function, which darkened mid-tones by ~9-13
+    /// levels: video tiles around a dragged window showed as a dark halo next
+    /// to the lossless tiles. The tablet maps YUV back with the BT.709 matrix
+    /// alone, so tag the pixels as BT.709 and let only the matrix apply, as the
+    /// 420v capture path effectively does.
+    static func tagAsBT709IfRGB(_ buffer: CVPixelBuffer) {
+        guard CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_32BGRA else { return }
+        if CaptureDiagnostics.keepCaptureColorSpace { return }
+        CVBufferRemoveAttachment(buffer, kCVImageBufferCGColorSpaceKey)
+        CVBufferRemoveAttachment(buffer, kCVImageBufferICCProfileKey)
+        CVBufferSetAttachment(buffer, kCVImageBufferColorPrimariesKey, kCVImageBufferColorPrimaries_ITU_R_709_2, .shouldPropagate)
+        CVBufferSetAttachment(buffer, kCVImageBufferTransferFunctionKey, kCVImageBufferTransferFunction_ITU_R_709_2, .shouldPropagate)
+        CVBufferSetAttachment(buffer, kCVImageBufferYCbCrMatrixKey, kCVImageBufferYCbCrMatrix_ITU_R_709_2, .shouldPropagate)
+    }
+
     /// Force the next encoded frame to be an IDR (sync) frame.
     /// Used when a fresh client connects so its decoder can start immediately
     /// instead of waiting up to one full GOP for the next scheduled keyframe.
@@ -221,21 +239,25 @@ class VideoEncoder {
     /// Callable from any capture queue: the frame is submitted on
     /// `sessionQueue`, so it never meets a session that a settings change is
     /// tearing down.
-    func encode(pixelBuffer: CVPixelBuffer, presentationTimeStamp: CMTime) {
+    /// `isRepeat` marks a re-encode of an unchanged frame (pacer fill,
+    /// keepalive); it only rides along to the send-side statistics.
+    func encode(pixelBuffer: CVPixelBuffer, presentationTimeStamp: CMTime, isRepeat: Bool = false) {
         sessionQueue.sync {
-            encodeOnSessionQueue(pixelBuffer: pixelBuffer, presentationTimeStamp: presentationTimeStamp)
+            encodeOnSessionQueue(pixelBuffer: pixelBuffer, presentationTimeStamp: presentationTimeStamp, isRepeat: isRepeat)
         }
     }
 
-    private func encodeOnSessionQueue(pixelBuffer: CVPixelBuffer, presentationTimeStamp: CMTime) {
+    private func encodeOnSessionQueue(pixelBuffer: CVPixelBuffer, presentationTimeStamp: CMTime, isRepeat: Bool) {
         guard let session = compressionSession else { return }
+        Self.tagAsBT709IfRGB(pixelBuffer)
 
         let duration = CMTime(value: 1, timescale: CMTimeScale(frameRate))
 
         // Use system uptime clock — MUST match DispatchTime.now().uptimeNanoseconds
         let captureNanos = DispatchTime.now().uptimeNanoseconds
-        let refconValue = UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)
+        let refconValue = UnsafeMutableRawPointer.allocate(byteCount: 16, alignment: 8)
         refconValue.storeBytes(of: captureNanos, as: UInt64.self)
+        refconValue.storeBytes(of: isRepeat ? UInt64(1) : 0, toByteOffset: 8, as: UInt64.self)
 
         let shouldForceKeyframe = stateLock.withLock { state -> Bool in
             guard state.pendingForceKeyframe else { return false }
@@ -279,8 +301,10 @@ private let encodingOutputCallback: VTCompressionOutputCallback = { (outputCallb
 
     // Get timestamp for frame age tracking
     let timestamp: UInt64
+    var isRepeat = false
     if let refcon = sourceFrameRefCon {
         timestamp = refcon.load(as: UInt64.self)
+        isRepeat = refcon.load(fromByteOffset: 8, as: UInt64.self) != 0
         refcon.deallocate()
     } else {
         timestamp = DispatchTime.now().uptimeNanoseconds
@@ -362,5 +386,5 @@ private let encodingOutputCallback: VTCompressionOutputCallback = { (outputCallb
         offset += Int(nalLength)
     }
 
-    encoder.onEncodedFrame?(frameData, timestamp, isKeyframe)
+    encoder.onEncodedFrame?(frameData, timestamp, isKeyframe, isRepeat)
 }

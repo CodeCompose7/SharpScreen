@@ -5,13 +5,13 @@ import ApplicationServices
 import os.log
 @preconcurrency import ScreenCaptureKit
 
-// Debug file logger - writes to /tmp/sidescreen.log
+// Debug file logger - writes to /tmp/sharpscreen.log
 func debugLog(_ message: String) {
     let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
     let line = "[\(timestamp)] \(message)\n"
     print(message)
     if let data = line.data(using: .utf8) {
-        let url = URL(fileURLWithPath: "/tmp/sidescreen.log")
+        let url = URL(fileURLWithPath: "/tmp/sharpscreen.log")
         if let handle = try? FileHandle(forWritingTo: url) {
             handle.seekToEndOfFile()
             handle.write(data)
@@ -339,7 +339,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "display.2", accessibilityDescription: "Side Screen")
+            button.image = NSImage(systemSymbolName: "display.2", accessibilityDescription: "SharpScreen")
         }
 
         // Items are rebuilt on every open (menuNeedsUpdate) so the menu always
@@ -641,6 +641,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             streamingServer?.onKeyframeRequested = { [weak self] force in
                 self?.screenCapture?.requestKeyframeOrReplayCachedFrame(force: force)
+            }
+            streamingServer?.onLosslessTilesRequested = { [weak self] in
+                self?.screenCapture?.enableLosslessTiles()
             }
 
             streamingServer?.onClientDisconnected = { [weak self] in
@@ -1387,6 +1390,6 @@ extension AppDelegate: NSMenuDelegate {
         menu.addItem(settingsItem)
 
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit Side Screen", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit SharpScreen", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 }

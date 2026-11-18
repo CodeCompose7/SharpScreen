@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-print("🚀 Side Screen starting...")
+print("🚀 SharpScreen starting...")
 
 // No args needed
 
@@ -15,12 +15,12 @@ let mainMenu = NSMenu()
 let appMenu = NSMenu()
 let appMenuItem = NSMenuItem()
 appMenuItem.submenu = appMenu
-appMenu.addItem(NSMenuItem(title: "About Side Screen", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""))
+appMenu.addItem(NSMenuItem(title: "About SharpScreen", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""))
 let checkForUpdatesItem = NSMenuItem(title: "Check for Updates…", action: #selector(AppUpdater.checkForUpdates(_:)), keyEquivalent: "")
 checkForUpdatesItem.target = AppUpdater.shared
 appMenu.addItem(checkForUpdatesItem)
 appMenu.addItem(NSMenuItem.separator())
-appMenu.addItem(NSMenuItem(title: "Quit Side Screen", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+appMenu.addItem(NSMenuItem(title: "Quit SharpScreen", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 mainMenu.addItem(appMenuItem)
 
 // Edit menu (for standard text editing shortcuts)
