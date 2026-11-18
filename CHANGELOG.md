@@ -6,6 +6,17 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+### Changed
+- **Wireless latency.** Vsync-aligned presentation no longer spaces a Wi-Fi
+  burst out one frame per vsync (extra wait 42 ms -> 7 ms); the tablet holds a
+  Wi-Fi low-latency lock while streaming wirelessly; lossless tiles go out in
+  smaller bursts over Wi-Fi (128 KB per tick).
+
+### Added
+- The Mac's wireless settings warn when AWDL (AirDrop, Handoff, Universal
+  Control) is on: it took the Mac's Wi-Fi off-channel twice a second, ~80 ms
+  each time (ping p99 72 ms -> 8 ms with it off).
+
 ## [0.3.0-beta.1] - 2026-11-18 — Even frame pacing, lighter lossless
 
 Pre-release. Measurements are in [docs/measurements.md](docs/measurements.md).

@@ -1624,9 +1624,29 @@ struct WirelessSection: View {
     /// the underlying lastConnected timestamp hasn't changed (e.g. while a
     /// device is disconnected and we still want "5 minutes ago" to count up).
     @State private var nowTick: Date = Date()
+    @State private var awdlActive = AWDLStatus.isActive()
 
     var body: some View {
         VStack(spacing: 12) {
+            if awdlActive {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "wifi.exclamationmark")
+                        .foregroundColor(.orange)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("AirDrop, Handoff and Universal Control can make wireless streaming stutter.")
+                            .font(.system(size: 11, weight: .medium))
+                        Text("They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until the next restart or AirDrop: sudo ifconfig awdl0 down")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer()
+                }
+                .padding(8)
+                .background(Color.orange.opacity(0.12))
+                .cornerRadius(6)
+            }
             if !settings.isRunning {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -1747,6 +1767,7 @@ struct WirelessSection: View {
             refreshQR()
             refreshPaired()
             nowTick = Date()
+            awdlActive = AWDLStatus.isActive()
         }
         // One-parameter onChange(of:perform:) works on macOS 13+. The
         // two-parameter form requires macOS 14 and would block Ventura.
@@ -1755,6 +1776,7 @@ struct WirelessSection: View {
         .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { now in
             nowTick = now
             refreshPaired()
+            awdlActive = AWDLStatus.isActive()
         }
         .alert("Reset Token?", isPresented: $showResetConfirm) {
             Button("Cancel", role: .cancel) { }
