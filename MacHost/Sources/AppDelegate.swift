@@ -52,6 +52,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var settings = DisplaySettings()
     var settingsWindow: SettingsWindowController?
     var statusItem: NSStatusItem?
+    private var statusMenu: NSMenu?
     let pairedDeviceStore = PairedDeviceStore()
     let deviceProfileStore = DeviceProfileStore()
     /// Profile key of the tablet currently streaming (nil when none, or when
@@ -338,16 +339,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
-        if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "display.2", accessibilityDescription: "SharpScreen")
-        }
-
         // Items are rebuilt on every open (menuNeedsUpdate) so the menu always
         // reflects live server/connection state.
         let menu = NSMenu()
         menu.delegate = self
         menu.autoenablesItems = false
-        statusItem?.menu = menu
+        statusMenu = menu
+
+        if let button = statusItem?.button {
+            button.image = MenuBarIcon.image()
+            // Opened by hand rather than through `statusItem.menu`, which
+            // drops the menu noticeably lower than the system's own menu bar
+            // items do.
+            button.target = self
+            button.action = #selector(statusItemClicked(_:))
+            button.sendAction(on: [.leftMouseDown, .rightMouseDown])
+        }
 
         // Dim the menu bar icon while the server is stopped — at-a-glance
         // state without opening the menu.
@@ -357,6 +364,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.statusItem?.button?.appearsDisabled = !running
             }
             .store(in: &cancellables)
+    }
+
+    /// Space between the menu bar and the top of the menu.
+    private static let statusMenuGap: CGFloat = 4
+
+    @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
+        guard let menu = statusMenu else { return }
+        sender.highlight(true)
+        let y = sender.isFlipped ? sender.bounds.maxY + Self.statusMenuGap : sender.bounds.minY - Self.statusMenuGap
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: y), in: sender)
+        sender.highlight(false)
     }
 
     @objc private func toggleServerFromMenu() {
