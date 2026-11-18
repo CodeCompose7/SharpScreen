@@ -1100,6 +1100,15 @@ struct AboutPopover: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             // Justified: first link flush left, last flush right, equal gaps between.
+            HStack(spacing: 0) {
+                Link("GitHub", destination: AppInfo.github)
+                Spacer()
+                Link("Releases", destination: AppInfo.releases)
+                Spacer()
+                Link("Report a Problem", destination: AppInfo.reportProblem)
+            }
+            .font(.system(size: 12))
+
             Divider()
 
             // SharpScreen is a hard fork; credit the project it is built on.

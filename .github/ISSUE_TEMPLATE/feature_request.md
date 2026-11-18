@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest an idea for Side Screen
+about: Suggest an idea for SharpScreen
 title: '[Feature] '
 labels: enhancement
 assignees: ''

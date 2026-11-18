@@ -45,4 +45,7 @@ enum AppInfo {
 
     /// The project SharpScreen was forked from (MIT).
     static let upstream = URL(string: "https://github.com/tranvuongquocdat/SideScreen")!
+    static let github = URL(string: "https://github.com/CodeCompose7/SharpScreen")!
+    static let releases = URL(string: "https://github.com/CodeCompose7/SharpScreen/releases")!
+    static let reportProblem = URL(string: "https://github.com/CodeCompose7/SharpScreen/issues")!
 }

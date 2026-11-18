@@ -46,10 +46,8 @@ import java.net.Socket
 
 private fun mainDiag(msg: String) = DiagLog.log("MA", msg)
 
-// SharpScreen has no site or tracker of its own yet; both point at the
-// project it was forked from until they exist.
-private const val MAC_APP_URL = "https://github.com/tranvuongquocdat/SideScreen"
-private const val REPORT_PROBLEM_URL = "https://github.com/tranvuongquocdat/SideScreen"
+private const val MAC_APP_URL = "https://github.com/CodeCompose7/SharpScreen/releases"
+private const val REPORT_PROBLEM_URL = "https://github.com/CodeCompose7/SharpScreen/issues"
 
 class MainActivity : AppCompatActivity() {
     private lateinit var wirelessController: WirelessTabController
