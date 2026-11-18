@@ -2,7 +2,7 @@ import Foundation
 import Network
 import os
 
-private enum WireMessage {
+enum WireMessage {
     static let legacyVideoFrame: UInt8 = 0
     static let displayConfig: UInt8 = 1
     static let touchEvent: UInt8 = 2
@@ -40,6 +40,15 @@ private enum WireMessage {
     /// BEFORE type 8, so the host knows which profile to apply before the
     /// display config goes out.
     static let clientIdentity: UInt8 = 18
+    /// Client→server, 1-byte payload 0x81 (protocol 1, high bit set like the
+    /// other optional client messages): "I composite lossless tiles"
+    /// (M1b, docs/design/M1-lossless-tiles.md). Only then does the host send
+    /// types 20 and 21, which older clients would treat as a desync.
+    static let clientSupportsLosslessTiles: UInt8 = 19
+    /// Server→client: tiles that stopped being valid (see LosslessTileCodec).
+    static let tileInvalidate: UInt8 = 20
+    /// Server→client: LZ4-compressed BGRA tiles (see LosslessTileCodec).
+    static let losslessTiles: UInt8 = 21
 }
 
 private extension String {
@@ -172,6 +181,8 @@ class StreamingServer {
     var onTouchEvent: ((Float, Float, Int, Int, Float, Float) -> Void)?
     var onStats: ((Double, Double) -> Void)?
     var onKeyframeRequested: ((Bool) -> Void)?
+    /// The connected client composites lossless tiles (wire type 19).
+    var onLosslessTilesRequested: (() -> Void)?
     // Whether host wants to receive touch events from client. Ping/pong is
     // handled regardless. When false, incoming touch frames are dropped
     // immediately without parsing or dispatching to main queue.
@@ -245,6 +256,12 @@ class StreamingServer {
     private var connectionReady = false
     private var waitingForSyncFrame = false
     private var clientSupportsFrameMetadata = false
+    /// Set from the receive queue, read on frameQueue.
+    private let losslessClient = OSAllocatedUnfairLock(initialState: false)
+    let tileTracker = TileTracker(grid: TileGrid(width: 0, height: 0))
+    private var tilesSentBytes = 0
+    private var tilesSent = 0
+    private var invalidatesSent = 0
     private var clientIsAvcOnly = false
     /// Max decode size reported by the connected client (issue #41).
     private(set) var clientDecodeLimits: (width: Int, height: Int)?
@@ -365,6 +382,7 @@ class StreamingServer {
 
         connectionReady = false
         clientSupportsFrameMetadata = false
+        losslessClient.withLock { $0 = false }
         clientIsAvcOnly = false
         clientDecodeLimits = nil
         clientDecodeLimitTable = nil
@@ -755,6 +773,21 @@ class StreamingServer {
                 consumeInputBytes(2)
                 onKeyframeRequested?((flags & 1) != 0)
 
+            case WireMessage.clientSupportsLosslessTiles:
+                // Type + one version byte (high bit set).
+                guard inputBuffer.count >= 2 else { return }
+                let version = inputByte(at: 1) & 0x7F
+                consumeInputBytes(2)
+                let wasOn = losslessClient.withLock { on -> Bool in
+                    let was = on
+                    on = version >= 1
+                    return was
+                }
+                if version >= 1, !wasOn {
+                    debugLog("Client composites lossless tiles (protocol \(version))")
+                    onLosslessTilesRequested?()
+                }
+
             case WireMessage.clientSupportsFrameMetadata:
                 // One-byte opt-in from newer clients. Keeping this payload-free
                 // lets older hosts safely ignore it without misaligning input.
@@ -936,6 +969,52 @@ class StreamingServer {
         inputBuffer.removeSubrange(inputBuffer.startIndex..<endIndex)
     }
 
+    // MARK: - Lossless tiles (M1b)
+
+    var clientWantsLosslessTiles: Bool { losslessClient.withLock { $0 } }
+
+    /// Start a fresh tile session for frames of `grid`'s size: nothing is
+    /// valid on the client yet (it clears its mask on every display config).
+    func resetLosslessTiles(grid: TileGrid) {
+        frameQueue.async { [weak self] in
+            self?.tileTracker.reset(grid: grid, nowNs: DispatchTime.now().uptimeNanoseconds)
+        }
+    }
+
+    /// Pixels changed in a frame captured at `capturedAtNs`. Runs on frameQueue
+    /// so the invalidate reaches the client before that frame's video, which
+    /// is still being encoded.
+    func noteDirtyRects(_ rects: [CGRect], capturedAtNs: UInt64) {
+        guard clientWantsLosslessTiles, !rects.isEmpty else { return }
+        frameQueue.async { [weak self] in
+            guard let self, let connection = self.connection, self.connectionReady, !self.isStopped else { return }
+            let invalid = self.tileTracker.markDirty(rects, atNs: capturedAtNs)
+            guard !invalid.isEmpty else { return }
+            // u16 count: split very large invalidations.
+            for chunk in stride(from: 0, to: invalid.count, by: 60_000) {
+                let msg = LosslessTileCodec.invalidateMessage(Array(invalid[chunk..<min(chunk + 60_000, invalid.count)]))
+                connection.send(content: msg, completion: .contentProcessed { _ in })
+            }
+            self.invalidatesSent += invalid.count
+        }
+    }
+
+    /// Send tiles cut from a frame captured at `capturedAtNs`, dropping any
+    /// that changed since (their pixels would be older than the video).
+    func sendLosslessTiles(_ tiles: [EncodedTile], capturedAtNs: UInt64, tileSize: Int) {
+        guard clientWantsLosslessTiles, !tiles.isEmpty else { return }
+        frameQueue.async { [weak self] in
+            guard let self, let connection = self.connection, self.connectionReady, !self.isStopped else { return }
+            let claimed = Set(self.tileTracker.claimForSend(tiles.map(\.index), capturedAtNs: capturedAtNs))
+            let fresh = tiles.filter { claimed.contains($0.index) }
+            guard !fresh.isEmpty else { return }
+            let msg = LosslessTileCodec.tilesMessage(fresh, tileSize: tileSize)
+            connection.send(content: msg, completion: .contentProcessed { _ in })
+            self.tilesSent += fresh.count
+            self.tilesSentBytes += msg.count
+        }
+    }
+
     func sendFrame(_ data: Data, timestamp: UInt64, isKeyframe: Bool = false, isRepeat: Bool = false) {
         guard let connection = connection, !isStopped, connectionReady else { return }
 
@@ -1038,7 +1117,7 @@ class StreamingServer {
             // Log pipeline latency profile
             if profiledFrameCount > 0 {
                 let avgAgeMs = Double(totalFrameAgeNs) / Double(profiledFrameCount) / 1_000_000.0
-                debugLog("Pipeline: \(String(format: "%.1f", fps))fps, \(String(format: "%.1f", mbps))Mbps, avg frame age: \(String(format: "%.1f", avgAgeMs))ms, max \(String(format: "%.1f", Double(maxFrameAgeNs) / 1e6))ms, >20ms: \(lateFrames), max send-done \(String(format: "%.1f", Double(maxSendDoneNs) / 1e6))ms, new frames: \(newFrames) avg \(String(format: "%.1f", newFrames > 0 ? Double(newFrameAgeNs) / Double(newFrames) / 1e6 : 0))ms max \(String(format: "%.1f", Double(maxNewFrameAgeNs) / 1e6))ms, dropped: \(droppedFrames)")
+                debugLog("Pipeline: \(String(format: "%.1f", fps))fps, \(String(format: "%.1f", mbps))Mbps, avg frame age: \(String(format: "%.1f", avgAgeMs))ms, max \(String(format: "%.1f", Double(maxFrameAgeNs) / 1e6))ms, >20ms: \(lateFrames), max send-done \(String(format: "%.1f", Double(maxSendDoneNs) / 1e6))ms, tiles: \(tilesSent) (\(tilesSentBytes / 1024) KB, \(tileTracker.validCount) valid, \(invalidatesSent) invalidated), new frames: \(newFrames) avg \(String(format: "%.1f", newFrames > 0 ? Double(newFrameAgeNs) / Double(newFrames) / 1e6 : 0))ms max \(String(format: "%.1f", Double(maxNewFrameAgeNs) / 1e6))ms, dropped: \(droppedFrames)")
             }
 
             bytesSent = 0
@@ -1052,6 +1131,9 @@ class StreamingServer {
             newFrameAgeNs = 0
             newFrames = 0
             maxNewFrameAgeNs = 0
+            tilesSent = 0
+            tilesSentBytes = 0
+            invalidatesSent = 0
             lastStatsTime = now
         }
     }
