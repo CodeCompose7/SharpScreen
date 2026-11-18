@@ -157,6 +157,35 @@ tiles/s cycled between video and lossless around the moving bar and the menu
 bar, at 120-200 KB/s of tile data. 32BGRA capture adds ~1.5-2 ms of encode time
 on the host (new-frame age ~14-16 ms vs ~12-13 ms with 420v in this setup).
 
+### Time to a full lossless screen after a reset
+
+From a tile reset (reconnect or client resync) until 99% of tiles are valid
+(a menu bar clock keeps a few changing), logged by the host:
+
+| | Still 2960x1848 desktop |
+|---|---|
+| Reset marks every tile changed now | 135-988 ms (6 runs) |
+| Reset keeps the change history | **27-38 ms (14 runs)** |
+
+The transfer itself was ~25 ms; the rest was waiting for a frame captured
+after the reset, which a still screen only sends when something small
+changes. The host now records changes with or without a client, so the
+frame it already holds is known to be current.
+
+Photo wallpaper at 2560x1600 barely compresses with LZ4 (~6.8 MB per full
+screen), so the per-tick byte cap binds. 4 reconnects per cap:
+
+| Cap per 8.3 ms tick | Full fill | Video frame age during fill |
+|---|---|---|
+| 512 KB | 111-136 ms | avg 11-12 ms, max 12-22 ms |
+| **1 MB** | 76-95 ms | avg 8-12 ms, max 11-20 ms |
+| 2 MB | 73-92 ms | avg 8-11 ms, max 11-19 ms |
+
+Past ~750 KB the 4 ms work cap binds instead, so 2 MB gains nothing. Encoding
+tiles on several cores would lift that, but only saves ~20 ms on photo-heavy
+full fills. A display rebuilt mid-connection (2960x1848 to 2560x1600 by
+profile switch) went on with a 40x25 grid, 994/1000 tiles valid.
+
 ## Video colour with 32BGRA capture (2026-11-18)
 
 Dragging a window left a dark halo: the tiles around it fall back to video,

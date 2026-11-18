@@ -33,6 +33,12 @@ enum CaptureDiagnostics {
         return v > 0 ? v : 1.0
     }
 
+    /// Lossless tile bytes per refine tick, in KB (stock 1024). diag.tileKBPerTick.
+    static var tileBytesPerTick: Int {
+        let v = UserDefaults.standard.integer(forKey: "diag.tileKBPerTick")
+        return (v > 0 ? v : 1024) * 1024
+    }
+
     /// SCStreamConfiguration.minimumFrameInterval. Stock: 1/fps.
     /// diag.minFrameIntervalHz = 0 means no limit (CMTime.zero), N means 1/N s.
     static func minimumFrameInterval(fps: Int) -> CMTime {

@@ -769,6 +769,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             gamingBoost: settings.gamingBoost,
             frameRate: settings.effectiveRefreshRate
         )
+        // A display rebuilt under a connected client (profile switch) gets a
+        // new capture: carry the client's lossless opt-in over to it, or tiles
+        // stay off until it reconnects.
+        if server.clientWantsLosslessTiles {
+            screenCapture?.enableLosslessTiles()
+        }
     }
 
     // MARK: - Per-tablet profiles

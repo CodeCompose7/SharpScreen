@@ -14,7 +14,12 @@ import os
 final class TileRefiner {
     static let settleNs: UInt64 = 100_000_000          // 100 ms without change
     static let tickNs: UInt64 = 8_333_333              // 1/120 s
-    static let maxBytesPerTick = 512 * 1024            // ~60 MB/s, ~20% of adb's measured ~300 MB/s
+    /// 1 MB/tick: a full 2560x1600 photo-wallpaper fill took 76-95 ms instead
+    /// of 111-136 ms at 512 KB, video frame age unchanged (max < 20 ms). Past
+    /// ~750 KB the 4 ms work cap binds, so 2 MB gained nothing. Peaks at ~40%
+    /// of adb's measured ~300 MB/s only while a fill runs. diag.tileKBPerTick
+    /// overrides.
+    static let maxBytesPerTick = CaptureDiagnostics.tileBytesPerTick
     static let maxWorkNsPerTick: UInt64 = 4_000_000    // leave the queue idle half the tick
 
     private struct Latest {
@@ -65,6 +70,15 @@ final class TileRefiner {
         if CaptureDiagnostics.dumpFrames, startNs - lastDumpNs > 2_000_000_000 {
             lastDumpNs = startNs
             CaptureDiagnostics.dump(buffer, to: "/tmp/sharpscreen_frame.bgra")
+        }
+        // The capture size changes when the stream does (new resolution, a new
+        // client decode limit). Follow it: a grid of the old size made every tile
+        // encode fail, which silently stopped lossless tiles until reconnect.
+        if let resized = grid.resized(width: CVPixelBufferGetWidth(buffer), height: CVPixelBufferGetHeight(buffer)) {
+            debugLog("Lossless tiles: frame is now \(resized.width)x\(resized.height), new grid \(resized.columns)x\(resized.rows)")
+            grid = resized
+            server.resetLosslessTiles(grid: resized)
+            return
         }
         let candidates = server.tileTracker.refineCandidates(nowNs: startNs, settleNs: Self.settleNs, limit: 512)
         guard !candidates.isEmpty else { return }
