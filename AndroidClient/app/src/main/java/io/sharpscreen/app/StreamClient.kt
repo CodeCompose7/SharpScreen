@@ -117,6 +117,25 @@ class StreamClient(
             }
         }
     private val touchDispatcher = touchExecutor.asCoroutineDispatcher()
+
+    // The receive loop gets its own thread at URGENT_DISPLAY priority rather
+    // than sharing Dispatchers.IO at default priority. It is blocked in read()
+    // almost all the time, so it costs no CPU. (On its own this did not remove
+    // the 40-60 ms arrival stalls; see [quickAck].)
+    private val receiveExecutor =
+        Executors.newSingleThreadExecutor { runnable ->
+            Thread(
+                {
+                    try {
+                        Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY)
+                    } catch (_: Exception) {
+                    }
+                    runnable.run()
+                },
+                "StreamReceive",
+            )
+        }
+    private val receiveDispatcher = receiveExecutor.asCoroutineDispatcher()
     private val touchScope = CoroutineScope(touchDispatcher)
 
     suspend fun connect() =
@@ -484,13 +503,39 @@ class StreamClient(
         }
     }
 
+    /**
+     * The stream is one-way, so this socket almost never sends data an ACK
+     * could ride on, and Linux delays a bare ACK by up to ~40 ms. Over USB the
+     * peer is adbd's local TCP socket, which (unlike our sockets) does not
+     * disable Nagle: its small writes then wait for that delayed ACK, and
+     * frames arrive in bursts after 40-50 ms gaps. TCP_QUICKACK is not sticky,
+     * so it is re-armed after every message.
+     */
+    private var quickAckFd: android.os.ParcelFileDescriptor? = null
+
+    private fun quickAck() {
+        val pfd = quickAckFd ?: return
+        try {
+            android.system.Os.setsockoptInt(pfd.fileDescriptor, android.system.OsConstants.IPPROTO_TCP, TCP_QUICKACK, 1)
+        } catch (_: Exception) {
+            quickAckFd = null // not supported here; stop trying
+        }
+    }
+
     private suspend fun receiveData() =
-        withContext(Dispatchers.IO) {
+        withContext(receiveDispatcher) {
             val input = inputStream ?: return@withContext
+            quickAckFd =
+                try {
+                    socket?.let { android.os.ParcelFileDescriptor.fromSocket(it) }
+                } catch (_: Exception) {
+                    null
+                }
 
             try {
                 while (isConnected) {
                     val type = input.readByte()
+                    quickAck()
 
                     when (type.toInt()) {
                         MESSAGE_VIDEO_FRAME -> {
@@ -752,6 +797,11 @@ class StreamClient(
             inputStream?.close()
             socket?.close()
 
+            // The receive thread is blocked in read() until the socket closes above.
+            receiveExecutor.shutdown()
+            quickAckFd?.close()
+            quickAckFd = null
+
             // Properly shutdown executor with timeout to prevent orphaned threads
             touchExecutor.shutdown()
             try {
@@ -775,6 +825,8 @@ class StreamClient(
     private fun diagLog(msg: String) = DiagLog.log("SC", msg)
 
     companion object {
+        /** Linux TCP_QUICKACK (include/uapi/linux/tcp.h); not in OsConstants. */
+        private const val TCP_QUICKACK = 12
         private const val TAG = "StreamClient"
 
         // Only a desync guard — acquireBuffer allocates the real frame size, so a generous bound
