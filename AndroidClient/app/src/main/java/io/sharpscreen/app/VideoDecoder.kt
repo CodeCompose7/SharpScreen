@@ -501,7 +501,9 @@ class VideoDecoder(
             }
 
             codec.releaseOutputBuffer(index, true)
-            trackFrameTiming(System.nanoTime())
+            val renderedNs = System.nanoTime()
+            PacingDiag.recordRender(renderedNs)
+            trackFrameTiming(renderedNs)
             updateStats()
         } catch (e: Exception) {
             Log.e(TAG, "releaseOutputBuffer failed", e)
