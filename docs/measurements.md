@@ -139,6 +139,24 @@ verified: FrameTimeline only reports dump-relative times) the GL path costs
 ~1.9 ms of draw+swap, offset by ~0.9 ms faster decode, within the +2 ms gate,
 and paces frames more evenly. Picture verified upright and correct.
 
+## M1b: lossless tiles (2026-11-18)
+
+Still desktop on the virtual display, tablet screenshot (`adb screencap`)
+against the host's own 32BGRA capture of the same moment, per 64x64 tile
+(stats overlay, settings button and menu bar excluded):
+
+| | HEVC only | Lossless tiles shown |
+|---|---|---|
+| Tiles 100% pixel-exact | 70 / 1282 (5%) | **1274 / 1282 (99.4%)** |
+| Text/UI tiles 100% exact | **0 / 655** | **653 / 655** |
+| Median pixel-exact share per tile | 40.6% | 100% |
+| Mean absolute error | 2.07 | 0.61 |
+
+With the test window animating, 1318 of 1363 tiles were lossless and ~290
+tiles/s cycled between video and lossless around the moving bar and the menu
+bar, at 120-200 KB/s of tile data. 32BGRA capture adds ~1.5-2 ms of encode time
+on the host (new-frame age ~14-16 ms vs ~12-13 ms with 420v in this setup).
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;

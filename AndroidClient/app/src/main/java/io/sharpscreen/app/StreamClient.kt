@@ -37,6 +37,10 @@ class StreamClient(
 
     /** Logical desktop size behind the stream. Display only; never size the decoder from it. */
     var onDesktopSize: ((Int, Int) -> Unit)? = null
+
+    // M1b lossless tiles (types 20, 21), delivered on the receive thread in stream order.
+    var onTileInvalidate: ((IntArray) -> Unit)? = null
+    var onLosslessTiles: ((Int, List<DecodedTile>) -> Unit)? = null
     var onStats: ((Double, Double) -> Unit)? = null
 
     /** Invoked when the server confirms the stream codec (true = HEVC). */
@@ -154,6 +158,7 @@ class StreamClient(
                 advertiseDecoderLimits() // Also before type 8, for the same reason
                 advertiseDesktopGeometrySupport() // Likewise
                 advertiseIdentity() // Likewise: the Mac picks this tablet's profile when type 8 lands
+                advertiseLosslessTilesSupport()
                 advertiseFrameMetadataSupport()
                 isConnected = true
                 lastKeyframeReceivedNs = 0L
@@ -380,6 +385,7 @@ class StreamClient(
                 advertiseDecoderLimits() // Also before type 8, for the same reason
                 advertiseDesktopGeometrySupport() // Likewise
                 advertiseIdentity() // Likewise: the Mac picks this tablet's profile when type 8 lands
+                advertiseLosslessTilesSupport()
                 advertiseFrameMetadataSupport()
                 isConnected = true
                 diagLog("Wireless connected to $host:$port")
@@ -408,6 +414,34 @@ class StreamClient(
             out.writeByte(MESSAGE_CLIENT_SUPPORTS_DESKTOP_GEOMETRY)
             out.flush()
             diagLog("Advertised desktop-geometry support")
+        }
+    }
+
+    /**
+     * Type 19 again once a new compositor exists: its canvas starts empty,
+     * so the host must stop treating earlier tiles as present and resend.
+     */
+    fun requestLosslessTileResync() {
+        if (!GlCompositor.enabled || !isConnected) return
+        touchScope.launch {
+            try {
+                socket?.getOutputStream()?.let { out ->
+                    out.write(byteArrayOf(LosslessTileWire.CLIENT_SUPPORTS_LOSSLESS_TILES.toByte(), LosslessTileWire.PROTOCOL_BYTE.toByte()))
+                    out.flush()
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /** Type 19, before type 8 like the other opt-ins: only when the GL compositor can show tiles. */
+    private fun advertiseLosslessTilesSupport() {
+        if (!GlCompositor.enabled) return
+        outputStream?.let { out ->
+            out.writeByte(LosslessTileWire.CLIENT_SUPPORTS_LOSSLESS_TILES)
+            out.writeByte(LosslessTileWire.PROTOCOL_BYTE)
+            out.flush()
+            diagLog("Advertised lossless tiles support")
         }
     }
 
@@ -564,6 +598,16 @@ class StreamClient(
                             val sentTime = ByteBuffer.wrap(buf).order(ByteOrder.LITTLE_ENDIAN).long
                             val rtt = (System.nanoTime() - sentTime) / 1_000_000.0 // ms
                             onLatencyMeasured?.invoke(rtt)
+                        }
+
+                        LosslessTileWire.TILE_INVALIDATE -> {
+                            val tiles = LosslessTileWire.readInvalidate(input)
+                            onTileInvalidate?.invoke(tiles)
+                        }
+
+                        LosslessTileWire.LOSSLESS_TILES -> {
+                            val (tileSize, tiles) = LosslessTileWire.readTiles(input)
+                            onLosslessTiles?.invoke(tileSize, tiles)
                         }
 
                         MESSAGE_DESKTOP_GEOMETRY -> {

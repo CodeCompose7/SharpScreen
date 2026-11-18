@@ -42,6 +42,22 @@ class GlCompositor(
     private var aPosition = 0
     private var aTexCoord = 0
     private var uTexMatrix = 0
+    private var uCanvas = 0
+    private var uMask = 0
+    private var uMaskScale = 0
+    private var uTiles = 0
+    private var uTint = 0
+
+    // M1b lossless layer: BGRA canvas at stream size + one mask byte per tile
+    // (255 = show the canvas there). Touched only on the GL thread.
+    private var canvasTexture = 0
+    private var maskTexture = 0
+    private var grid: TileGrid? = null
+    private var mask = ByteArray(0)
+    private var maskDirty = false
+    private var hasVideoFrame = false
+    private var tilesApplied = 0
+    private var tilesInvalidated = 0
     private lateinit var surfaceTexture: SurfaceTexture
     private val texMatrix = FloatArray(16)
     private var released = false
@@ -86,7 +102,72 @@ class GlCompositor(
         width: Int,
         height: Int,
     ) {
-        handler.post { if (!released) surfaceTexture.setDefaultBufferSize(width, height) }
+        handler.post {
+            if (released) return@post
+            surfaceTexture.setDefaultBufferSize(width, height)
+            allocateTileLayer(TileGrid(width, height))
+        }
+    }
+
+    /** Wire type 20: these tiles changed; show video there until refined. Any thread. */
+    fun invalidateTiles(tiles: IntArray) {
+        handler.post {
+            val g = grid ?: return@post
+            var changed = false
+            for (t in tiles) {
+                if (t in 0 until g.count && mask[t] != 0.toByte()) {
+                    mask[t] = 0
+                    changed = true
+                }
+            }
+            tilesInvalidated += tiles.size
+            if (changed) {
+                maskDirty = true
+                compose()
+            }
+        }
+    }
+
+    /** Wire type 21: lossless BGRA pixels for these tiles. Any thread. */
+    fun applyTiles(
+        tileSize: Int,
+        tiles: List<DecodedTile>,
+    ) {
+        handler.post {
+            val g = grid ?: return@post
+            if (tileSize != g.tileSize || !showTiles) return@post
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, canvasTexture)
+            GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 4)
+            for (t in tiles) {
+                if (t.index !in 0 until g.count) continue
+                val w = g.tileWidth(t.index)
+                val h = g.tileHeight(t.index)
+                if (t.pixels.size != w * h * 4) continue
+                GLES20.glTexSubImage2D(
+                    GLES20.GL_TEXTURE_2D, 0, g.x(t.index), g.y(t.index), w, h,
+                    GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, ByteBuffer.wrap(t.pixels),
+                )
+                mask[t.index] = 0xFF.toByte()
+            }
+            tilesApplied += tiles.size
+            maskDirty = true
+            compose()
+        }
+    }
+
+    private fun allocateTileLayer(g: TileGrid) {
+        if (g == grid) return
+        grid = g
+        mask = ByteArray(g.count)
+        maskDirty = true
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, canvasTexture)
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, g.width, g.height, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, maskTexture)
+        GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1)
+        GLES20.glTexImage2D(
+            GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, g.columns, g.rows, 0,
+            GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, ByteBuffer.wrap(mask),
+        )
     }
 
     fun release() {
@@ -147,6 +228,25 @@ class GlCompositor(
         aPosition = GLES20.glGetAttribLocation(program, "aPosition")
         aTexCoord = GLES20.glGetAttribLocation(program, "aTexCoord")
         uTexMatrix = GLES20.glGetUniformLocation(program, "uTexMatrix")
+        uCanvas = GLES20.glGetUniformLocation(program, "uCanvas")
+        uMask = GLES20.glGetUniformLocation(program, "uMask")
+        uMaskScale = GLES20.glGetUniformLocation(program, "uMaskScale")
+        uTiles = GLES20.glGetUniformLocation(program, "uTiles")
+        uTint = GLES20.glGetUniformLocation(program, "uTint")
+
+        val two = IntArray(2)
+        GLES20.glGenTextures(2, two, 0)
+        canvasTexture = two[0]
+        maskTexture = two[1]
+        for (t in two) {
+            // NEAREST: the canvas is drawn 1:1 and must stay pixel exact; the
+            // mask must not blend between neighbouring tiles.
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, t)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+        }
 
         val tex = IntArray(1)
         GLES20.glGenTextures(1, tex, 0)
@@ -174,6 +274,25 @@ class GlCompositor(
         }
         surfaceTexture.updateTexImage()
         surfaceTexture.getTransformMatrix(texMatrix)
+        hasVideoFrame = true
+        compose()
+        recordTiming(startNs, System.nanoTime())
+    }
+
+    /** Draw video with the lossless layer on top and present. GL thread. */
+    private fun compose() {
+        if (released || !hasVideoFrame) return
+        val g = grid
+        if (maskDirty && g != null) {
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE2)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, maskTexture)
+            GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1)
+            GLES20.glTexSubImage2D(
+                GLES20.GL_TEXTURE_2D, 0, 0, 0, g.columns, g.rows,
+                GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, ByteBuffer.wrap(mask),
+            )
+            maskDirty = false
+        }
 
         val w = IntArray(1)
         val h = IntArray(1)
@@ -185,6 +304,22 @@ class GlCompositor(
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, oesTexture)
         GLES20.glUniformMatrix4fv(uTexMatrix, 1, false, texMatrix, 0)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, canvasTexture)
+        GLES20.glUniform1i(uCanvas, 1)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE2)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, maskTexture)
+        GLES20.glUniform1i(uMask, 2)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        if (g != null) {
+            // Tiles at the right/bottom edge are narrower than tileSize, so map
+            // pixels to mask cells as pixel / tileSize, not as a fraction of the grid.
+            GLES20.glUniform2f(uMaskScale, g.width.toFloat() / (g.columns * g.tileSize), g.height.toFloat() / (g.rows * g.tileSize))
+            GLES20.glUniform1f(uTiles, 1f)
+        } else {
+            GLES20.glUniform1f(uTiles, 0f)
+        }
+        GLES20.glUniform1f(uTint, if (tintTiles) 1f else 0f)
         QUAD.position(0)
         GLES20.glVertexAttribPointer(aPosition, 2, GLES20.GL_FLOAT, false, 16, QUAD)
         GLES20.glEnableVertexAttribArray(aPosition)
@@ -194,7 +329,6 @@ class GlCompositor(
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
 
         EGL14.eglSwapBuffers(eglDisplay, eglSurface)
-        recordTiming(startNs, System.nanoTime())
     }
 
     private fun recordTiming(
@@ -211,7 +345,8 @@ class GlCompositor(
                 "GlCompositor",
                 "frames=$frames handoff avg=${"%.2f".format(if (handoffSamples > 0) handoffSumNs / handoffSamples / 1e6 else 0.0)}ms " +
                     "max=${"%.2f".format(handoffMaxNs / 1e6)}ms, draw+swap avg=${"%.2f".format(drawSumNs / frames / 1e6)}ms " +
-                    "max=${"%.2f".format(drawMaxNs / 1e6)}ms",
+                    "max=${"%.2f".format(drawMaxNs / 1e6)}ms, tiles applied=$tilesApplied invalidated=$tilesInvalidated " +
+                    "lossless now=${mask.count { it != 0.toByte() }}/${mask.size}",
             )
             frames = 0
             drawSumNs = 0
@@ -219,6 +354,8 @@ class GlCompositor(
             handoffSumNs = 0
             handoffMaxNs = 0
             handoffSamples = 0
+            tilesApplied = 0
+            tilesInvalidated = 0
             statWindowStartNs = endNs
         }
     }
@@ -250,9 +387,17 @@ class GlCompositor(
     }
 
     companion object {
-        /** Off by default until M1a passes its latency gate; see MainActivity. */
+        /** On by default since M1a passed its latency gate; diag.glCompositor=false turns it off. */
         @Volatile
         var enabled = false
+
+        /** Diagnostics: receive tiles but keep showing video (HEVC-only baseline). */
+        @Volatile
+        var showTiles = true
+
+        /** Diagnostics: tint lossless tiles green. */
+        @Volatile
+        var tintTiles = false
 
         // x, y, u, v for a full-screen triangle strip.
         private val QUAD: FloatBuffer =
@@ -267,19 +412,34 @@ class GlCompositor(
             attribute vec4 aTexCoord;
             uniform mat4 uTexMatrix;
             varying vec2 vTexCoord;
+            varying vec2 vImage;
             void main() {
                 gl_Position = aPosition;
                 vTexCoord = (uTexMatrix * aTexCoord).xy;
+                // Image coordinates, origin top-left like the host's tiles.
+                vImage = vec2(aTexCoord.x, 1.0 - aTexCoord.y);
             }
         """
 
         private const val FRAGMENT_SHADER = """
             #extension GL_OES_EGL_image_external : require
-            precision mediump float;
+            precision highp float;
             varying vec2 vTexCoord;
+            varying vec2 vImage;
             uniform samplerExternalOES uTexture;
+            uniform sampler2D uCanvas;
+            uniform sampler2D uMask;
+            uniform vec2 uMaskScale;
+            uniform float uTiles;
+            uniform float uTint;
             void main() {
-                gl_FragColor = texture2D(uTexture, vTexCoord);
+                if (uTiles > 0.5 && texture2D(uMask, vImage * uMaskScale).r > 0.5) {
+                    // Host pixels are BGRA; the canvas was uploaded as RGBA bytes.
+                    vec4 c = vec4(texture2D(uCanvas, vImage).bgr, 1.0);
+                    gl_FragColor = uTint > 0.5 ? mix(c, vec4(0.0, 1.0, 0.0, 1.0), 0.3) : c;
+                } else {
+                    gl_FragColor = texture2D(uTexture, vTexCoord);
+                }
             }
         """
     }

@@ -55,11 +55,17 @@ final class TileRefiner {
         latest.withLockUnchecked { $0 = Latest(buffer: buffer, capturedAtNs: capturedAtNs) }
     }
 
+    private var lastDumpNs: UInt64 = 0
+
     private func tick() {
         guard let server, server.clientWantsLosslessTiles else { return }
         let frame = latest.withLockUnchecked { $0 }
         guard let buffer = frame.buffer else { return }
         let startNs = DispatchTime.now().uptimeNanoseconds
+        if CaptureDiagnostics.dumpFrames, startNs - lastDumpNs > 2_000_000_000 {
+            lastDumpNs = startNs
+            CaptureDiagnostics.dump(buffer, to: "/tmp/sharpscreen_frame.bgra")
+        }
         let candidates = server.tileTracker.refineCandidates(nowNs: startNs, settleNs: Self.settleNs, limit: 512)
         guard !candidates.isEmpty else { return }
 

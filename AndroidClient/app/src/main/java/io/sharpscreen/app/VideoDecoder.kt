@@ -92,7 +92,9 @@ class VideoDecoder(
 
     // M1a: when enabled, decode into a GlCompositor's SurfaceTexture and let it
     // draw onto [surface]; otherwise the codec renders onto [surface] directly.
-    private var compositor: GlCompositor? = null
+    /** The M1a/M1b compositor when it is in use; tiles go to it. */
+    var compositor: GlCompositor? = null
+        private set
     private var codecSurface: Surface = surface
 
     private fun setupDecoder() {

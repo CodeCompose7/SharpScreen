@@ -51,6 +51,25 @@ enum CaptureDiagnostics {
     /// Capture 32BGRA instead of 420v (M1b needs RGB pixels for lossless tiles).
     static var captureBGRA: Bool { UserDefaults.standard.bool(forKey: "diag.captureBGRA") }
 
+    /// diag.dumpFrames: every 2 s write the newest 32BGRA capture to a file
+    /// (u32 width, u32 height, then packed rows) to compare against the tablet.
+    static var dumpFrames: Bool { UserDefaults.standard.bool(forKey: "diag.dumpFrames") }
+
+    static func dump(_ buffer: CVPixelBuffer, to path: String) {
+        guard CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_32BGRA else { return }
+        CVPixelBufferLockBaseAddress(buffer, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
+        guard let base = CVPixelBufferGetBaseAddress(buffer) else { return }
+        let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer), stride = CVPixelBufferGetBytesPerRow(buffer)
+        var d = Data(capacity: 8 + w * h * 4)
+        var header = [UInt32(w).littleEndian, UInt32(h).littleEndian]
+        d.append(Data(bytes: &header, count: 8))
+        for y in 0..<h { d.append(Data(bytes: base + y * stride, count: w * 4)) }
+        try? d.write(to: URL(fileURLWithPath: path + ".tmp"))
+        try? FileManager.default.removeItem(atPath: path)
+        try? FileManager.default.moveItem(atPath: path + ".tmp", toPath: path)
+    }
+
     /// Log SCStreamFrameInfo dirty rects / scale for the first frames.
     static var logDirtyRects: Bool { UserDefaults.standard.bool(forKey: "diag.logDirtyRects") }
     private static var loggedFrames = 0
