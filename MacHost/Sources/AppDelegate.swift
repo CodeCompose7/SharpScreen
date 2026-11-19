@@ -692,7 +692,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             guard let server = streamingServer else {
                 throw NSError(
-                    domain: "SideScreen.Startup",
+                    domain: "SharpScreen.Startup",
                     code: 2,
                     userInfo: [NSLocalizedDescriptionKey: String(localized: "The streaming server could not be created.")]
                 )
@@ -727,7 +727,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             height: size.height,
             refreshRate: settings.refreshRate,
             hiDPI: settings.hiDPI,
-            name: "SideScreen"
+            name: "SharpScreen"
         )
 
         // Disable mirror mode (may fail if already in extend mode)
@@ -747,7 +747,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         guard let displayID = manager.displayID else {
             throw NSError(
-                domain: "SideScreen.Startup",
+                domain: "SharpScreen.Startup",
                 code: 1,
                 userInfo: [NSLocalizedDescriptionKey: String(localized: "The virtual display was created without a display ID.")]
             )
