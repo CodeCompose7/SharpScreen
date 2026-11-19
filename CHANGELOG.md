@@ -6,6 +6,14 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+### Fixed
+- **Check for Updates was always disabled** on the Mac (#4). Sparkle, inherited
+  from Side Screen, had no SharpScreen feed and was switched off. It now reads
+  SharpScreen's own appcast, attached to each GitHub Release and signed with a
+  SharpScreen EdDSA key: the Mac app checks once a day and can download, verify
+  and install a new version itself. Versions up to 0.3.1 have no feed, so the
+  first release with it is installed by hand once.
+
 ## [0.3.1] - 2026-11-19 — Eight languages, notarized
 
 The Mac app is notarized by Apple from this release on.

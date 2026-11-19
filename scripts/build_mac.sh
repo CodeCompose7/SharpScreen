@@ -101,8 +101,17 @@ cat > "$APP_DIR/Contents/Info.plist" << EOF
     <string>13.0</string>
     <key>LSUIElement</key>
     <false/>
-    <!-- No SUFeedURL yet: AppUpdater disables Sparkle until SharpScreen
-         publishes its own appcast (never point at Side Screen's). -->
+    <!-- Sparkle: SharpScreen's own appcast, attached to every GitHub Release
+         (scripts/make_appcast.sh), and the public half of the EdDSA key in
+         the release machine's keychain (RELEASING.md). Never Side Screen's. -->
+    <key>SUFeedURL</key>
+    <string>https://github.com/CodeCompose7/SharpScreen/releases/latest/download/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>JtLmNcbx4yImlNjQ6NSbpR3kEpTgdhkh7hn4z2gm73Y=</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
