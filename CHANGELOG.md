@@ -6,6 +6,14 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+### Fixed
+- **Smoother dragging over Wi-Fi** (#9). Lossless tiles (the sharp copy of
+  text that has stopped changing) now give way to video over Wi-Fi while the
+  screen moves, and go at full speed again as soon as it is still. While
+  dragging, tablet display pauses drop from 33-40 to 26-31 ms and frames
+  arriving in a rush from 27-30% to 12-18%; a full screen still sharpens in
+  about a second.
+
 ### Changed
 - **Wi-Fi notice: put the router on channel 149** (#9). AirDrop, Handoff and
   Universal Control take the Mac's Wi-Fi off its channel about twice a second;

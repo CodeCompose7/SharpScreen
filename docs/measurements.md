@@ -476,6 +476,33 @@ buffer) had not hidden the stops on channel 36 (86-91 ms either way): only a
 buffer longer than the gap would, at that much more latency. The Mac's Wi-Fi
 notice now recommends channel 149 (44 in some countries) first.
 
+### Lossless tiles while the screen moves (2026-11-19)
+
+On channel 149, lossless tiles were most of what was left. Big-window drag,
+tablet app launched with `--ez diag.lossless`:
+
+| Wi-Fi, channel 149 | Tiles on (~3.8 MB/s) | Tiles off |
+|---|---|---|
+| Tablet display stop, per-2 s max (avg) | 32-36 ms | 25 ms |
+| Frames shown <4 ms after the previous | 18-20% | 10% |
+| Ping during the drag, p90 | 24-26 ms | 10 ms |
+
+A lower Wi-Fi budget for all tiles (diag.tileKBPerTickWireless) helped only by
+slowing the sharpening: 16 KB a tick gave 24-30 ms stops but a full screen of
+tiles took 5.5 s after a reset instead of 0.8 s (32 KB: no change, the cap
+hardly bound). Tiles now take 16 KB a tick over Wi-Fi only while the screen
+moves (a frame with new pixels went out in the last 100 ms) and the full
+128 KB once it is still. New build against the installed one, alternating,
+two drags each, twice:
+
+| Wi-Fi, channel 149 | Full budget always | Small budget while moving |
+|---|---|---|
+| Tiles during the drag | 3.7-3.9 MB/s | 2.2 MB/s |
+| Tablet display stop, per-2 s max (avg) | 33-40 ms (one run 54) | 26-31 ms |
+| Frames shown <4 ms after the previous | 27-30% | 12-18% |
+| Ping during the drag, p90 | 25-32 ms | 12-17 ms |
+| Full screen of tiles after a reset | 0.81 s | 0.95-0.99 s |
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
