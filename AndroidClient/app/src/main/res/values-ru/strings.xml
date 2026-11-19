@@ -145,4 +145,31 @@
     <string name="settings_github">GitHub</string>
     <string name="settings_get_mac_app">Скачать приложение для Mac</string>
     <string name="settings_credit">Форк Side Screen от Tran Vuong Quoc Dat (MIT)</string>
+
+    <string name="update_available_title">Доступна версия SharpScreen %1$s</string>
+    <string name="update_available_body">Установлена: %1$s · Загрузка: %2$s</string>
+    <string name="update_action">Обновить</string>
+    <string name="update_release_notes">Что нового</string>
+    <string name="update_dismiss">Скрыть</string>
+    <string name="update_downloading_start">Загрузка…</string>
+    <string name="update_downloading">Загрузка… %1$d%%</string>
+    <string name="update_installing">Установка…</string>
+    <string name="update_check_title">Проверить обновления</string>
+    <string name="update_checking">Проверка…</string>
+    <string name="update_up_to_date">Установлена последняя версия</string>
+    <string name="update_available_short">Доступна %1$s</string>
+    <string name="update_auto_title">Проверять автоматически</string>
+    <string name="update_auto_summary">Раз в день, когда нет трансляции</string>
+    <string name="update_permission_title">Разрешите обновления</string>
+    <string name="update_permission_message">Чтобы SharpScreen мог сам устанавливать обновления, Android один раз запрашивает разрешение. На следующем экране разрешите SharpScreen, затем вернитесь сюда.</string>
+    <string name="update_open_settings">Открыть настройки</string>
+    <string name="update_error_check">Не удалось проверить — попробуйте позже</string>
+    <string name="update_error_download">Не удалось загрузить — попробуйте ещё раз</string>
+    <string name="update_error_verify">Загруженный файл не совпадает с выпуском, поэтому он не установлен.</string>
+    <string name="update_error_install">Не удалось установить: %1$s</string>
+    <string name="update_error_streaming">Чтобы установить обновление, сначала отключитесь</string>
+    <string name="update_error_android_too_old">Для SharpScreen %1$s нужна более новая версия Android</string>
+    <string name="update_error_permission">Для установки обновлений нужно ваше разрешение</string>
+    <string name="update_cancelled">Обновление отменено</string>
+    <string name="update_done">SharpScreen обновлён до версии %1$s</string>
 </resources>

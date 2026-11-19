@@ -6,6 +6,29 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-19 — Both apps update themselves
+
+Install this version by hand once; from here on the Mac and tablet apps offer new
+versions themselves.
+
+### Added
+- **The tablet app updates itself** from GitHub Releases. Each release carries
+  `android-update.json` (version, APK size and SHA-256); the app checks it once a
+  day on the home screen (never while streaming; Settings ▸ About ▸ Check
+  automatically turns it off), shows a card when a new version is out, and on
+  Update downloads the APK, checks its size and SHA-256 and installs it. Android
+  asks once to allow SharpScreen to install apps. Settings ▸ About ▸ Check for
+  updates checks right away. Versions up to 0.3.1 cannot update themselves, so the
+  first release with this is installed by hand once.
+
+### Fixed
+- **Check for Updates was always disabled** on the Mac (#4). Sparkle, inherited
+  from Side Screen, had no SharpScreen feed and was switched off. It now reads
+  SharpScreen's own appcast, attached to each GitHub Release and signed with a
+  SharpScreen EdDSA key: the Mac app checks once a day and can download, verify
+  and install a new version itself. Versions up to 0.3.1 have no feed, so the
+  first release with it is installed by hand once.
+
 ## [0.3.1] - 2026-11-19 — Eight languages, notarized
 
 The Mac app is notarized by Apple from this release on.

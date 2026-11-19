@@ -160,4 +160,32 @@
     <string name="settings_github">GitHub</string>
     <string name="settings_get_mac_app">Get the Mac app</string>
     <string name="settings_credit">Fork of Side Screen by Tran Vuong Quoc Dat (MIT)</string>
+
+    <!-- ===== Self-update from GitHub Releases (SelfUpdater) ===== -->
+    <string name="update_available_title">SharpScreen %1$s is available</string>
+    <string name="update_available_body">You have %1$s · Download %2$s</string>
+    <string name="update_action">Update</string>
+    <string name="update_release_notes">Release notes</string>
+    <string name="update_dismiss">Dismiss</string>
+    <string name="update_downloading_start">Downloading…</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_installing">Installing…</string>
+    <string name="update_check_title">Check for updates</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_up_to_date">Up to date</string>
+    <string name="update_available_short">%1$s available</string>
+    <string name="update_auto_title">Check automatically</string>
+    <string name="update_auto_summary">Once a day, when not streaming</string>
+    <string name="update_permission_title">Allow updates</string>
+    <string name="update_permission_message">Android asks once before SharpScreen can install its own updates. On the next screen, allow SharpScreen, then come back here.</string>
+    <string name="update_open_settings">Open Settings</string>
+    <string name="update_error_check">Couldn\'t check — try again later</string>
+    <string name="update_error_download">Download failed — try again</string>
+    <string name="update_error_verify">The download didn\'t match the release, so it wasn\'t installed.</string>
+    <string name="update_error_install">Install failed: %1$s</string>
+    <string name="update_error_streaming">Disconnect first to install the update</string>
+    <string name="update_error_android_too_old">SharpScreen %1$s needs a newer version of Android</string>
+    <string name="update_error_permission">Installing updates needs your permission</string>
+    <string name="update_cancelled">Update cancelled</string>
+    <string name="update_done">Updated to SharpScreen %1$s</string>
 </resources>
