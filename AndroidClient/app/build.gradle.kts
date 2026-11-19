@@ -97,4 +97,6 @@ dependencies {
     implementation("com.google.android.play:review-ktx:2.0.2")
 
     testImplementation("junit:junit:4.13.2")
+    // Real org.json for JVM unit tests (android.jar only has stubs); UpdateManifestTest.
+    testImplementation("org.json:json:20240303")
 }

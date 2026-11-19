@@ -50,14 +50,18 @@ another Mac with `MacHost/.build/artifacts/sparkle/Sparkle/bin/generate_keys -f 
    ```
 
    `build_android_release.sh` stops if the APK is not signed with the release key.
-   Then notarize the DMG, write the Sparkle appcast for it, and checksum:
+   Then notarize the DMG, write the Sparkle appcast for it and the Android update
+   manifest for the APK, and checksum:
    ```bash
    NOTARY_PROFILE=sharpscreen-notary ./scripts/notarize.sh dist/<version>/SharpScreen-<version>.dmg
    ./scripts/make_appcast.sh <version>        # dist/<version>/appcast.xml, signed with the Sparkle key
+   ./scripts/make_android_update.sh <version> # dist/<version>/android-update.json: APK version, size, SHA-256
    (cd dist/<version> && shasum -a 256 SharpScreen-<version>.dmg SharpScreen-<version>.apk > SHA256SUMS.txt)
    ```
    Notarize before `make_appcast.sh`: stapling changes the DMG, and the appcast
-   signs the exact file users download.
+   signs the exact file users download. Likewise run `make_android_update.sh` on the
+   final APK: the tablet app installs an update only when its size and SHA-256 match
+   `android-update.json`, and Android only when it is signed with the release key.
 4. Install both on real hardware and check that a stream connects.
 5. `git flow release finish <version> -T v<version> -m "SharpScreen <version>" --no-sign`
    (tags use a `v` prefix: Side Screen's history already has plain `0.x.y` tags).
@@ -67,7 +71,7 @@ another Mac with `MacHost/.build/artifacts/sparkle/Sparkle/bin/generate_keys -f 
    ```bash
    git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main develop refs/tags/v<version>
    gh release create v<version> dist/<version>/SharpScreen-<version>.dmg dist/<version>/SharpScreen-<version>.apk \
-     dist/<version>/SHA256SUMS.txt dist/<version>/appcast.xml --repo CodeCompose7/SharpScreen --verify-tag \
+     dist/<version>/SHA256SUMS.txt dist/<version>/appcast.xml dist/<version>/android-update.json --repo CodeCompose7/SharpScreen --verify-tag \
      --title "SharpScreen <version>" --notes-file <notes>
    ```
 

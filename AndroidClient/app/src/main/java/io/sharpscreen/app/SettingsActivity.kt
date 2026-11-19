@@ -9,7 +9,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import io.sharpscreen.app.databinding.ActivitySettingsBinding
+import kotlinx.coroutines.launch
 
 /**
  * App settings, opened from the gear on the home panel: language, the USB-mode
@@ -24,6 +28,7 @@ class SettingsActivity : AppCompatActivity() {
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
         prefs = PreferencesManager(this)
+        SelfUpdater.init(this)
 
         binding.backButton.setOnClickListener { finish() }
         setupLanguage()
@@ -114,6 +119,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         saveUsbEndpoint()
+        SelfUpdater.onActivityPaused(this)
     }
 
     // ==================== About ====================
@@ -128,6 +134,38 @@ class SettingsActivity : AppCompatActivity() {
         binding.reportProblemRow.setOnClickListener { openUrl(REPORT_PROBLEM_URL) }
         binding.githubRow.setOnClickListener { openUrl(GITHUB_URL) }
         binding.macAppRow.setOnClickListener { openUrl(MAC_APP_URL) }
+        setupUpdates()
+    }
+
+    /** Check for updates (status at the end; tap again to install) and Check automatically. */
+    private fun setupUpdates() {
+        binding.autoUpdateSwitch.isChecked = SelfUpdater.autoCheckEnabled
+        binding.autoUpdateSwitch.setOnCheckedChangeListener { _, checked -> SelfUpdater.autoCheckEnabled = checked }
+        binding.autoUpdateRow.setOnClickListener { binding.autoUpdateSwitch.toggle() }
+        binding.checkUpdatesRow.setOnClickListener {
+            when (val s = SelfUpdater.state.value) {
+                UpdateState.Checking, is UpdateState.Downloading, is UpdateState.Installing -> Unit
+                is UpdateState.Available -> UpdateUi.startUpdate(this)
+                is UpdateState.Failed ->
+                    // A failed download or install retries; a failed check checks again.
+                    if (s.manifest != null && s.error != UpdateError.ANDROID_TOO_OLD) UpdateUi.startUpdate(this) else SelfUpdater.checkNow()
+                else -> SelfUpdater.checkNow()
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SelfUpdater.state.collect { state ->
+                    binding.checkUpdatesStatus.text = UpdateUi.settingsStatus(this@SettingsActivity, state)
+                    val offer = state is UpdateState.Available || (state is UpdateState.Failed && state.manifest != null)
+                    binding.checkUpdatesStatus.setTextColor(getColor(if (offer) R.color.ss_accent else R.color.ss_text_secondary))
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        SelfUpdater.onActivityResumed(this)
     }
 
     private fun openUrl(url: String) {

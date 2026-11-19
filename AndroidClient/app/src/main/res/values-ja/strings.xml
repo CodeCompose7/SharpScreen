@@ -145,4 +145,31 @@
     <string name="settings_github">GitHub</string>
     <string name="settings_get_mac_app">Macアプリを入手</string>
     <string name="settings_credit">Side Screen（Tran Vuong Quoc Dat作、MIT）のフォーク</string>
+
+    <string name="update_available_title">SharpScreen %1$sが利用可能です</string>
+    <string name="update_available_body">現在 %1$s · ダウンロード %2$s</string>
+    <string name="update_action">アップデート</string>
+    <string name="update_release_notes">リリースノート</string>
+    <string name="update_dismiss">閉じる</string>
+    <string name="update_downloading_start">ダウンロード中…</string>
+    <string name="update_downloading">ダウンロード中… %1$d%%</string>
+    <string name="update_installing">インストール中…</string>
+    <string name="update_check_title">アップデートを確認</string>
+    <string name="update_checking">確認中…</string>
+    <string name="update_up_to_date">最新です</string>
+    <string name="update_available_short">%1$sが利用可能</string>
+    <string name="update_auto_title">自動的に確認</string>
+    <string name="update_auto_summary">1日1回、ストリーミング中以外に確認</string>
+    <string name="update_permission_title">アップデートのインストールを許可</string>
+    <string name="update_permission_message">SharpScreenが自身のアップデートをインストールするには、Androidで一度だけ許可が必要です。次の画面でSharpScreenを許可してから、この画面に戻ってください。</string>
+    <string name="update_open_settings">設定を開く</string>
+    <string name="update_error_check">確認できませんでした。後でもう一度お試しください。</string>
+    <string name="update_error_download">ダウンロードに失敗しました。もう一度お試しください。</string>
+    <string name="update_error_verify">ダウンロードしたファイルがリリースと一致しないため、インストールしませんでした。</string>
+    <string name="update_error_install">インストールに失敗しました：%1$s</string>
+    <string name="update_error_streaming">アップデートをインストールするには、先に切断してください</string>
+    <string name="update_error_android_too_old">SharpScreen %1$sには新しいバージョンのAndroidが必要です</string>
+    <string name="update_error_permission">アップデートのインストールには許可が必要です</string>
+    <string name="update_cancelled">アップデートをキャンセルしました</string>
+    <string name="update_done">SharpScreen %1$sにアップデートしました</string>
 </resources>
