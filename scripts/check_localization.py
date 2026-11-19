@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check the Mac host's Localizable.strings files.
 
-  scripts/check_localization.py            # en/ko parity, specifiers, Text("…") grep
+  scripts/check_localization.py            # key/specifier parity of every language with en, Text("…") grep
   scripts/check_localization.py --extract  # also compile with -emit-localized-strings
                                            # and require every extracted key in en
 
@@ -20,7 +20,7 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAC = os.path.join(ROOT, "MacHost")
 RES = os.path.join(MAC, "Resources")
-LANGS = ["en", "ko"]
+LANGS = ["en", "ko", "ja", "de", "fr", "ru", "zh-Hans", "es"]
 
 # Keys looked up at runtime from data rather than a literal the compiler sees
 # (DisplaySettings.resolutionGroups ratio labels via LocalizedStringKey(_:)).
@@ -84,35 +84,48 @@ def main():
 
     errors = []
     tables = {lang: load(lang) for lang in LANGS}
-    en, ko = tables["en"], tables["ko"]
+    en = tables["en"]
 
-    for a, b in (("en", "ko"), ("ko", "en")):
-        for k in sorted(set(tables[a]) - set(tables[b])):
-            errors.append(f"key in {a} but missing in {b}: {k!r}")
-
-    for k in sorted(set(en) & set(ko)):
+    for k in sorted(en):
         if en[k] != k:
             errors.append(f"en value differs from key: {k!r}")
-        if specifiers(k) != specifiers(ko[k]):
-            errors.append(f"specifier mismatch: {k!r} {specifiers(k)} vs ko {specifiers(ko[k])}")
-        if not ko[k].strip():
-            errors.append(f"empty ko value: {k!r}")
+
+    for lang in LANGS[1:]:
+        t = tables[lang]
+        for k in sorted(set(en) - set(t)):
+            errors.append(f"key in en but missing in {lang}: {k!r}")
+        for k in sorted(set(t) - set(en)):
+            errors.append(f"key in {lang} but missing in en: {k!r}")
+        for k in sorted(set(en) & set(t)):
+            if specifiers(k) != specifiers(t[k]):
+                errors.append(f"specifier mismatch: {k!r} {specifiers(k)} vs {lang} {specifiers(t[k])}")
+            if not t[k].strip():
+                errors.append(f"empty {lang} value: {k!r}")
 
     # InfoPlist.strings: same keys in every language that has one.
-    info = {lang: load(lang, "InfoPlist") for lang in LANGS
-            if os.path.exists(os.path.join(RES, f"{lang}.lproj", "InfoPlist.strings"))}
-    if len(info) > 1:
-        ref = set(next(iter(info.values())))
-        for lang, t in info.items():
-            if set(t) != ref:
-                errors.append(f"InfoPlist.strings keys differ in {lang}")
+    info = {}
+    for lang in LANGS:
+        if os.path.exists(os.path.join(RES, f"{lang}.lproj", "InfoPlist.strings")):
+            info[lang] = load(lang, "InfoPlist")
+        else:
+            errors.append(f"{lang}.lproj has no InfoPlist.strings")
+    for lang, t in info.items():
+        if set(t) != set(info.get("en", t)):
+            errors.append(f"InfoPlist.strings keys differ in {lang}")
+        if any(not v.strip() for v in t.values()):
+            errors.append(f"empty InfoPlist.strings value in {lang}")
+
+    # Every shipped .lproj must be checked here (and listed in build_mac.sh).
+    shipped = sorted(os.path.basename(d)[:-6] for d in glob.glob(os.path.join(RES, "*.lproj")))
+    if shipped != sorted(LANGS):
+        errors.append(f"Resources has {shipped}, LANGS is {sorted(LANGS)}")
 
     texts = grep_text_literals()
     unmatched = [(loc, lit) for loc, lit, rx in texts if not any(rx.match(k) for k in en)]
     for loc, lit in unmatched:
         errors.append(f'Text("{lit}") at {loc} has no key')
 
-    print(f"en: {len(en)} keys, ko: {len(ko)} keys, InfoPlist languages: {sorted(info)}")
+    print(", ".join(f"{lang}: {len(t)}" for lang, t in tables.items()) + f" keys; InfoPlist languages: {sorted(info)}")
     print(f'Text("…") literals in Sources: {len(texts)}, without a key: {len(unmatched)}')
 
     if args.extract:

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name is not translated: a localized app_name would also override the debug
+         build's "SharpScreen Dev" label. Mac UI labels ("Wireless", "Listening", "Reset Token")
+         stay in English because the Mac app shows them in English for this language. -->
+    <string name="stat_demo_suffix">" (demo)"</string>
+
+    <!-- ===== Home panel ===== -->
+    <string name="home_subtitle">Convierte tu tablet en una segunda pantalla</string>
+    <string name="home_requires_mac">Requiere un Mac con la app SharpScreen en ejecución</string>
+    <string name="home_get_mac_app">Descargar la app para Mac →</string>
+    <string name="settings_open">Ajustes</string>
+    <string name="mode_usb">USB</string>
+    <string name="mode_wireless">Inalámbrico</string>
+
+    <string name="checklist_title">Lista de comprobación</string>
+    <string name="checklist_developer_mode">Modo desarrollador activado</string>
+    <string name="checklist_usb_debugging">Depuración USB activada</string>
+    <string name="checklist_usb_cable">Cable USB conectado</string>
+    <string name="checklist_mac_server">Servidor del Mac activo</string>
+    <string name="checklist_hint_developer_mode">Activa las opciones de desarrollador</string>
+    <string name="checklist_hint_usb_debugging">Actívala en las opciones de desarrollador</string>
+    <string name="checklist_hint_usb_cable">Conecta la tablet al Mac con un cable</string>
+    <string name="checklist_hint_mac_server">Inicia la transmisión en la app del Mac</string>
+
+    <string name="connect">Conectar</string>
+    <string name="status_ready">Listo para conectar</string>
+    <string name="status_not_ready">No está listo para conectar</string>
+    <string name="status_connecting">Conectando…</string>
+    <string name="status_connected">Conectado · Transmitiendo</string>
+    <string name="status_disconnected">Desconectado</string>
+    <string name="status_connection_failed">Error de conexión</string>
+    <string name="status_no_hevc">Este dispositivo no tiene decodificador HEVC. Actualiza la app SharpScreen del Mac para habilitar H.264.</string>
+    <string name="status_decoder_failed">Error del decodificador de vídeo: %1$s</string>
+
+    <string name="watch_demo_video">Ver vídeo de demostración</string>
+    <string name="try_demo">¿No tienes Mac? Prueba la demo</string>
+    <string name="report_problem">Informar de un problema</string>
+
+    <!-- ===== Wireless ===== -->
+    <string name="wireless_connecting">Conectando…</string>
+    <string name="wireless_connecting_to">Conectando con %1$s</string>
+    <string name="wireless_reconnecting_to">Reconectando con %1$s</string>
+    <string name="wireless_pair_title">Vincular con tu Mac</string>
+    <string name="wireless_pair_steps">Abre SharpScreen en el Mac → pestaña «Conexión» → elige «Inalámbrico» → escanea el código QR que aparece</string>
+    <string name="wireless_scan_qr">Escanear código QR</string>
+    <string name="wireless_enter_code_no_camera">¿Sin cámara? Introduce un código</string>
+    <string name="wireless_enter_code_instead">Introducir código</string>
+    <string name="wireless_connected">● Conectado</string>
+    <string name="wireless_disconnected">○ Desconectado</string>
+    <string name="wireless_disconnect">Desconectar</string>
+    <string name="wireless_forget_mac">Olvidar este Mac</string>
+    <string name="wireless_reconnect">Reconectar</string>
+    <string name="wireless_repair_title">⚠ No se pudo conectar</string>
+    <string name="wireless_repair_message">Escanea un código QR nuevo en el Mac para volver a vincularlo.</string>
+    <string name="wireless_unreachable_title">⚠ No se puede acceder al Mac</string>
+    <string name="wireless_unreachable_cached">Sin respuesta de %1$s en %2$s:%3$d.\n\nPuede que el Mac haya cambiado de red Wi-Fi o de puerto, o que la app no esté abierta. Abre SharpScreen en el Mac y escanea el nuevo código QR para volver a vincularlo.</string>
+    <string name="wireless_unreachable">Sin respuesta del Mac. Asegúrate de que ambos dispositivos estén en la misma red Wi-Fi y de que la app del Mac esté abierta, y vuelve a escanear el código QR.</string>
+    <string name="wireless_token_title">⚠ Es necesario volver a vincular</string>
+    <string name="wireless_token_cached">%1$s ha restablecido su token de vinculación (p. ej., con «Restablecer token de vinculación» o al reinstalar). Escanea el nuevo código QR para volver a vincularlo.</string>
+    <string name="wireless_token">El Mac ha restablecido su token de vinculación. Escanea el nuevo código QR para volver a vincularlo.</string>
+    <string name="wireless_protocol_title">⚠ Error de conexión</string>
+    <string name="wireless_protocol">No se pudo establecer la conexión segura con el Mac. Vuelve a escanear el código QR.</string>
+    <string name="wireless_camera_title">Se necesita permiso de cámara para escanear el código QR</string>
+    <string name="wireless_camera_message">Has bloqueado el permiso. Ve a Ajustes → Aplicaciones → SharpScreen → Permisos para permitirlo.</string>
+    <string name="wireless_open_settings">Abrir Ajustes</string>
+
+    <!-- ===== Code pairing dialog ===== -->
+    <string name="pair_code_title">Vincular con código</string>
+    <string name="pair_code_intro">El código aparece debajo del QR en SharpScreen en tu Mac.</string>
+    <string name="pair_code_mac_address">Dirección del Mac</string>
+    <string name="pair_code_port">Puerto</string>
+    <string name="pair_code_code">Código de vinculación</string>
+    <string name="pair_code_dash_hint">Con o sin guion, funciona igual.</string>
+    <string name="pair_code_pair">Vincular</string>
+    <string name="pair_code_pairing">Vinculando…</string>
+    <string name="pair_error_host">Introduce la dirección del Mac (aparece en «Escuchando en», en la pestaña «Conexión» de la app para Mac).</string>
+    <string name="pair_error_port">El puerto debe estar entre 1 y 65535.</string>
+    <string name="pair_error_code_length">El código tiene %1$d dígitos.</string>
+    <string name="pair_error_code_rejected">Código no aceptado. El código cambia después de cada uso: consulta el actual en el Mac.</string>
+    <string name="pair_error_host_too_old">Actualiza SharpScreen en el Mac para vincular con código.</string>
+    <string name="pair_error_no_response">Sin respuesta de %1$s:%2$d. Comprueba que ambos dispositivos estén en la misma red Wi-Fi y que la app del Mac esté abierta.</string>
+    <string name="pair_error_connection">Error de conexión. Inténtalo de nuevo.</string>
+    <string name="pair_error_failed">Error al vincular. Inténtalo de nuevo.</string>
+
+    <!-- ===== Errors and toasts ===== -->
+    <string name="error_title_connection">Error de conexión</string>
+    <string name="ok">Aceptar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="close">Cerrar</string>
+    <string name="error_enter_host">Introduce una dirección de host</string>
+    <string name="error_open_mac_app_url">Abre %1$s en un navegador para descargar la app para Mac.</string>
+    <string name="error_open_report_url">Abre %1$s en un navegador para informar de un problema.</string>
+    <string name="error_open_url">Abre %1$s en un navegador.</string>
+    <string name="error_demo_failed">No se pudo iniciar la demo: %1$s</string>
+    <string name="error_server_not_running">El servidor del Mac no está en ejecución.\n\nPrimero abre SharpScreen en tu Mac.</string>
+    <string name="error_unreachable">No se puede acceder al Mac.\n\nAsegúrate de que ambos dispositivos estén conectados por cable USB y de que ADB reverse esté configurado.</string>
+    <string name="error_timeout">Se ha agotado el tiempo de conexión.\n\nComprueba si el cortafuegos del Mac bloquea el puerto %1$d.</string>
+    <string name="error_connection_failed">Error de conexión: %1$s\n\nPrueba a:\n• Abrir SharpScreen en el Mac\n• Comprobar la conexión USB\n• Ejecutar: adb reverse tcp:%2$d tcp:%2$d</string>
+    <string name="toast_demo_started">Modo demo: abre Ajustes (⚙) o pulsa Atrás para salir</string>
+    <string name="toast_demo_touch">Modo demo: cuando estés conectado, al tocar aquí harás clic, arrastrarás y te desplazarás en tu Mac.</string>
+    <string name="toast_settings_icon_hidden">Icono de ajustes oculto: usa el gesto Atrás para mostrarlo</string>
+    <string name="toast_decoder_stalled">No hay salida de vídeo: puede que la resolución supere el límite del decodificador de esta tablet%1$s. Reduce la resolución o la frecuencia de actualización, o desactiva HiDPI en el Mac.</string>
+    <string name="toast_decoder_stalled_cap">" (máx. ~%1$d×%2$d)"</string>
+    <string name="toast_decoder_failed">Error del decodificador de vídeo. Desconecta y vuelve a conectar para reintentarlo.</string>
+
+    <!-- ===== In-stream display settings ===== -->
+    <string name="display_settings_title">Ajustes de pantalla</string>
+    <string name="display_show_stats">Mostrar estadísticas</string>
+    <string name="display_show_stats_summary">FPS, tasa de bits, resolución</string>
+    <string name="display_show_stats_overlay">Mostrar estadísticas superpuestas</string>
+    <string name="display_show_stats_overlay_summary">Muestra FPS, tasa de bits y resolución</string>
+    <string name="display_hide_settings_icon">Ocultar icono de ajustes</string>
+    <string name="display_hide_settings_icon_summary">Usa el gesto Atrás para mostrarlo durante la transmisión</string>
+    <string name="display_overlay_opacity">Opacidad de la superposición</string>
+    <string name="display_button_position">Posición del botón de ajustes</string>
+    <string name="display_reset_overlay">Restablecer superposición</string>
+    <string name="display_reset_overlay_position">Restablecer posición de la superposición</string>
+    <string name="display_reset_button">Restablecer botón</string>
+    <string name="display_disconnect">Desconectar</string>
+    <string name="display_exit_demo">Salir de la demo</string>
+    <string name="done">Hecho</string>
+
+    <!-- ===== QR scanner ===== -->
+    <string name="qr_aim">Apunta la cámara al código QR de tu Mac</string>
+    <string name="qr_unavailable">El escaneo de QR no está disponible en este dispositivo. Usa el modo USB.</string>
+    <string name="qr_invalid">QR no válido: se esperaba un código de vinculación de SharpScreen</string>
+
+    <!-- ===== App settings screen ===== -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_back">Atrás</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_language">Idioma</string>
+    <string name="language_system">Predeterminado del sistema</string>
+    <string name="settings_section_connection">Conexión</string>
+    <string name="settings_usb_title">Conexión USB</string>
+    <string name="settings_usb_summary">Dirección de la app del Mac a través del cable USB. Cámbiala solo si has cambiado el puerto en el Mac.</string>
+    <string name="settings_usb_host">Host</string>
+    <string name="settings_usb_port">Puerto</string>
+    <string name="settings_usb_port_invalid">Usa 1–65535</string>
+    <string name="settings_usb_reset">Restablecer valores predeterminados (127.0.0.1:54321)</string>
+    <string name="settings_section_about">Información</string>
+    <string name="settings_version">Versión</string>
+    <string name="settings_report_problem">Informar de un problema</string>
+    <string name="settings_github">GitHub</string>
+    <string name="settings_get_mac_app">Descargar la app para Mac</string>
+    <string name="settings_credit">Fork de Side Screen de Tran Vuong Quoc Dat (MIT)</string>
+</resources>

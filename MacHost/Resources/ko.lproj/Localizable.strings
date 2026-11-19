@@ -244,7 +244,5 @@
 "Language" = "언어";
 "App Language" = "앱 언어";
 "SharpScreen uses this language after it restarts." = "SharpScreen을 다시 시작하면 이 언어로 표시됩니다.";
-"System" = "시스템 설정";
-"English" = "English";
-"한국어" = "한국어";
+"System" = "시스템 기본값";
 "Restart SharpScreen to apply the new language." = "새 언어를 적용하려면 SharpScreen을 다시 시작하십시오.";

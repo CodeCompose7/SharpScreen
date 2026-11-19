@@ -1,0 +1,247 @@
+/* SharpScreen Mac UI strings (Simplified Chinese). Key = English source
+   text; see en.lproj/Localizable.strings. Keep every format specifier
+   (%@, %lld). */
+
+/* Settings window: tabs */
+"Connection" = "连接";
+"Display" = "显示器";
+"Streaming" = "串流";
+"General" = "通用";
+"About" = "关于";
+
+/* Connection pane */
+"Streaming · %@" = "正在串流 · %@";
+"Streaming to tablet" = "正在串流到平板电脑";
+"Waiting for tablet" = "正在等待平板电脑";
+"Stopped" = "已停止";
+"Start" = "开始";
+"Stop" = "停止";
+"%lld Hz" = "%lld Hz";
+"Port %@" = "端口 %@";
+"Screen Recording permission required — see General." = "需要录屏权限，请查看“通用”。";
+"USB" = "USB";
+"Wireless" = "无线";
+"USB Setup" = "USB 设置";
+"Connect the tablet with a USB cable and allow USB debugging when asked. SharpScreen sets up adb reverse automatically when you click Start." = "使用 USB 线连接平板电脑，并在出现提示时允许 USB 调试。点按“开始”后，SharpScreen 会自动设置 adb reverse。";
+"ADB installed" = "ADB 安装";
+"Installed" = "已安装";
+"Missing" = "未找到";
+"USB mode tunnels the TCP stream through the cable using `adb reverse`. Requires the `adb` command on the Mac. Searched paths: Homebrew, /usr/local/bin, ~/Library/Android/sdk/platform-tools, and PATH (`which adb`)." = "USB 模式通过 `adb reverse` 让 TCP 流经由数据线传输。Mac 上需要有 `adb` 命令。搜索路径：Homebrew、/usr/local/bin、~/Library/Android/sdk/platform-tools 和 PATH（`which adb`）。";
+"Install it with Homebrew:" = "使用 Homebrew 安装：";
+"ADB reverse" = "ADB reverse";
+"OK" = "正常";
+"Pending" = "等待中";
+"Whether `adb reverse tcp:%@ tcp:%@` is currently configured. The Mac app sets this up automatically when you click Start. Goes green within ~2 seconds after the tablet is plugged in and authorized." = "`adb reverse tcp:%@ tcp:%@` 当前是否已设置。点按“开始”后，Mac App 会自动设置。平板电脑连接并授权后约 2 秒内变为绿色。";
+"USB device" = "USB 设备";
+"Detected" = "已检测到";
+"Not detected" = "未检测到";
+"An Android device authorized for ADB and visible to your Mac. Plug in via USB-C and tap Allow on the device's USB debugging prompt." = "已授权 ADB 且 Mac 可识别的 Android 设备。通过 USB-C 连接，然后在设备的 USB 调试提示中轻点“允许”。";
+"Network Status" = "网络状态";
+"Wi-Fi" = "Wi-Fi";
+"Connected" = "已连接";
+"Disconnected" = "未连接";
+"Whether the Mac currently has a working internet route. Wireless mode requires the Mac to be on a Wi-Fi (or Ethernet) network — the same network the tablet is on." = "Mac 当前是否有可用的网络连接。无线模式要求 Mac 与平板电脑连接到同一个 Wi-Fi（或以太网）网络。";
+"Listening on" = "监听地址";
+"The LAN address the tablet must reach. The QR code embeds this exact host:port — if it changes (e.g. you switch Wi-Fi), re-scan the new QR on the tablet." = "平板电脑需要访问的局域网地址。二维码中包含的正是这个 host:port；如果地址改变（例如切换了 Wi-Fi），请在平板电脑上重新扫描新的二维码。";
+"Network" = "网络";
+"Server Port" = "服务器端口";
+"Port" = "端口";
+"Stop the server to change the port." = "停止服务器后才能更改端口。";
+"Changing the port invalidates existing pairings — re-scan the QR on each tablet." = "更改端口会使现有配对失效，请在每台平板电脑上重新扫描二维码。";
+"Custom port set — the Android app must use the same port." = "已设置自定端口，Android App 必须使用相同的端口。";
+
+/* Connection pane: wireless pairing */
+"Pair Device" = "配对设备";
+"Click Start above to begin listening, then scan the QR." = "点按上方的“开始”以开始监听，然后扫描二维码。";
+"Generating QR…" = "正在生成二维码…";
+"Scan this QR from SharpScreen for Android (Wireless tab)" = "请在 Android 版 SharpScreen 的“无线”标签页中扫描此二维码";
+"Listening: %@:%@" = "正在监听：%@:%@";
+"Wi-Fi disconnected — no LAN address" = "Wi-Fi 未连接 — 没有局域网地址";
+"No camera on your tablet?" = "平板电脑没有摄像头？";
+"Type this one-time code in the Android app instead.\nA new code is issued after each pairing." = "也可以在 Android App 中输入此一次性代码。\n每次配对后都会生成新代码。";
+"Paired Devices (%lld)" = "已配对的设备（%lld）";
+"No devices paired yet." = "尚未配对任何设备。";
+"Forget" = "忘记";
+"Reset Pairing Token" = "重置配对令牌";
+"Forgets every paired device." = "忘记所有已配对的设备。";
+"Reset…" = "重置…";
+"Refresh list and timestamps" = "刷新列表和时间";
+"Reset Token?" = "要重置令牌吗？";
+"This will disconnect all paired devices. They will need to scan the new QR to connect again." = "这将断开所有已配对设备的连接。这些设备需要扫描新的二维码才能再次连接。";
+"just now" = "刚刚";
+
+/* Display pane */
+"Resolution" = "分辨率";
+"Show all" = "全部显示";
+"Custom" = "自定";
+"User defined" = "用户定义";
+"Widescreen" = "宽屏";
+"HD/4K" = "HD/4K";
+"Classic" = "经典";
+"Surface/Pixel" = "Surface/Pixel";
+"Tablet Wide" = "宽屏平板";
+"iPad" = "iPad";
+"W" = "宽";
+"H" = "高";
+"Apply" = "应用";
+"Supported range: 640–7680 × 480–4320" = "支持范围：640–7680 × 480–4320";
+"HiDPI (Retina)" = "HiDPI（Retina）";
+"Renders at 2× resolution for sharper text. Increases bandwidth." = "以 2 倍分辨率渲染，文字更清晰。会增加带宽占用。";
+"Orientation" = "方向";
+"Portrait" = "竖排";
+"Landscape" = "横排";
+"Rotation" = "旋转";
+"Display will be in portrait mode" = "显示器将以竖排模式显示";
+"Flip Horizontally" = "水平翻转";
+"Mirror left and right" = "左右翻转";
+"Flip Vertically" = "垂直翻转";
+"Mirror top and bottom" = "上下翻转";
+"Display Arrangement" = "显示器排列";
+"Position the tablet relative to your other displays." = "设置平板电脑相对于其他显示器的位置。";
+"Arrange Displays…" = "排列显示器…";
+"Frame Rate" = "帧率";
+"Refresh Rate" = "刷新率";
+"High refresh rate for a smooth experience" = "高刷新率带来流畅体验";
+"Custom rate — handy when a tablet shows artifacts above a certain FPS" = "自定刷新率 — 适用于超过一定 FPS 就出现画面异常的平板电脑";
+
+/* Streaming pane */
+"Gaming Mode" = "游戏模式";
+"Enable Gaming Mode" = "启用游戏模式";
+"Optimized for competitive gaming" = "为竞技游戏优化";
+"High bitrate (1000 Mbps)" = "高码率（1000 Mbps）";
+"120 Hz refresh rate" = "120 Hz 刷新率";
+"Ultra-low latency encoding" = "超低延迟编码";
+"Bitrate" = "码率";
+"Target bitrate" = "目标码率";
+"%@ Mbps" = "%@ Mbps";
+"Locked at 1000 Mbps in Gaming Mode" = "游戏模式下固定为 1000 Mbps";
+"Quality" = "画质";
+"Ultra Low" = "极低";
+"Low" = "低";
+"Medium" = "中";
+"High" = "高";
+"Quality locked to Ultra Low in Gaming Mode" = "游戏模式下画质固定为“极低”";
+"Fastest encoding, lowest latency" = "编码最快，延迟最低";
+"Touch Input" = "触控输入";
+"Enable Touch Input" = "启用触控输入";
+"Control the Mac by touching the tablet" = "触摸平板电脑来控制 Mac";
+"Touch input is off — the tablet is display-only" = "触控输入已关闭，平板电脑仅用于显示";
+"Performance" = "性能";
+"FPS" = "FPS";
+
+/* General pane */
+"Startup" = "启动";
+"Launch at Login" = "登录时打开";
+"Run SharpScreen in the background automatically after you log in." = "登录后自动在后台运行 SharpScreen。";
+"Auto-start streaming on launch" = "启动时自动开始串流";
+"Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "App 打开时自动启动服务器，无需操作 Mac 即可让平板电脑连接。";
+"Startup mode" = "启动模式";
+"Which connection mode to start in when auto-starting." = "自动启动时使用的连接模式。";
+"Permissions & Status" = "权限与状态";
+"Screen & System Audio" = "屏幕与系统音频";
+"Screen Recording" = "录屏";
+"Granted" = "已允许";
+"Required" = "必需";
+"Optional" = "可选";
+"macOS privacy permission required to capture the virtual display. Grant it in System Settings → Privacy & Security → Screen Recording." = "捕获虚拟显示器所需的 macOS 隐私权限。请在“系统设置”→“隐私与安全性”→“录屏”中允许。";
+"Accessibility" = "辅助功能";
+"Optional permission. Required only if you want touch input from the tablet to control the Mac. Streaming works without it." = "可选权限。仅当你想通过平板电脑触控来控制 Mac 时才需要。没有此权限也可以串流。";
+"Virtual Display" = "虚拟显示器";
+"Active" = "活跃";
+"Inactive" = "未活跃";
+"The macOS virtual display SharpScreen renders into. Created when you click Start; the tablet streams its pixels." = "SharpScreen 渲染所用的 macOS 虚拟显示器。点按“开始”时创建，平板电脑串流的就是它的画面。";
+"Client Connected" = "客户端连接";
+"Yes" = "是";
+"No" = "否";
+"Whether the Android app currently has an active stream session." = "Android App 当前是否有活跃的串流会话。";
+"Capture Method" = "捕获方式";
+"Initializing…" = "正在初始化…";
+"Which macOS API is currently capturing the virtual display. SCStream is the modern path; the CGDisplayStream fallback activates if SCStream fails (e.g. on certain virtual display configurations)." = "当前用于捕获虚拟显示器的 macOS API。默认使用 SCStream；如果 SCStream 失败（例如某些虚拟显示器配置下），则改用备用的 CGDisplayStream。";
+"Screen & System Audio Recording Required" = "需要录屏与系统录音权限";
+"Screen Recording Required" = "需要录屏权限";
+"Required to capture the virtual display. Go to System Settings > Privacy & Security > Screen & System Audio Recording." = "捕获虚拟显示器时需要此权限。请前往“系统设置”>“隐私与安全性”>“录屏与系统录音”。";
+"Required to capture the virtual display." = "捕获虚拟显示器时需要此权限。";
+"Open System Settings" = "打开系统设置";
+"Tablet goes black in fullscreen apps" = "全屏 App 中平板电脑会变黑";
+"\"Displays have separate Spaces\" is turned off, so macOS blanks every other display — including the tablet — whenever an app enters fullscreen. Turn it on in System Settings → Desktop & Dock → Mission Control, then log out and back in." = "“显示器具有单独的空间”已关闭，因此每当有 App 进入全屏，macOS 都会让包括平板电脑在内的其他所有显示器变黑。请在“系统设置”→“桌面与程序坞”→“调度中心”中将其打开，然后注销并重新登录。";
+"Enable Touch Control" = "启用触控操作";
+"Control your Mac from your tablet." = "通过平板电脑控制 Mac。";
+"Open Settings" = "打开设置";
+"App" = "App";
+"Reset Settings" = "重置设置";
+"Restore every setting to its default value." = "将所有设置恢复为默认值。";
+"Restart SharpScreen" = "重新启动 SharpScreen";
+"Restart" = "重新启动";
+"Quit SharpScreen" = "退出 SharpScreen";
+"Stops streaming and removes the virtual display." = "停止串流并移除虚拟显示器。";
+"Quit" = "退出";
+"Quit SharpScreen (⌘Q)" = "退出 SharpScreen（⌘Q）";
+"Cancel" = "取消";
+"Reset" = "重置";
+"This will reset all settings to default values." = "这将把所有设置重置为默认值。";
+
+/* About pane */
+"Version %@" = "版本 %@";
+"Turn your tablet into a second display" = "让平板电脑成为第二台显示器";
+"Turns an Android tablet or phone into a second display for your Mac — over USB or Wi-Fi, with touch control. Free and open source." = "通过 USB 或 Wi-Fi，将 Android 平板电脑或手机变成 Mac 的第二台显示器，并支持触控操作。免费且开源。";
+"Check for Updates…" = "检查更新…";
+"Look for a newer version now. SharpScreen also checks once a day." = "立即检查新版本。SharpScreen 也会每天自动检查一次。";
+"Update checks are only available in the released build." = "只有正式发布的版本才能检查更新。";
+"Links" = "链接";
+"GitHub" = "GitHub";
+"Releases" = "发布版本";
+"Report a Problem" = "报告问题";
+"Credits" = "致谢";
+"Fork of Side Screen by Tran Vuong Quoc Dat (MIT)" = "派生自 Tran Vuong Quoc Dat 的 Side Screen（MIT）";
+
+/* Menu bar and app menu */
+"Connected — %@" = "已连接 — %@";
+"Connected to tablet" = "已连接到平板电脑";
+"Waiting for tablet on port %@" = "正在端口 %@ 上等待平板电脑";
+"Server stopped" = "服务器已停止";
+"Start Streaming" = "开始串流";
+"Stop Streaming" = "停止串流";
+"Connection Mode" = "连接模式";
+"Settings…" = "设置…";
+"About SharpScreen" = "关于 SharpScreen";
+"Edit" = "编辑";
+"Cut" = "剪切";
+"Copy" = "拷贝";
+"Paste" = "粘贴";
+"Select All" = "全选";
+
+/* Alerts and errors */
+"Screen & System Audio Recording Permission Required" = "需要录屏与系统录音权限";
+"Please grant Screen & System Audio Recording permission in System Settings > Privacy & Security." = "请在“系统设置”>“隐私与安全性”中允许录屏与系统录音。";
+"Screen Recording Permission Required" = "需要录屏权限";
+"Please grant Screen Recording permission in System Settings > Privacy & Security." = "请在“系统设置”>“隐私与安全性”中允许录屏。";
+"Later" = "以后";
+"Failed to Start Server" = "无法启动服务器";
+"The streaming server could not be created." = "无法创建串流服务器。";
+"The virtual display was created without a display ID." = "虚拟显示器创建时没有显示器 ID。";
+"Could not listen on port %@: %@" = "无法在端口 %@ 上监听：%@";
+"Server startup on port %@ was cancelled before the listener became ready." = "监听器就绪前，端口 %@ 上的服务器启动已被取消。";
+"Last listener error: %@" = "上一个监听器错误：%@";
+"Timed out while waiting for the server to listen on port %@." = "等待服务器在端口 %@ 上监听时超时。";
+"Server startup was awaited more than once." = "服务器启动被等待了不止一次。";
+"Virtual display creation failed: %@" = "无法创建虚拟显示器：%@";
+"Settings apply failed: %@" = "无法应用设置：%@";
+"Virtual display has not been created" = "尚未创建虚拟显示器";
+"Main display not found" = "找不到主显示器";
+"Display configuration failed: %@" = "显示器配置失败：%@";
+"Mirror mode operation failed: %@" = "镜像操作失败：%@";
+"SCShareableContent timed out after %llds (possible Apple bug FB12114396)" = "SCShareableContent 在 %lld 秒后超时（可能是 Apple 错误 FB12114396）";
+"Virtual display ID not set" = "未设置虚拟显示器 ID";
+"Virtual display with ID %@ not found after 5 attempts" = "尝试 5 次后仍找不到 ID 为 %@ 的虚拟显示器";
+"Display not initialized" = "显示器尚未初始化";
+
+/* Wireless: AWDL warning */
+"AirDrop, Handoff and Universal Control can make wireless streaming stutter." = "AirDrop、Handoff 和 Universal Control 可能会导致无线串流卡顿。";
+"They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until the next restart or AirDrop: sudo ifconfig awdl0 down" = "这些功能每秒约有两次会让这台 Mac 的 Wi-Fi 短暂离开当前信道（每次约 80 ms）。串流时请将它们关闭，或使用以太网连接 Mac，或改用 USB。若要在下次重新启动或使用 AirDrop 之前将它们关闭：sudo ifconfig awdl0 down";
+
+/* General: language */
+"Language" = "语言";
+"App Language" = "App 语言";
+"SharpScreen uses this language after it restarts." = "SharpScreen 重新启动后将使用此语言。";
+"System" = "跟随系统";
+"Restart SharpScreen to apply the new language." = "重新启动 SharpScreen 以应用新语言。";

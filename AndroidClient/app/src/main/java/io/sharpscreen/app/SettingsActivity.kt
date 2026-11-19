@@ -39,6 +39,12 @@ class SettingsActivity : AppCompatActivity() {
                 AppLanguage.SYSTEM to (binding.languageSystem to binding.languageSystemCheck),
                 AppLanguage.ENGLISH to (binding.languageEnglish to binding.languageEnglishCheck),
                 AppLanguage.KOREAN to (binding.languageKorean to binding.languageKoreanCheck),
+                AppLanguage.JAPANESE to (binding.languageJapanese to binding.languageJapaneseCheck),
+                AppLanguage.GERMAN to (binding.languageGerman to binding.languageGermanCheck),
+                AppLanguage.FRENCH to (binding.languageFrench to binding.languageFrenchCheck),
+                AppLanguage.RUSSIAN to (binding.languageRussian to binding.languageRussianCheck),
+                AppLanguage.CHINESE_SIMPLIFIED to (binding.languageChineseSimplified to binding.languageChineseSimplifiedCheck),
+                AppLanguage.SPANISH to (binding.languageSpanish to binding.languageSpanishCheck),
             )
 
         fun showSelected(selected: AppLanguage) {
@@ -67,7 +73,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun currentLanguage(): AppLanguage = AppLanguage.fromLanguage(AppCompatDelegate.getApplicationLocales()[0]?.language)
+    private fun currentLanguage(): AppLanguage = AppLanguage.fromLocale(AppCompatDelegate.getApplicationLocales()[0])
 
     // ==================== Connection: USB host / port ====================
 
