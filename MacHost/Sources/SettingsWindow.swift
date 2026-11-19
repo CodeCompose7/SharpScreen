@@ -138,6 +138,7 @@ class DisplaySettings: ObservableObject {
     var onToggleServer: (() -> Void)?
     var onSelectUsbDevice: ((String) -> Void)?
     var onForgetUsbDevice: ((String) -> Void)?
+    var onSetUsbDeviceDecision: ((String, UsbDeviceStore.Decision?) -> Void)?
     /// Re-evaluate USB devices now instead of at the next 2 s refresh.
     var onUsbDevicesChanged: (() -> Void)?
 

@@ -249,7 +249,6 @@
 
 /* USB devices, accessory mode (issue #3) */
 "ADB (Optional)" = "ADB (선택 사항)";
-"Ask again before using this tablet in accessory mode." = "이 태블릿을 액세서리 모드로 쓰기 전에 다시 묻습니다.";
 "Asks once per tablet before switching it into accessory mode." = "태블릿마다 액세서리 모드로 바꾸기 전에 한 번 묻습니다.";
 "Connect" = "연결";
 "Connect without ADB" = "ADB 없이 연결";
@@ -274,3 +273,8 @@
 "Waiting for your approval or for ADB" = "승인 또는 ADB 연결을 기다리는 중";
 "While streaming, SharpScreen switches this device into USB accessory mode, so developer options and ADB are not needed. It returns to normal when streaming stops or the cable is unplugged." = "스트리밍하는 동안 SharpScreen이 이 기기를 USB 액세서리 모드로 바꾸므로 개발자 옵션과 ADB가 필요 없습니다. 스트리밍을 멈추거나 케이블을 뽑으면 원래대로 돌아갑니다.";
 "Not needed" = "필요 없음";
+"Ask Again" = "다시 묻기";
+"How this tablet connects over USB." = "이 태블릿이 USB로 연결하는 방식입니다.";
+"Not set" = "선택 안 함";
+"Without ADB" = "ADB 없이";
+"Without ADB (USB accessory)" = "ADB 없이 (USB 액세서리)";

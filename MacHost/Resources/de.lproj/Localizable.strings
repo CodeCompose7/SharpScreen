@@ -247,7 +247,6 @@
 
 /* USB devices, accessory mode (issue #3) */
 "ADB (Optional)" = "ADB (optional)";
-"Ask again before using this tablet in accessory mode." = "Vor der Nutzung dieses Tablets im Zubehörmodus erneut fragen.";
 "Asks once per tablet before switching it into accessory mode." = "Fragt pro Tablet einmal, bevor es in den Zubehörmodus wechselt.";
 "Connect" = "Verbinden";
 "Connect without ADB" = "Ohne ADB verbinden";
@@ -272,3 +271,8 @@
 "Waiting for your approval or for ADB" = "Wartet auf deine Freigabe oder auf ADB";
 "While streaming, SharpScreen switches this device into USB accessory mode, so developer options and ADB are not needed. It returns to normal when streaming stops or the cable is unplugged." = "Während des Streamings schaltet SharpScreen dieses Gerät in den USB-Zubehörmodus, daher sind Entwickleroptionen und ADB nicht nötig. Es kehrt in den Normalzustand zurück, wenn das Streaming endet oder das Kabel abgezogen wird.";
 "Not needed" = "Nicht nötig";
+"Ask Again" = "Erneut fragen";
+"How this tablet connects over USB." = "Wie sich dieses Tablet über USB verbindet.";
+"Not set" = "Nicht festgelegt";
+"Without ADB" = "Ohne ADB";
+"Without ADB (USB accessory)" = "Ohne ADB (USB-Zubehör)";

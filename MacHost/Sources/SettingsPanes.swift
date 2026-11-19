@@ -1269,7 +1269,7 @@ struct UsbDevicesSection: View {
                 RowDivider()
                 UsbDeviceRow(device: device,
                              onUse: { settings.onSelectUsbDevice?(device.serial) },
-                             onForget: { settings.onForgetUsbDevice?(device.serial) })
+                             onChoose: { settings.onSetUsbDeviceDecision?(device.serial, $0) })
             }
         }
     }
@@ -1278,7 +1278,15 @@ struct UsbDevicesSection: View {
 private struct UsbDeviceRow: View {
     let device: UsbDeviceEntry
     let onUse: () -> Void
-    let onForget: () -> Void
+    let onChoose: (UsbDeviceStore.Decision?) -> Void
+
+    private var choiceLabel: String {
+        switch device.decision {
+        case .accessory: return String(localized: "Without ADB")
+        case .adbOnly: return "ADB"
+        case nil: return String(localized: "Not set")
+        }
+    }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -1300,9 +1308,26 @@ private struct UsbDeviceRow: View {
                 Button("Reconnect", action: onUse)
                     .controlSize(.small)
             }
-            Button("Forget", action: onForget)
-                .controlSize(.small)
-                .help("Ask again before using this tablet in accessory mode.")
+            // How this tablet connects over USB (issue #3).
+            Menu {
+                // An inline picker gives the menu its checkmark.
+                Picker(selection: Binding(get: { device.decision }, set: { onChoose($0) })) {
+                    Text("Without ADB (USB accessory)").tag(Optional(UsbDeviceStore.Decision.accessory))
+                    Text(verbatim: "ADB").tag(Optional(UsbDeviceStore.Decision.adbOnly))
+                } label: {
+                    EmptyView()
+                }
+                .pickerStyle(.inline)
+                Divider()
+                Button("Ask Again") { onChoose(nil) }
+                    .disabled(device.decision == nil)
+            } label: {
+                Text(verbatim: choiceLabel)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .controlSize(.small)
+            .help("How this tablet connects over USB.")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
