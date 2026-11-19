@@ -412,6 +412,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settings.onForgetUsbDevice = { [weak self] serial in
             self?.usbManager.forget(serial)
         }
+        settings.onSetUsbDeviceDecision = { [weak self] serial, decision in
+            self?.usbManager.setDecision(decision, for: serial)
+        }
         settings.onUsbDevicesChanged = { [weak self] in
             Task { @MainActor in self?.refreshStatusIndicators() }
         }

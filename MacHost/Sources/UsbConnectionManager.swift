@@ -15,6 +15,8 @@ struct UsbDeviceEntry: Identifiable, Equatable {
     let name: String
     let isActive: Bool
     let transport: Transport
+    /// What the user chose for this tablet (nil: not asked yet).
+    let decision: UsbDeviceStore.Decision?
     /// The accessory link's state, when it has one.
     let linkState: AccessoryLink.State?
 
@@ -117,6 +119,18 @@ final class UsbConnectionManager {
         settings.onUsbDevicesChanged?()
     }
 
+    /// The user picked how this tablet connects (nil: ask again).
+    func setDecision(_ decision: UsbDeviceStore.Decision?, for serial: String) {
+        store.setDecision(decision, for: serial)
+        postponed.remove(serial)
+        if let device = lastDevices.first(where: { $0.serial == serial }) {
+            failedLocations.remove(device.locationID)
+        }
+        // Leaving accessory mode: send the tablet back to normal USB now.
+        if decision != .accessory, link?.serial == serial { stopLink(reset: true) }
+        settings.onUsbDevicesChanged?()
+    }
+
     func forget(_ serial: String) {
         if serial == activeSerial { stopLink(reset: true) }
         store.forget(serial)
@@ -200,6 +214,7 @@ final class UsbConnectionManager {
                 name: store.name(for: serial) ?? usbName ?? serial,
                 isActive: isActive,
                 transport: transport,
+                decision: store.decision(for: serial),
                 linkState: usesLink ? linkState : (linkFailed ? .failed("") : nil)
             )
         }
