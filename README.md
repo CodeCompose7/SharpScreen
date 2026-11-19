@@ -14,9 +14,8 @@ Grab the Mac app (`SharpScreen-<version>.dmg`) and the Android app
 (`SharpScreen-<version>.apk`) from [Releases](https://github.com/CodeCompose7/SharpScreen/releases).
 
 - **Mac** (macOS 13+): open the DMG and drag SharpScreen to Applications. Builds are
-  signed with a Developer ID but not notarized yet, so the first launch needs
-  right-click > Open (or System Settings > Privacy & Security > Open Anyway). Grant
-  Screen Recording when asked.
+  signed with a Developer ID and notarized by Apple. Grant Screen Recording when
+  asked.
 - **Android** (8+): enable "Install unknown apps" for your browser or file manager and
   open the APK.
 
@@ -31,6 +30,18 @@ when streaming stops or the cable comes out.
 Tablets you keep on ADB still work as before (Developer options > USB debugging on the
 tablet, `adb` on the Mac). With several tablets plugged in, one streams at a time; pick
 it in the menu or in Settings > Connection.
+
+### Smoother Wi-Fi
+
+AirDrop, Handoff, Universal Control and iPhone Mirroring share the Mac's Wi-Fi through
+AWDL, which takes the Mac off its channel about twice a second (~70-80 ms each); on
+Wi-Fi the tablet then freezes briefly and catches up in a rush. The best fix is to set
+your router's 5 GHz channel to **149** (44 in some countries), the channel AWDL uses:
+the Mac then never has to leave it, and those features keep working. Measured here,
+idle pings over 40 ms went from 7% to none and the longest display pause while
+dragging from ~90 ms to ~35 ms. Otherwise turn those features off while streaming, or
+run `sudo ifconfig awdl0 down` (macOS turns AWDL back on after a restart or when
+AirDrop is used), connect the Mac by Ethernet, or use USB.
 
 ## Goal
 

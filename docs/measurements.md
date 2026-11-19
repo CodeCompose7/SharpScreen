@@ -456,6 +456,26 @@ queue moved into the app, display stops grew to 116-145 ms), and holding
 lossless tiles while the socket holds over 64 KB (no difference, with or
 without the keyframe fix).
 
+### The router on AWDL's channel (2026-11-19)
+
+The ~0.46 s rhythm held with nothing streaming: the Mac's pings to the router
+(not just the tablet) spiked to 60-76 ms every 0.46 s, so the gap was on the
+Mac's Wi-Fi. The Mac sat on channel 36 (80 MHz); AWDL was active (it comes back
+after `ifconfig awdl0 down` once macOS wants it). With the router moved to
+channel 149 (80 MHz), the channel AWDL uses, and AWDL still active:
+
+| Wi-Fi, AWDL active | Channel 36 | Channel 149 |
+|---|---|---|
+| Idle ping Mac -> router, >40 ms | 34 of 500 (60-76 ms every 0.46 s) | 0 of 1000, max 9.4 ms |
+| Idle ping Mac -> tablet, >40 ms | 37 of 500 | 0 of 1000, p99 23 ms, max 30 ms |
+| Big-window drag: tablet display stop, per-2 s max | 86-91 ms (worst 90-107) | 35-36 ms (worst 43-59) |
+| Ping during the drag, p99 | 72-82 ms | 37-47 ms |
+
+Raising the tablet's present percentile from p50 to p95 (a ~55 ms playout
+buffer) had not hidden the stops on channel 36 (86-91 ms either way): only a
+buffer longer than the gap would, at that much more latency. The Mac's Wi-Fi
+notice now recommends channel 149 (44 in some countries) first.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
