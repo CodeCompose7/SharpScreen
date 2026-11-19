@@ -463,15 +463,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Opened from the menu bar: on the display that was clicked, centered,
-    /// unless the window is already there.
+    /// unless the window is already there; never with its title bar under
+    /// that display's menu bar.
     private func moveSettings(toScreenAt point: NSPoint) {
         guard let window = settingsWindow?.window,
-              let screen = NSScreen.screens.first(where: { $0.frame.contains(point) }),
-              window.screen != screen else { return }
-        let area = screen.visibleFrame
-        window.setFrameOrigin(NSPoint(x: area.midX - window.frame.width / 2,
-                                      y: area.midY - window.frame.height / 2))
-        debugLog("Settings window moved to \(screen.localizedName)")
+              let screen = NSScreen.screens.first(where: { $0.frame.contains(point) }) else { return }
+        let top = screen.frame.maxY - menuBarHeight(on: screen)
+        var frame = window.frame
+        if window.screen != screen {
+            let area = screen.visibleFrame
+            frame.origin = NSPoint(x: area.midX - frame.width / 2, y: area.midY - frame.height / 2)
+        }
+        // A display whose menu bar hides itself reports no menu bar in its
+        // visible frame, and the bar then slides over the title bar.
+        if frame.maxY > top { frame.origin.y = max(screen.frame.minY, top - frame.height) }
+        guard frame.origin != window.frame.origin else { return }
+        window.setFrameOrigin(frame.origin)
+        debugLog("Settings window placed on \(screen.localizedName) at \(frame.origin)")
+    }
+
+    /// The menu bar's height on `screen`, also when it hides itself there.
+    private func menuBarHeight(on screen: NSScreen) -> CGFloat {
+        var height = max(screen.frame.maxY - screen.visibleFrame.maxY, NSStatusBar.system.thickness)
+        if let bar = statusItem?.button?.window, bar.screen == screen {
+            height = max(height, bar.frame.height)
+        }
+        return height
     }
 
     @objc private func toggleServerFromMenu() {
