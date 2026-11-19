@@ -211,6 +211,12 @@ class StreamClient(
         try {
             val sock = Socket()
             sock.tcpNoDelay = true
+            // DSCP EF: Wi-Fi sends touch input and stream ACKs in the voice
+            // access category (WMM AC_VO), ahead of other traffic (issue #9).
+            try {
+                sock.trafficClass = 0xB8
+            } catch (_: Exception) {
+            }
             val cm = context.getSystemService(ConnectivityManager::class.java)
             val wifiNetwork =
                 cm.allNetworks.firstOrNull { net ->

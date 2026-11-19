@@ -305,6 +305,9 @@ class StreamingServer {
         do {
             let params = NWParameters.tcp
             params.allowLocalEndpointReuse = true
+            // Wi-Fi: send in the video access category (WMM AC_VI), ahead of
+            // bulk traffic on the same access point (issue #9).
+            params.serviceClass = .interactiveVideo
 
             // Optimize TCP for low-latency streaming
             if let tcpOptions = params.defaultProtocolStack.transportProtocol as? NWProtocolTCP.Options {

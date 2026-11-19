@@ -360,6 +360,35 @@ finished stream never leaks into the next). USB debugging on (18d1:2d01):
   and the app sees the accessory detach. Killing the tablet app makes the Mac's next
   write time out (3 s); the Mac then resets the device and waits for Reconnect.
 
+## Wi-Fi vs USB, again (2026-11-19, issue #9)
+
+Same 5 GHz access point, tablet RSSI -36 / 780 Mbps, AWDL down on the Mac,
+release builds, a window swept across the tablet display for 15-20 s.
+
+| | USB accessory | Wi-Fi |
+|---|---|---|
+| Mac frame age (content -> sent), avg / max | 12-13 / 19-20 ms | 12-13 / 19-25 ms |
+| Tablet decoder latency, avg | ~7 ms | ~7 ms |
+| Transit jitter in motion, p50 / p90 / p99 | 8-12 / 18-24 / 26-33 ms | 8-11 / 17-20 / 25-30 ms |
+| Vsync scheduling wait, avg | 4-6 ms | 5-6 ms |
+| Decode-to-draw handoff, per-2 s max | 15-21 ms | 22-38 ms |
+
+The jitter is the Mac's (capture and encode timing), not the network's: it is
+the same over USB. Wi-Fi adds ~3 ms one way (ping while streaming, both ways:
+p50 6.3-6.6, p99 ~9, max 12 ms round trip) and somewhat larger occasional
+spikes.
+
+Idle Wi-Fi is another matter: with no stream running, power saving gave round
+trips of p50 21 / p90 197 / max 435 ms tablet -> Mac and p50 8 / p90 58 /
+max 498 ms Mac -> tablet (router p99 33, max 151 ms). A running stream keeps
+both radios awake.
+
+A still screen sent ~2.7 Mbps over Wi-Fi, mostly a ~200 KB keyframe a second
+(1.1 Mbps with keyframes every 10 s). Keyframes now come every 10 s over
+Wi-Fi (1 s over USB); the stream socket is marked interactive video (WMM
+AC_VI) on the Mac and EF (AC_VO) on the tablet. Neither moved the numbers
+above on this uncontended network.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
