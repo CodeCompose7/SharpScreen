@@ -80,8 +80,8 @@
 "Surface/Pixel" = "Surface/Pixel";
 "Tablet Wide" = "Tablet breit";
 "iPad" = "iPad";
-"W" = "B";
-"H" = "H";
+"W" = "Breite";
+"H" = "Höhe";
 "Apply" = "Anwenden";
 "Supported range: 640–7680 × 480–4320" = "Unterstützter Bereich: 640–7680 × 480–4320";
 "HiDPI (Retina)" = "HiDPI (Retina)";

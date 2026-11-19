@@ -13,15 +13,15 @@
 "Streaming to tablet" = "Трансляция на планшет";
 "Waiting for tablet" = "Ожидание планшета";
 "Stopped" = "Остановлено";
-"Start" = "Запустить";
-"Stop" = "Остановить";
+"Start" = "Старт";
+"Stop" = "Стоп";
 "%lld Hz" = "%lld Hz";
 "Port %@" = "Порт %@";
 "Screen Recording permission required — see General." = "Нужно разрешение на запись экрана — см. «Основные».";
 "USB" = "USB";
 "Wireless" = "Беспроводной";
 "USB Setup" = "Настройка USB";
-"Connect the tablet with a USB cable and allow USB debugging when asked. SharpScreen sets up adb reverse automatically when you click Start." = "Подключите планшет кабелем USB и разрешите отладку по USB, когда появится запрос. При нажатии «Запустить» SharpScreen автоматически настроит adb reverse.";
+"Connect the tablet with a USB cable and allow USB debugging when asked. SharpScreen sets up adb reverse automatically when you click Start." = "Подключите планшет кабелем USB и разрешите отладку по USB, когда появится запрос. При нажатии «Старт» SharpScreen автоматически настроит adb reverse.";
 "ADB installed" = "ADB установлен";
 "Installed" = "Установлен";
 "Missing" = "Не найден";
@@ -30,7 +30,7 @@
 "ADB reverse" = "ADB reverse";
 "OK" = "OK";
 "Pending" = "Ожидание";
-"Whether `adb reverse tcp:%@ tcp:%@` is currently configured. The Mac app sets this up automatically when you click Start. Goes green within ~2 seconds after the tablet is plugged in and authorized." = "Настроен ли сейчас `adb reverse tcp:%@ tcp:%@`. Приложение для Mac настраивает это автоматически при нажатии «Запустить». Индикатор становится зеленым примерно через 2 секунды после подключения и авторизации планшета.";
+"Whether `adb reverse tcp:%@ tcp:%@` is currently configured. The Mac app sets this up automatically when you click Start. Goes green within ~2 seconds after the tablet is plugged in and authorized." = "Настроен ли сейчас `adb reverse tcp:%@ tcp:%@`. Приложение для Mac настраивает это автоматически при нажатии «Старт». Индикатор становится зеленым примерно через 2 секунды после подключения и авторизации планшета.";
 "USB device" = "Устройство USB";
 "Detected" = "Обнаружено";
 "Not detected" = "Не обнаружено";
@@ -51,7 +51,7 @@
 
 /* Connection pane: wireless pairing */
 "Pair Device" = "Создание пары";
-"Click Start above to begin listening, then scan the QR." = "Нажмите «Запустить» выше, чтобы начать прием, затем отсканируйте QR-код.";
+"Click Start above to begin listening, then scan the QR." = "Нажмите «Старт» выше, чтобы начать прием, затем отсканируйте QR-код.";
 "Generating QR…" = "Создание QR-кода…";
 "Scan this QR from SharpScreen for Android (Wireless tab)" = "Отсканируйте этот QR-код в SharpScreen для Android (вкладка «Беспроводной»)";
 "Listening: %@:%@" = "Прием: %@:%@";
@@ -80,8 +80,8 @@
 "Surface/Pixel" = "Surface/Pixel";
 "Tablet Wide" = "Широкий планшет";
 "iPad" = "iPad";
-"W" = "Ш";
-"H" = "В";
+"W" = "Ширина";
+"H" = "Высота";
 "Apply" = "Применить";
 "Supported range: 640–7680 × 480–4320" = "Допустимый диапазон: 640–7680 × 480–4320";
 "HiDPI (Retina)" = "HiDPI (Retina)";
@@ -137,7 +137,7 @@
 "Startup mode" = "Режим при запуске";
 "Which connection mode to start in when auto-starting." = "Режим подключения при автоматическом запуске.";
 "Permissions & Status" = "Разрешения и состояние";
-"Screen & System Audio" = "Экран и системный звук";
+"Screen & System Audio" = "Экран и системное аудио";
 "Screen Recording" = "Запись экрана";
 "Granted" = "Разрешено";
 "Required" = "Требуется";
@@ -148,7 +148,7 @@
 "Virtual Display" = "Виртуальный дисплей";
 "Active" = "Активен";
 "Inactive" = "Неактивен";
-"The macOS virtual display SharpScreen renders into. Created when you click Start; the tablet streams its pixels." = "Виртуальный дисплей macOS, в который выводит изображение SharpScreen. Создается при нажатии «Запустить»; планшет транслирует его содержимое.";
+"The macOS virtual display SharpScreen renders into. Created when you click Start; the tablet streams its pixels." = "Виртуальный дисплей macOS, в который выводит изображение SharpScreen. Создается при нажатии «Старт»; планшет транслирует его содержимое.";
 "Client Connected" = "Клиент подключен";
 "Yes" = "Да";
 "No" = "Нет";
@@ -196,7 +196,7 @@
 /* Menu bar and app menu */
 "Connected — %@" = "Подключено — %@";
 "Connected to tablet" = "Подключено к планшету";
-"Waiting for tablet on port %@" = "Ожидание планшета на порту %@";
+"Waiting for tablet on port %@" = "Ожидание на порту %@";
 "Server stopped" = "Сервер остановлен";
 "Start Streaming" = "Начать трансляцию";
 "Stop Streaming" = "Остановить трансляцию";

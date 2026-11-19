@@ -380,6 +380,11 @@ struct DisplayPane: View {
                         }
                         .font(.system(size: 9))
                         .foregroundColor(.secondary)
+                        // Stay inside the preview rectangle (50pt wide when
+                        // portrait); long words such as "Hochformat" shrink.
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(maxWidth: isPortrait ? 44 : 74)
                     }
                     .frame(width: 100, height: 84)
 
@@ -748,7 +753,7 @@ struct GeneralPane: View {
             RowDivider()
 
             SettingsRow("Startup mode", subtitle: "Which connection mode to start in when auto-starting.") {
-                ModeSegmentedControl(selection: $settings.startupMode, width: 150, showSymbols: false)
+                ModeSegmentedControl(selection: $settings.startupMode, width: 200, showSymbols: false)
                     .disabled(!settings.autoStartStreamingOnLaunch)
             }
         }

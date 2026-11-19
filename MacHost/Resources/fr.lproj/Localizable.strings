@@ -80,8 +80,8 @@
 "Surface/Pixel" = "Surface/Pixel";
 "Tablet Wide" = "Tablette large";
 "iPad" = "iPad";
-"W" = "L";
-"H" = "H";
+"W" = "Largeur";
+"H" = "Hauteur";
 "Apply" = "Appliquer";
 "Supported range: 640–7680 × 480–4320" = "Plage prise en charge : 640–7680 × 480–4320";
 "HiDPI (Retina)" = "HiDPI (Retina)";
@@ -196,7 +196,7 @@
 /* Menu bar and app menu */
 "Connected — %@" = "Connecté — %@";
 "Connected to tablet" = "Connecté à la tablette";
-"Waiting for tablet on port %@" = "Attente de la tablette (port %@)";
+"Waiting for tablet on port %@" = "En attente sur le port %@";
 "Server stopped" = "Serveur arrêté";
 "Start Streaming" = "Démarrer la diffusion";
 "Stop Streaming" = "Arrêter la diffusion";
