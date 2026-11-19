@@ -748,6 +748,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
 
             manager.restoreDisplayPosition()
+            CaptureDiagnostics.streamingOverWiFi = settings.connectionMode == .wireless
             screenCapture = try await makeCapture(for: manager)
 
             // Setup server
