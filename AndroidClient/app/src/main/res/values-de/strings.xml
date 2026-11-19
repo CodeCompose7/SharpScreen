@@ -23,6 +23,7 @@
     <string name="checklist_hint_usb_debugging">In den Entwickleroptionen aktivieren</string>
     <string name="checklist_hint_usb_cable">Verbinde das Tablet per USB-Datenkabel mit dem Mac (ein Ladegerät zählt nicht)</string>
     <string name="checklist_hint_mac_server">Streaming in der Mac-App starten</string>
+    <string name="checklist_hint_mac_accessory_permission">Tippe auf „Verbinden“, um die USB-Verbindung zu erlauben</string>
 
     <string name="connect">Verbinden</string>
     <string name="status_ready">Bereit zum Verbinden</string>

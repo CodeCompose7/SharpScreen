@@ -24,6 +24,9 @@ Side Screen's history up to the fork is in the git log and in
 - **The settings window comes to the front, active, also under Stage
   Manager** (#7). It used to come up inactive, or wait in Stage Manager's
   strip, and a second click on the icon did not close it.
+- **Cancelling the tablet's USB accessory prompt no longer brings it back
+  over and over** (#8). The app asks only when you tap Connect, once per tap,
+  and the checklist says so ("Tap Connect to allow the USB connection").
 
 ## [0.4.1] - 2026-11-19 — The USB check means a computer
 
