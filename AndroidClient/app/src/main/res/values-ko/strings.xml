@@ -144,4 +144,31 @@
     <string name="settings_github">GitHub</string>
     <string name="settings_get_mac_app">Mac 앱 다운로드</string>
     <string name="settings_credit">Tran Vuong Quoc Dat의 Side Screen(MIT 라이선스)을 기반으로 합니다</string>
+
+    <string name="update_available_title">SharpScreen %1$s 버전이 나왔습니다</string>
+    <string name="update_available_body">현재 %1$s · 다운로드 %2$s</string>
+    <string name="update_action">업데이트</string>
+    <string name="update_release_notes">릴리스 노트</string>
+    <string name="update_dismiss">닫기</string>
+    <string name="update_downloading_start">다운로드 중…</string>
+    <string name="update_downloading">다운로드 중… %1$d%%</string>
+    <string name="update_installing">설치 중…</string>
+    <string name="update_check_title">업데이트 확인</string>
+    <string name="update_checking">확인 중…</string>
+    <string name="update_up_to_date">최신 버전입니다</string>
+    <string name="update_available_short">%1$s 사용 가능</string>
+    <string name="update_auto_title">자동으로 확인</string>
+    <string name="update_auto_summary">하루 한 번, 스트리밍 중이 아닐 때</string>
+    <string name="update_permission_title">업데이트 설치 허용</string>
+    <string name="update_permission_message">SharpScreen이 직접 업데이트를 설치하려면 Android에서 한 번 허용해야 합니다. 다음 화면에서 SharpScreen을 허용한 뒤 이 화면으로 돌아오세요.</string>
+    <string name="update_open_settings">설정 열기</string>
+    <string name="update_error_check">확인하지 못했습니다 — 나중에 다시 시도하세요</string>
+    <string name="update_error_download">다운로드하지 못했습니다 — 다시 시도하세요</string>
+    <string name="update_error_verify">다운로드한 파일이 릴리스와 일치하지 않아 설치하지 않았습니다.</string>
+    <string name="update_error_install">설치 실패: %1$s</string>
+    <string name="update_error_streaming">업데이트를 설치하려면 먼저 연결을 해제하세요</string>
+    <string name="update_error_android_too_old">SharpScreen %1$s을(를) 쓰려면 더 최신 Android가 필요합니다</string>
+    <string name="update_error_permission">업데이트를 설치하려면 권한이 필요합니다</string>
+    <string name="update_cancelled">업데이트를 취소했습니다</string>
+    <string name="update_done">SharpScreen %1$s 버전으로 업데이트했습니다</string>
 </resources>

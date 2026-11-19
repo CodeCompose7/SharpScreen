@@ -6,6 +6,16 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+### Added
+- **The tablet app updates itself** from GitHub Releases. Each release carries
+  `android-update.json` (version, APK size and SHA-256); the app checks it once a
+  day on the home screen (never while streaming; Settings ▸ About ▸ Check
+  automatically turns it off), shows a card when a new version is out, and on
+  Update downloads the APK, checks its size and SHA-256 and installs it. Android
+  asks once to allow SharpScreen to install apps. Settings ▸ About ▸ Check for
+  updates checks right away. Versions up to 0.3.1 cannot update themselves, so the
+  first release with this is installed by hand once.
+
 ### Fixed
 - **Check for Updates was always disabled** on the Mac (#4). Sparkle, inherited
   from Side Screen, had no SharpScreen feed and was switched off. It now reads

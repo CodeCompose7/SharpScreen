@@ -145,4 +145,31 @@
     <string name="settings_github">GitHub</string>
     <string name="settings_get_mac_app">Mac-App herunterladen</string>
     <string name="settings_credit">Fork von Side Screen von Tran Vuong Quoc Dat (MIT)</string>
+
+    <string name="update_available_title">SharpScreen %1$s ist verfügbar</string>
+    <string name="update_available_body">Installiert: %1$s · Download: %2$s</string>
+    <string name="update_action">Aktualisieren</string>
+    <string name="update_release_notes">Versionshinweise</string>
+    <string name="update_dismiss">Ausblenden</string>
+    <string name="update_downloading_start">Wird heruntergeladen…</string>
+    <string name="update_downloading">Wird heruntergeladen… %1$d %%</string>
+    <string name="update_installing">Wird installiert…</string>
+    <string name="update_check_title">Nach Updates suchen</string>
+    <string name="update_checking">Suche läuft…</string>
+    <string name="update_up_to_date">Auf dem neuesten Stand</string>
+    <string name="update_available_short">%1$s verfügbar</string>
+    <string name="update_auto_title">Automatisch suchen</string>
+    <string name="update_auto_summary">Einmal täglich, wenn nicht gestreamt wird</string>
+    <string name="update_permission_title">Updates erlauben</string>
+    <string name="update_permission_message">Android fragt einmalig, bevor SharpScreen eigene Updates installieren darf. Erlauben Sie SharpScreen auf dem nächsten Bildschirm und kehren Sie dann hierher zurück.</string>
+    <string name="update_open_settings">Einstellungen öffnen</string>
+    <string name="update_error_check">Suche fehlgeschlagen – bitte später erneut versuchen</string>
+    <string name="update_error_download">Download fehlgeschlagen – bitte erneut versuchen</string>
+    <string name="update_error_verify">Der Download stimmt nicht mit dem Release überein und wurde daher nicht installiert.</string>
+    <string name="update_error_install">Installation fehlgeschlagen: %1$s</string>
+    <string name="update_error_streaming">Trennen Sie zuerst die Verbindung, um das Update zu installieren</string>
+    <string name="update_error_android_too_old">SharpScreen %1$s erfordert eine neuere Android-Version</string>
+    <string name="update_error_permission">Für Updates ist Ihre Erlaubnis zum Installieren nötig</string>
+    <string name="update_cancelled">Update abgebrochen</string>
+    <string name="update_done">Auf SharpScreen %1$s aktualisiert</string>
 </resources>
