@@ -10,7 +10,8 @@ import android.os.Process
 import android.util.Log
 import android.view.Display
 import android.view.Surface
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 private fun diagLog(msg: String) = DiagLog.log("VD", msg)
 
@@ -71,7 +72,7 @@ class VideoDecoder(
     private var queuedInputCount = 0L
 
     // Available input buffer indices — fed by onInputBufferAvailable callback
-    private val availableInputBuffers = ConcurrentLinkedQueue<Int>()
+    private val availableInputBuffers = LinkedBlockingQueue<Int>()
 
     init {
         setupDecoder()
@@ -372,15 +373,16 @@ class VideoDecoder(
         }
 
         // Direct feed: grab an available input buffer and queue immediately.
-        val index = availableInputBuffers.poll()
+        // A Wi-Fi burst can land several frames at once and empty the pool
+        // for a moment; MediaCodec frees a buffer within a frame time, so wait
+        // briefly rather than drop. A dropped P-frame costs a forced keyframe
+        // (~600 KB at panel resolution), itself a 100+ ms stall on Wi-Fi
+        // (issue #9). The buffer callbacks run on the decoder thread.
+        val index = availableInputBuffers.poll() ?: availableInputBuffers.poll(INPUT_BUFFER_WAIT_MS, TimeUnit.MILLISECONDS)
         if (index == null) {
-            // Decoder input pool exhausted (typically a WiFi burst saturating
-            // MediaCodec). Do NOT pause the pipeline — keep feeding so the
-            // cursor tracks live. Reference state diverges briefly (cursor
-            // trail visible), but a force-keyframe request bypasses every
-            // layer's throttle and rebuilds the reference within ~100-200 ms,
-            // which feels better than a 1-2 s freeze waiting on the next
-            // throttled request to land.
+            // Still exhausted: keep feeding so the cursor tracks live and
+            // rebuild the reference with a force keyframe (bypasses every
+            // layer's throttle) rather than freeze waiting on a throttled one.
             droppedFrames++
             if (droppedFrames <= 3L || droppedFrames % 60L == 0L) {
                 diagLog("Dropping frame (no input buffer, dropped=$droppedFrames)")
@@ -579,6 +581,7 @@ class VideoDecoder(
     companion object {
         private const val TAG = "VideoDecoder"
         private const val STALL_DETECT_INPUT_FRAMES = 120L
+        private const val INPUT_BUFFER_WAIT_MS = 20L
         private const val KEYFRAME_REQUEST_INTERVAL_NS = 1_000_000_000L
         private const val FORCE_KEYFRAME_REQUEST_INTERVAL_NS = 200_000_000L
         private const val MAX_RENDER_LATENCY_NS = 100_000_000L

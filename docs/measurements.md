@@ -421,6 +421,41 @@ Wi-Fi (1 s over USB); the stream socket is marked interactive video (WMM
 AC_VI) on the Mac and EF (AC_VO) on the tablet. Neither moved the numbers
 on this uncontended network.
 
+### What was left: keyframes the tablet asked for (issue #9, 2026-11-19)
+
+With the BSD sockets in, the Mac now logs how much the stream socket holds
+(its queue plus the kernel's unacknowledged bytes) and the largest frame, each
+second. During the big-window sweep the socket held 540-900 KB in most
+seconds, and every such second carried a 560-670 KB keyframe: the tablet asked
+for one ("last keyframe 1505 ms ago") 1.5 s after each keyframe, so the 10 s
+Wi-Fi interval never applied while anything moved. A keyframe of a moving
+screen is ~3x a still one's, and at Wi-Fi rates each one is 100+ ms of air
+time that the frames behind it wait out.
+
+The tablet's stale-keyframe guard now waits 12 s (above the Mac's longest
+interval); the decoder still asks at once on errors. A decoder input pool
+emptied by a Wi-Fi burst now waits up to 20 ms for a buffer instead of
+dropping the frame and forcing another keyframe.
+
+| Big window over Wi-Fi | Before | After |
+|---|---|---|
+| Keyframes while moving | every 1.5 s, 560-670 KB | every 10 s |
+| Video while moving, average | 7.8 Mbps (9.5-12 in keyframe seconds) | 5.0-5.5 Mbps |
+| Socket queue, per-second max | 540-900 KB in most seconds | 90-215 KB (keyframe or new-window seconds: 490-800 KB) |
+| Tablet display stop, per-2 s max | 84-102 ms | 83-102 ms |
+
+The display stops of ~85-90 ms did not change, and they show up on a still
+screen too (84-91 ms per 2 s with nothing moving). The Mac's AWDL (AirDrop,
+Handoff, Universal Control) was active: idle pings to the tablet, with no
+stream, went over 40 ms 9 times in 100, p99 ~77 ms, the same size as the
+stops. AWDL moves the Mac's Wi-Fi to its own channel about twice a second
+(the app's Wi-Fi notice); USB has no such gaps.
+
+Measured and dropped: a smaller send buffer (SO_SNDBUF 64 or 128 KB: the
+queue moved into the app, display stops grew to 116-145 ms), and holding
+lossless tiles while the socket holds over 64 KB (no difference, with or
+without the keyframe fix).
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
