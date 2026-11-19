@@ -14,7 +14,7 @@ for line in lines:
     if re.match(r"^## \[" + re.escape(version) + r"\]", line):
         inside = True
         continue
-    if inside and line.startswith("---"):
+    if inside and (line.startswith("---") or line.startswith("## [")):
         break
     if inside:
         section.append(line)
@@ -25,8 +25,18 @@ def inline(text):
     text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
     return re.sub(r"\[(.+?)\]\((.+?)\)", r'<a href="\2">\1</a>', text)
 
-out, in_list = ["<html><body style=\"font-family:-apple-system;font-size:13px\">"], False
+# Join wrapped lines: a bullet's indented continuation, and paragraph lines.
+joined = []
 for line in section:
+    if joined and line.startswith("  ") and line.strip() and joined[-1].strip().startswith("- "):
+        joined[-1] += " " + line.strip()
+    elif joined and line.strip() and not line.strip().startswith(("- ", "#")) and joined[-1].strip() and not joined[-1].strip().startswith(("- ", "#")):
+        joined[-1] += " " + line.strip()
+    else:
+        joined.append(line)
+
+out, in_list = ["<html><body style=\"font-family:-apple-system;font-size:13px\">"], False
+for line in joined:
     stripped = line.strip()
     if stripped.startswith("### Installation"):
         break  # install steps are for the download page, not the update dialog

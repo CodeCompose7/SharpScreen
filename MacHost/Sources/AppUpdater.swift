@@ -4,22 +4,22 @@ import Sparkle
 
 /// Sparkle auto-update, one instance for the whole app. Sparkle checks the
 /// appcast once a day (SUScheduledCheckInterval) and asks before downloading;
-/// nothing is installed without the user clicking through the dialog.
+/// nothing is installed without the user clicking through the dialog. The
+/// appcast is attached to each GitHub Release (scripts/make_appcast.sh) and
+/// every download is checked against SUPublicEDKey.
 /// Builds without SUFeedURL in Info.plist (swift run, tests) never start it.
-final class AppUpdater: NSObject, ObservableObject, NSMenuItemValidation {
+/// diag.updateFeedURL points a build at another appcast, to test an update.
+final class AppUpdater: NSObject, ObservableObject, NSMenuItemValidation, SPUUpdaterDelegate {
     static let shared = AppUpdater()
 
     @Published private(set) var canCheckForUpdates = false
 
-    private let controller = SPUStandardUpdaterController(
-        startingUpdater: false,
-        updaterDelegate: nil,
-        userDriverDelegate: nil
-    )
+    private var controller: SPUStandardUpdaterController!
     private var observation: AnyCancellable?
 
     private override init() {
         super.init()
+        controller = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
         guard Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil else {
             debugLog("Sparkle: no SUFeedURL in Info.plist — update checks disabled (dev build)")
             return
@@ -32,6 +32,10 @@ final class AppUpdater: NSObject, ObservableObject, NSMenuItemValidation {
 
     @objc func checkForUpdates(_ sender: Any?) {
         controller.checkForUpdates(sender)
+    }
+
+    func feedURLString(for updater: SPUUpdater) -> String? {
+        UserDefaults.standard.string(forKey: "diag.updateFeedURL")
     }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {

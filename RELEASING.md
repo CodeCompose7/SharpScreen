@@ -8,6 +8,8 @@ Releases use git flow and attach both apps to a GitHub Release.
 |---|---|---|
 | Mac | Developer ID Application certificate | login keychain (`codesign` picks it by name) |
 | Android | Release key, alias `sharpscreen`, PKCS12, RSA 4096, valid to 2056 | `~/.android/sharpscreen-release.jks`; password in the keychain item `sharpscreen-android-release` |
+| Mac updates (Sparkle) | EdDSA (ed25519) key for update archives; public key `JtLmNcbx4yImlNjQ6NSbpR3kEpTgdhkh7hn4z2gm73Y=` is `SUPublicEDKey` in the app | login keychain (Sparkle's `generate_keys` item); exported copy `~/.sparkle/sharpscreen-sparkle-private-key` |
+| Mac notarization | notarytool keychain profile `sharpscreen-notary` (Apple ID app-specific password, team YQV3R5Y48H) | login keychain |
 
 Android release certificate: `CN=SharpScreen, O=SharpScreen`,
 SHA-256 `a8:4c:88:ac:4e:fd:89:83:98:d3:10:7f:9b:68:a3:1c:fc:f3:fc:4e:e6:d1:b7:51:f4:18:30:d3:6a:87:c7:89`.
@@ -30,6 +32,11 @@ Back up the key alias (`sharpscreen`) with the keystore and password. The
 certificate itself is inside the keystore and its SHA-256 is derived from it, so
 neither needs a separate backup; the fingerprint above is for checking APKs.
 
+**Back up the Sparkle private key** (`~/.sparkle/sharpscreen-sparkle-private-key`)
+the same way. Installed Macs only accept updates signed with it; losing it
+means shipping a new key in a release that users install by hand. Restore it on
+another Mac with `MacHost/.build/artifacts/sparkle/Sparkle/bin/generate_keys -f <file>`.
+
 ## Steps
 
 1. `git flow release start <version>` from `develop`.
@@ -40,11 +47,17 @@ neither needs a separate backup; the fingerprint above is for checking APKs.
    SHARPSCREEN_SIGN_IDENTITY="Developer ID Application" ./scripts/build_mac.sh
    cp SharpScreen-<version>-mac-universal.dmg dist/<version>/SharpScreen-<version>.dmg
    ./scripts/build_android_release.sh
-   (cd dist/<version> && shasum -a 256 SharpScreen-<version>.dmg SharpScreen-<version>.apk > SHA256SUMS.txt)
    ```
 
    `build_android_release.sh` stops if the APK is not signed with the release key.
-   The Mac build is not notarized yet (needs an App Store Connect API key).
+   Then notarize the DMG, write the Sparkle appcast for it, and checksum:
+   ```bash
+   NOTARY_PROFILE=sharpscreen-notary ./scripts/notarize.sh dist/<version>/SharpScreen-<version>.dmg
+   ./scripts/make_appcast.sh <version>        # dist/<version>/appcast.xml, signed with the Sparkle key
+   (cd dist/<version> && shasum -a 256 SharpScreen-<version>.dmg SharpScreen-<version>.apk > SHA256SUMS.txt)
+   ```
+   Notarize before `make_appcast.sh`: stapling changes the DMG, and the appcast
+   signs the exact file users download.
 4. Install both on real hardware and check that a stream connects.
 5. `git flow release finish <version> -T v<version> -m "SharpScreen <version>" --no-sign`
    (tags use a `v` prefix: Side Screen's history already has plain `0.x.y` tags).
@@ -54,7 +67,7 @@ neither needs a separate backup; the fingerprint above is for checking APKs.
    ```bash
    git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main develop refs/tags/v<version>
    gh release create v<version> dist/<version>/SharpScreen-<version>.dmg dist/<version>/SharpScreen-<version>.apk \
-     dist/<version>/SHA256SUMS.txt --repo CodeCompose7/SharpScreen --verify-tag \
+     dist/<version>/SHA256SUMS.txt dist/<version>/appcast.xml --repo CodeCompose7/SharpScreen --verify-tag \
      --title "SharpScreen <version>" --notes-file <notes>
    ```
 
