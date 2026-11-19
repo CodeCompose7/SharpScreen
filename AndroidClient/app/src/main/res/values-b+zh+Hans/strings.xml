@@ -18,12 +18,12 @@
     <string name="checklist_title">连接检查清单</string>
     <string name="checklist_developer_mode">已开启开发者模式</string>
     <string name="checklist_usb_debugging">已开启 USB 调试</string>
-    <string name="checklist_usb_cable">已连接 USB 数据线</string>
+    <string name="checklist_usb_cable">已通过 USB 连接电脑</string>
     <string name="checklist_mac_server">Mac 服务器正在运行</string>
     <string name="checklist_mac_accessory">Mac 连接（USB，无需 ADB）</string>
     <string name="checklist_hint_developer_mode">请开启开发者选项</string>
     <string name="checklist_hint_usb_debugging">请在开发者选项中开启 USB 调试</string>
-    <string name="checklist_hint_usb_cable">请用数据线将平板电脑连接到 Mac</string>
+    <string name="checklist_hint_usb_cable">请用 USB 数据线将平板连接到 Mac（充电器不算）</string>
     <string name="checklist_hint_mac_server">请在 Mac 应用中开始串流</string>
 
     <string name="connect">连接</string>

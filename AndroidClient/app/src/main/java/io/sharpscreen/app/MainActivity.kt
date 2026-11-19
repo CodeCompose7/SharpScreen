@@ -2070,9 +2070,8 @@ class MainActivity : AppCompatActivity() {
             ) == 1
         updateChecklistItem(binding.checkUsbDebugging, binding.hintUsbDebugging, isAdbEnabled)
 
-        // Check USB connected (check if any USB device is connected)
-        val usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
-        val isUsbConnected = usbManager.deviceList.isNotEmpty() || isUsbCablePlugged()
+        // A USB data link to a computer (not just a charger)
+        val isUsbConnected = isConnectedToComputer()
         updateChecklistItem(binding.checkUsbConnected, binding.hintUsbConnected, isUsbConnected)
 
         // Check Mac Server (try to connect to port)
@@ -2117,18 +2116,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * A cable to the Mac is plugged in. Not "charging": with the cable in,
-     * Samsung's battery protection (or a Mac port giving little power) reports
-     * "not charging", which left this item red while USB worked. The plug
-     * state counts USB and AC (USB-C power delivery can report AC); the USB
-     * gadget state covers a port that supplies no power at all.
+     * Connected to a computer over USB (a data link, issue: a charger alone
+     * turned this green). Android's sticky USB_STATE broadcast reports
+     * `connected` only when a USB host has enumerated the tablet; a wall
+     * charger or power bank never does. Charging state is not used: with the
+     * cable in, Samsung's battery protection or a weak Mac port can report
+     * "not charging" while USB works (the 0.3.x bug this replaced).
      */
-    private fun isUsbCablePlugged(): Boolean {
-        val battery = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val plugged = battery?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
-        if (plugged and (android.os.BatteryManager.BATTERY_PLUGGED_USB or android.os.BatteryManager.BATTERY_PLUGGED_AC) != 0) {
-            return true
-        }
+    private fun isConnectedToComputer(): Boolean {
         // Sticky broadcast UsbManager.ACTION_USB_STATE (hidden constant).
         val usbState = registerReceiver(null, IntentFilter("android.hardware.usb.action.USB_STATE"))
         return usbState?.getBooleanExtra("connected", false) == true
