@@ -396,6 +396,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 toggleServer: { [weak self] in self?.toggleServerFromMenu() },
                 showSettings: { [weak self, weak menu] in
                     menu?.cancelTracking()
+                    self?.moveSettings(toScreenAt: NSEvent.mouseLocation)
                     self?.showSettings()
                 },
                 quit: { NSApp.terminate(nil) }
@@ -419,6 +420,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let buttonWindow = button.window, buttonWindow.frame.insetBy(dx: -1, dy: -1).contains(mouse) {
             // Clicked on the item itself: the system places the menu and draws
             // the item as selected while it is open.
+            debugLog("Status menu: on the item (\(buttonWindow.screen?.localizedName ?? "-"))")
             item.popUpMenu(menu)
         } else if let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) }) {
             // Clicked on its copy in another display's menu bar: open there,
@@ -427,6 +429,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let offset = event?.window === button.window ? event?.locationInWindow.x ?? 0 : button.bounds.midX
             let barBottom = screen.visibleFrame.maxY < screen.frame.maxY
                 ? screen.visibleFrame.maxY : screen.frame.maxY - NSStatusBar.system.thickness
+            debugLog("Status menu: on \(screen.localizedName) at \(mouse.x - offset), \(barBottom); item is on \(button.window?.screen?.localizedName ?? "-")")
             menu.popUp(positioning: nil, at: NSPoint(x: mouse.x - offset, y: barBottom), in: nil)
         }
     }
@@ -451,8 +454,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let window = settingsWindow?.window, window.isVisible, window.isOnActiveSpace {
             window.performClose(nil)
         } else {
+            moveSettings(toScreenAt: NSEvent.mouseLocation)
             showSettings()
         }
+    }
+
+    /// Opened from the menu bar: on the display that was clicked, centered,
+    /// unless the window is already there.
+    private func moveSettings(toScreenAt point: NSPoint) {
+        guard let window = settingsWindow?.window,
+              let screen = NSScreen.screens.first(where: { $0.frame.contains(point) }),
+              window.screen != screen else { return }
+        let area = screen.visibleFrame
+        window.setFrameOrigin(NSPoint(x: area.midX - window.frame.width / 2,
+                                      y: area.midY - window.frame.height / 2))
+        debugLog("Settings window moved to \(screen.localizedName)")
     }
 
     @objc private func toggleServerFromMenu() {
