@@ -6,6 +6,12 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-19 — The display is called SharpScreen
+
+### Fixed
+- **The tablet shows up as "SharpScreen" in System Settings ▸ Displays**
+  (it still said "SideScreen") (#5).
+
 ## [0.3.2] - 2026-11-19 — Both apps update themselves
 
 Install this version by hand once; from here on the Mac and tablet apps offer new
