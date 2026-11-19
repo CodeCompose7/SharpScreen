@@ -6,6 +6,18 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+### Changed
+- **Menu bar icon: click for Settings, right-click for the menu** (#7). A click
+  opens the settings window, or closes it when it is open on this desktop; a
+  right click (or Control-click) opens the menu with the server switch,
+  connection mode, Settings and Quit (⌘T, ⌘S, ⌘Q work there). On a second
+  display's menu bar the menu opens under that display's icon.
+
+### Fixed
+- **The settings window opens on the desktop you are on** (#7). Opening it
+  again after closing it on another desktop (Space) switched back to that
+  desktop.
+
 ## [0.4.1] - 2026-11-19 — The USB check means a computer
 
 ### Fixed
