@@ -133,6 +133,8 @@
 "Startup" = "启动";
 "Launch at Login" = "登录时打开";
 "Run SharpScreen in the background automatically after you log in." = "登录后自动在后台运行 SharpScreen。";
+"Show Settings at launch" = "启动时显示设置";
+"Open this window when SharpScreen starts. When off, it starts in the menu bar only; click the menu bar icon to open Settings." = "SharpScreen 启动时打开此窗口。关闭后仅在菜单栏中启动；点按菜单栏图标即可打开设置。";
 "Auto-start streaming on launch" = "启动时自动开始串流";
 "Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "App 打开时自动启动服务器，无需操作 Mac 即可让平板电脑连接。";
 "Startup mode" = "启动模式";

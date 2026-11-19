@@ -751,6 +751,16 @@ struct GeneralPane: View {
                 RowDivider()
             }
 
+            SettingsRow("Show Settings at launch",
+                        subtitle: "Open this window when SharpScreen starts. When off, it starts in the menu bar only; click the menu bar icon to open Settings.") {
+                Toggle("", isOn: $settings.showSettingsOnLaunch)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .controlSize(.small)
+            }
+
+            RowDivider()
+
             SettingsRow("Auto-start streaming on launch",
                         subtitle: "Start the server automatically when the app opens, so the tablet can connect without touching the Mac.") {
                 Toggle("", isOn: $settings.autoStartStreamingOnLaunch)
