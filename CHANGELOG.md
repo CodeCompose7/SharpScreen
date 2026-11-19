@@ -6,6 +6,10 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-19 — Eight languages, notarized
+
+The Mac app is notarized by Apple from this release on.
+
 ### Added
 - **Six more languages** in both apps: Japanese, German, French, Russian,
   Simplified Chinese and Spanish, alongside English and Korean (#2). The Mac app
