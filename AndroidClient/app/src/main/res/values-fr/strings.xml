@@ -43,7 +43,7 @@
     <string name="wireless_connecting_to">Connexion à %1$s</string>
     <string name="wireless_reconnecting_to">Reconnexion à %1$s</string>
     <string name="wireless_pair_title">Associer à votre Mac</string>
-    <string name="wireless_pair_steps">Ouvrez SharpScreen sur le Mac → onglet « Wireless » → scannez le QR code affiché</string>
+    <string name="wireless_pair_steps">Ouvrez SharpScreen sur le Mac → onglet « Connexion » → « Sans fil » → scannez le QR code affiché</string>
     <string name="wireless_scan_qr">Scanner le QR code</string>
     <string name="wireless_enter_code_no_camera">Pas d\'appareil photo ? Saisir un code</string>
     <string name="wireless_enter_code_instead">Saisir un code</string>
@@ -58,7 +58,7 @@
     <string name="wireless_unreachable_cached">Aucune réponse de %1$s à l\'adresse %2$s:%3$d.\n\nLe Mac a peut-être changé de réseau Wi-Fi ou de port, ou l\'application n\'est pas lancée. Ouvrez SharpScreen sur le Mac et scannez le nouveau QR code pour l\'associer à nouveau.</string>
     <string name="wireless_unreachable">Aucune réponse de votre Mac. Vérifiez que les deux appareils sont sur le même réseau Wi-Fi et que l\'application Mac est lancée, puis scannez à nouveau le QR code.</string>
     <string name="wireless_token_title">⚠ Nouvelle association requise</string>
-    <string name="wireless_token_cached">%1$s a réinitialisé son jeton d\'association (par ex. via « Reset Token » ou une réinstallation). Scannez le nouveau QR code pour l\'associer à nouveau.</string>
+    <string name="wireless_token_cached">%1$s a réinitialisé son jeton d\'association (par ex. via « Réinitialiser le jeton de jumelage » ou une réinstallation). Scannez le nouveau QR code pour l\'associer à nouveau.</string>
     <string name="wireless_token">Le Mac a réinitialisé son jeton d\'association. Scannez le nouveau QR code pour l\'associer à nouveau.</string>
     <string name="wireless_protocol_title">⚠ Erreur de connexion</string>
     <string name="wireless_protocol">Impossible d\'établir la connexion sécurisée avec le Mac. Scannez à nouveau le QR code.</string>
@@ -75,7 +75,7 @@
     <string name="pair_code_dash_hint">Avec ou sans tiret, les deux fonctionnent.</string>
     <string name="pair_code_pair">Associer</string>
     <string name="pair_code_pairing">Association…</string>
-    <string name="pair_error_host">Saisissez l\'adresse du Mac (affichée à côté de « Listening » sous le QR code).</string>
+    <string name="pair_error_host">Saisissez l\'adresse du Mac (affichée à « Écoute sur » dans l\'onglet « Connexion » de l\'app Mac).</string>
     <string name="pair_error_port">Le port doit être compris entre 1 et 65535.</string>
     <string name="pair_error_code_length">Le code comporte %1$d chiffres.</string>
     <string name="pair_error_code_rejected">Code refusé. Le code change après chaque utilisation : vérifiez le code actuel sur le Mac.</string>

@@ -42,7 +42,7 @@
     <string name="wireless_connecting_to">Conectando con %1$s</string>
     <string name="wireless_reconnecting_to">Reconectando con %1$s</string>
     <string name="wireless_pair_title">Vincular con tu Mac</string>
-    <string name="wireless_pair_steps">Abre SharpScreen en el Mac → ve a la pestaña «Wireless» → escanea el código QR que aparece</string>
+    <string name="wireless_pair_steps">Abre SharpScreen en el Mac → pestaña «Conexión» → elige «Inalámbrico» → escanea el código QR que aparece</string>
     <string name="wireless_scan_qr">Escanear código QR</string>
     <string name="wireless_enter_code_no_camera">¿Sin cámara? Introduce un código</string>
     <string name="wireless_enter_code_instead">Introducir código</string>
@@ -57,7 +57,7 @@
     <string name="wireless_unreachable_cached">Sin respuesta de %1$s en %2$s:%3$d.\n\nPuede que el Mac haya cambiado de red Wi-Fi o de puerto, o que la app no esté abierta. Abre SharpScreen en el Mac y escanea el nuevo código QR para volver a vincularlo.</string>
     <string name="wireless_unreachable">Sin respuesta del Mac. Asegúrate de que ambos dispositivos estén en la misma red Wi-Fi y de que la app del Mac esté abierta, y vuelve a escanear el código QR.</string>
     <string name="wireless_token_title">⚠ Es necesario volver a vincular</string>
-    <string name="wireless_token_cached">%1$s ha restablecido su token de vinculación (p. ej., con «Reset Token» o al reinstalar). Escanea el nuevo código QR para volver a vincularlo.</string>
+    <string name="wireless_token_cached">%1$s ha restablecido su token de vinculación (p. ej., con «Restablecer token de vinculación» o al reinstalar). Escanea el nuevo código QR para volver a vincularlo.</string>
     <string name="wireless_token">El Mac ha restablecido su token de vinculación. Escanea el nuevo código QR para volver a vincularlo.</string>
     <string name="wireless_protocol_title">⚠ Error de conexión</string>
     <string name="wireless_protocol">No se pudo establecer la conexión segura con el Mac. Vuelve a escanear el código QR.</string>
@@ -74,7 +74,7 @@
     <string name="pair_code_dash_hint">Con o sin guion, funciona igual.</string>
     <string name="pair_code_pair">Vincular</string>
     <string name="pair_code_pairing">Vinculando…</string>
-    <string name="pair_error_host">Introduce la dirección del Mac (aparece junto a «Listening» debajo del QR).</string>
+    <string name="pair_error_host">Introduce la dirección del Mac (aparece en «Escuchando en», en la pestaña «Conexión» de la app para Mac).</string>
     <string name="pair_error_port">El puerto debe estar entre 1 y 65535.</string>
     <string name="pair_error_code_length">El código tiene %1$d dígitos.</string>
     <string name="pair_error_code_rejected">Código no aceptado. El código cambia después de cada uso: consulta el actual en el Mac.</string>

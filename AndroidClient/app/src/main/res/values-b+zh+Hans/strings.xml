@@ -44,7 +44,7 @@
     <string name="wireless_connecting_to">正在连接到 %1$s</string>
     <string name="wireless_reconnecting_to">正在重新连接到 %1$s</string>
     <string name="wireless_pair_title">与 Mac 配对</string>
-    <string name="wireless_pair_steps">在 Mac 上打开 SharpScreen → 切换到“Wireless”标签页 → 扫描显示的 QR 码</string>
+    <string name="wireless_pair_steps">在 Mac 上打开 SharpScreen → “连接”标签页 → 选择“无线” → 扫描显示的 QR 码</string>
     <string name="wireless_scan_qr">扫描 QR 码</string>
     <string name="wireless_enter_code_no_camera">没有相机？改为输入代码</string>
     <string name="wireless_enter_code_instead">改为输入代码</string>
@@ -59,7 +59,7 @@
     <string name="wireless_unreachable_cached">%1$s（%2$s:%3$d）没有响应。\n\nMac 可能已切换 Wi-Fi 网络、更改了端口，或者应用未运行。请在 Mac 上打开 SharpScreen 并扫描新的 QR 码以重新配对。</string>
     <string name="wireless_unreachable">Mac 没有响应。请确保两台设备连接到同一 Wi-Fi 并且 Mac 应用正在运行，然后重新扫描 QR 码。</string>
     <string name="wireless_token_title">⚠ 需要重新配对</string>
-    <string name="wireless_token_cached">%1$s 已重置配对令牌（例如点击了“Reset Token”或重新安装了应用）。请扫描新的 QR 码重新配对。</string>
+    <string name="wireless_token_cached">%1$s 已重置配对令牌（例如点击了“重置配对令牌”或重新安装了应用）。请扫描新的 QR 码重新配对。</string>
     <string name="wireless_token">Mac 已重置配对令牌。请扫描新的 QR 码重新配对。</string>
     <string name="wireless_protocol_title">⚠ 连接错误</string>
     <string name="wireless_protocol">无法与 Mac 建立安全连接。请重新扫描 QR 码。</string>
@@ -76,7 +76,7 @@
     <string name="pair_code_dash_hint">带不带短横线均可。</string>
     <string name="pair_code_pair">配对</string>
     <string name="pair_code_pairing">正在配对…</string>
-    <string name="pair_error_host">请输入 Mac 的地址（显示在 QR 码下方的“Listening”处）。</string>
+    <string name="pair_error_host">请输入 Mac 的地址（显示在 Mac 应用“连接”标签页的“监听地址”处）。</string>
     <string name="pair_error_port">端口必须介于 1 到 65535 之间。</string>
     <string name="pair_error_code_length">代码为 %1$d 位数字。</string>
     <string name="pair_error_code_rejected">代码无效。代码每次使用后都会更改，请在 Mac 上查看当前代码。</string>

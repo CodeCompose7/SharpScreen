@@ -42,7 +42,7 @@
     <string name="wireless_connecting_to">Подключение к %1$s</string>
     <string name="wireless_reconnecting_to">Повторное подключение к %1$s</string>
     <string name="wireless_pair_title">Сопряжение с Mac</string>
-    <string name="wireless_pair_steps">Откройте SharpScreen на Mac → вкладка «Wireless» → отсканируйте показанный QR-код</string>
+    <string name="wireless_pair_steps">Откройте SharpScreen на Mac → вкладка «Подключение» → «Беспроводной» → отсканируйте показанный QR-код</string>
     <string name="wireless_scan_qr">Сканировать QR-код</string>
     <string name="wireless_enter_code_no_camera">Нет камеры? Введите код</string>
     <string name="wireless_enter_code_instead">Ввести код</string>
@@ -57,7 +57,7 @@
     <string name="wireless_unreachable_cached">Нет ответа от %1$s по адресу %2$s:%3$d.\n\nВозможно, Mac подключился к другой сети Wi-Fi, сменил порт или приложение не запущено. Откройте SharpScreen на Mac и отсканируйте новый QR-код, чтобы выполнить сопряжение заново.</string>
     <string name="wireless_unreachable">Нет ответа от Mac. Убедитесь, что оба устройства подключены к одной сети Wi-Fi и приложение на Mac запущено, затем снова отсканируйте QR-код.</string>
     <string name="wireless_token_title">⚠ Требуется повторное сопряжение</string>
-    <string name="wireless_token_cached">На %1$s сброшен токен сопряжения (например, нажата кнопка «Reset Token» или приложение переустановлено). Отсканируйте новый QR-код, чтобы выполнить сопряжение заново.</string>
+    <string name="wireless_token_cached">На %1$s сброшен токен сопряжения (например, нажата кнопка «Сбросить токен пары» или приложение переустановлено). Отсканируйте новый QR-код, чтобы выполнить сопряжение заново.</string>
     <string name="wireless_token">На Mac сброшен токен сопряжения. Отсканируйте новый QR-код, чтобы выполнить сопряжение заново.</string>
     <string name="wireless_protocol_title">⚠ Ошибка подключения</string>
     <string name="wireless_protocol">Не удалось установить защищенное соединение с Mac. Отсканируйте QR-код еще раз.</string>
@@ -74,7 +74,7 @@
     <string name="pair_code_dash_hint">Можно вводить с дефисом или без него.</string>
     <string name="pair_code_pair">Подключить</string>
     <string name="pair_code_pairing">Сопряжение…</string>
-    <string name="pair_error_host">Введите адрес Mac (он указан под QR-кодом в строке «Listening»).</string>
+    <string name="pair_error_host">Введите адрес Mac (он указан в приложении для Mac на вкладке «Подключение», в строке «Адрес приема»).</string>
     <string name="pair_error_port">Порт должен быть от 1 до 65535.</string>
     <string name="pair_error_code_length">Код должен содержать %1$d цифр.</string>
     <string name="pair_error_code_rejected">Код не принят. Код меняется после каждого использования — проверьте текущий код на Mac.</string>

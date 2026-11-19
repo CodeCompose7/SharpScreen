@@ -42,7 +42,7 @@
     <string name="wireless_connecting_to">%1$sに接続中</string>
     <string name="wireless_reconnecting_to">%1$sに再接続中</string>
     <string name="wireless_pair_title">Macとペアリング</string>
-    <string name="wireless_pair_steps">MacでSharpScreenを開く →「Wireless」タブに切り替える → 表示されたQRコードをスキャン</string>
+    <string name="wireless_pair_steps">MacでSharpScreenを開く →「接続」タブで「ワイヤレス」を選択 → 表示されたQRコードをスキャン</string>
     <string name="wireless_scan_qr">QRコードをスキャン</string>
     <string name="wireless_enter_code_no_camera">カメラがない場合はコードを入力</string>
     <string name="wireless_enter_code_instead">コードを入力</string>
@@ -57,7 +57,7 @@
     <string name="wireless_unreachable_cached">%2$s:%3$dの%1$sから応答がありません。\n\nMacのWi-Fiネットワークやポートが変わったか、アプリが起動していない可能性があります。MacでSharpScreenを開き、新しいQRコードをスキャンしてもう一度ペアリングしてください。</string>
     <string name="wireless_unreachable">Macから応答がありません。両方のデバイスが同じWi-Fiに接続され、Macアプリが起動していることを確認してから、QRコードをもう一度スキャンしてください。</string>
     <string name="wireless_token_title">⚠ 再ペアリングが必要です</string>
-    <string name="wireless_token_cached">%1$sのペアリングトークンがリセットされました（「Reset Token」のクリックや再インストールなど）。新しいQRコードをスキャンしてもう一度ペアリングしてください。</string>
+    <string name="wireless_token_cached">%1$sのペアリングトークンがリセットされました（「ペアリングトークンをリセット」のクリックや再インストールなど）。新しいQRコードをスキャンしてもう一度ペアリングしてください。</string>
     <string name="wireless_token">Macのペアリングトークンがリセットされました。新しいQRコードをスキャンしてもう一度ペアリングしてください。</string>
     <string name="wireless_protocol_title">⚠ 接続エラー</string>
     <string name="wireless_protocol">Macとの安全な接続を確立できませんでした。QRコードをもう一度スキャンしてください。</string>
@@ -74,7 +74,7 @@
     <string name="pair_code_dash_hint">ハイフンはあってもなくても構いません。</string>
     <string name="pair_code_pair">ペアリング</string>
     <string name="pair_code_pairing">ペアリング中…</string>
-    <string name="pair_error_host">Macのアドレスを入力してください（QRコードの下の「Listening」に表示されています）。</string>
+    <string name="pair_error_host">Macのアドレスを入力してください（Macアプリの「接続」タブの「待ち受けアドレス」に表示されています）。</string>
     <string name="pair_error_port">ポートは1～65535の範囲で指定してください。</string>
     <string name="pair_error_code_length">コードは%1$d桁です。</string>
     <string name="pair_error_code_rejected">コードが正しくありません。コードは使用するたびに変わるため、Macで現在のコードを確認してください。</string>

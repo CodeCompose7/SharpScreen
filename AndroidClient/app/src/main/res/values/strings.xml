@@ -48,7 +48,7 @@
     <string name="wireless_connecting_to">Connecting to %1$s</string>
     <string name="wireless_reconnecting_to">Reconnecting to %1$s</string>
     <string name="wireless_pair_title">Pair with your Mac</string>
-    <string name="wireless_pair_steps">Open SharpScreen on your Mac → switch to the Wireless tab → scan the QR shown</string>
+    <string name="wireless_pair_steps">Open SharpScreen on your Mac → Connection tab → choose Wireless → scan the QR shown</string>
     <string name="wireless_scan_qr">Scan QR Code</string>
     <string name="wireless_enter_code_no_camera">No camera? Enter code instead</string>
     <string name="wireless_enter_code_instead">Enter code instead</string>
@@ -63,7 +63,7 @@
     <string name="wireless_unreachable_cached">No response from %1$s at %2$s:%3$d.\n\nThe Mac may have switched WiFi networks, changed its port, or is not running. Open SharpScreen on the Mac and scan the new QR to re-pair.</string>
     <string name="wireless_unreachable">No response from your Mac. Make sure both devices are on the same WiFi and the Mac app is running, then scan the QR again.</string>
     <string name="wireless_token_title">⚠ Re-pair required</string>
-    <string name="wireless_token_cached">%1$s reset its pairing token (e.g. Reset Token clicked, or reinstalled). Scan the new QR to pair again.</string>
+    <string name="wireless_token_cached">%1$s reset its pairing token (e.g. Reset Pairing Token clicked, or reinstalled). Scan the new QR to pair again.</string>
     <string name="wireless_token">The Mac reset its pairing token. Scan the new QR to pair again.</string>
     <string name="wireless_protocol_title">⚠ Connection error</string>
     <string name="wireless_protocol">Couldn\'t complete the secure handshake with the Mac. Scan the QR again.</string>
@@ -80,7 +80,7 @@
     <string name="pair_code_dash_hint">With or without the dash — both work.</string>
     <string name="pair_code_pair">Pair</string>
     <string name="pair_code_pairing">Pairing…</string>
-    <string name="pair_error_host">Enter the Mac\'s address (shown as \"Listening\" under the QR).</string>
+    <string name="pair_error_host">Enter the Mac\'s address (shown as \"Listening on\" in the Mac app\'s Connection tab).</string>
     <string name="pair_error_port">Port must be between 1 and 65535.</string>
     <string name="pair_error_code_length">The code is %1$d digits.</string>
     <string name="pair_error_code_rejected">Code not accepted. Codes change after each use — check the Mac for the current one.</string>
