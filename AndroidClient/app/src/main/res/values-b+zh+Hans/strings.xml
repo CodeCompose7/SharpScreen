@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Simplified Chinese (zh-Hans). Also used on zh-CN / zh-SG devices: since API 24 the
+         resource system infers the Hans script for those locales.
+         app_name is not translated: a localized app_name would also override the debug
+         build's "SharpScreen Dev" label. Mac UI labels ("Wireless", "Listening", "Reset Token")
+         stay in English because the Mac app shows them in English for this language. -->
+    <string name="stat_demo_suffix">" (演示)"</string>
+
+    <!-- ===== Home panel ===== -->
+    <string name="home_subtitle">将平板电脑用作第二块显示屏</string>
+    <string name="home_requires_mac">需要一台运行 SharpScreen 应用的 Mac</string>
+    <string name="home_get_mac_app">获取 Mac 应用 →</string>
+    <string name="settings_open">设置</string>
+    <string name="mode_usb">USB</string>
+    <string name="mode_wireless">无线</string>
+
+    <string name="checklist_title">连接检查清单</string>
+    <string name="checklist_developer_mode">已开启开发者模式</string>
+    <string name="checklist_usb_debugging">已开启 USB 调试</string>
+    <string name="checklist_usb_cable">已连接 USB 数据线</string>
+    <string name="checklist_mac_server">Mac 服务器正在运行</string>
+    <string name="checklist_hint_developer_mode">请开启开发者选项</string>
+    <string name="checklist_hint_usb_debugging">请在开发者选项中开启 USB 调试</string>
+    <string name="checklist_hint_usb_cable">请用数据线将平板电脑连接到 Mac</string>
+    <string name="checklist_hint_mac_server">请在 Mac 应用中开始串流</string>
+
+    <string name="connect">连接</string>
+    <string name="status_ready">已准备好连接</string>
+    <string name="status_not_ready">尚未准备好连接</string>
+    <string name="status_connecting">正在连接…</string>
+    <string name="status_connected">已连接 · 正在串流</string>
+    <string name="status_disconnected">已断开连接</string>
+    <string name="status_connection_failed">连接失败</string>
+    <string name="status_no_hevc">此设备没有 HEVC 解码器。请更新 Mac 上的 SharpScreen 应用以启用 H.264 支持。</string>
+    <string name="status_decoder_failed">视频解码器出错：%1$s</string>
+
+    <string name="watch_demo_video">观看演示视频</string>
+    <string name="try_demo">没有 Mac？试试演示</string>
+    <string name="report_problem">报告问题</string>
+
+    <!-- ===== Wireless ===== -->
+    <string name="wireless_connecting">正在连接…</string>
+    <string name="wireless_connecting_to">正在连接到 %1$s</string>
+    <string name="wireless_reconnecting_to">正在重新连接到 %1$s</string>
+    <string name="wireless_pair_title">与 Mac 配对</string>
+    <string name="wireless_pair_steps">在 Mac 上打开 SharpScreen → 切换到“Wireless”标签页 → 扫描显示的 QR 码</string>
+    <string name="wireless_scan_qr">扫描 QR 码</string>
+    <string name="wireless_enter_code_no_camera">没有相机？改为输入代码</string>
+    <string name="wireless_enter_code_instead">改为输入代码</string>
+    <string name="wireless_connected">● 已连接</string>
+    <string name="wireless_disconnected">○ 已断开连接</string>
+    <string name="wireless_disconnect">断开连接</string>
+    <string name="wireless_forget_mac">忘记此 Mac</string>
+    <string name="wireless_reconnect">重新连接</string>
+    <string name="wireless_repair_title">⚠ 无法连接</string>
+    <string name="wireless_repair_message">请扫描 Mac 上新的 QR 码以重新配对。</string>
+    <string name="wireless_unreachable_title">⚠ 无法连接到 Mac</string>
+    <string name="wireless_unreachable_cached">%1$s（%2$s:%3$d）没有响应。\n\nMac 可能已切换 Wi-Fi 网络、更改了端口，或者应用未运行。请在 Mac 上打开 SharpScreen 并扫描新的 QR 码以重新配对。</string>
+    <string name="wireless_unreachable">Mac 没有响应。请确保两台设备连接到同一 Wi-Fi 并且 Mac 应用正在运行，然后重新扫描 QR 码。</string>
+    <string name="wireless_token_title">⚠ 需要重新配对</string>
+    <string name="wireless_token_cached">%1$s 已重置配对令牌（例如点击了“Reset Token”或重新安装了应用）。请扫描新的 QR 码重新配对。</string>
+    <string name="wireless_token">Mac 已重置配对令牌。请扫描新的 QR 码重新配对。</string>
+    <string name="wireless_protocol_title">⚠ 连接错误</string>
+    <string name="wireless_protocol">无法与 Mac 建立安全连接。请重新扫描 QR 码。</string>
+    <string name="wireless_camera_title">需要相机权限才能扫描 QR 码</string>
+    <string name="wireless_camera_message">您已拒绝该权限。请前往“设置 → 应用 → SharpScreen → 权限”允许。</string>
+    <string name="wireless_open_settings">打开设置</string>
+
+    <!-- ===== Code pairing dialog ===== -->
+    <string name="pair_code_title">使用代码配对</string>
+    <string name="pair_code_intro">代码显示在 Mac 上 SharpScreen 的 QR 码下方。</string>
+    <string name="pair_code_mac_address">Mac 地址</string>
+    <string name="pair_code_port">端口</string>
+    <string name="pair_code_code">配对码</string>
+    <string name="pair_code_dash_hint">带不带短横线均可。</string>
+    <string name="pair_code_pair">配对</string>
+    <string name="pair_code_pairing">正在配对…</string>
+    <string name="pair_error_host">请输入 Mac 的地址（显示在 QR 码下方的“Listening”处）。</string>
+    <string name="pair_error_port">端口必须介于 1 到 65535 之间。</string>
+    <string name="pair_error_code_length">代码为 %1$d 位数字。</string>
+    <string name="pair_error_code_rejected">代码无效。代码每次使用后都会更改，请在 Mac 上查看当前代码。</string>
+    <string name="pair_error_host_too_old">请更新 Mac 上的 SharpScreen 以使用代码配对。</string>
+    <string name="pair_error_no_response">%1$s:%2$d 没有响应。请检查两台设备是否连接到同一 Wi-Fi，以及 Mac 应用是否正在运行。</string>
+    <string name="pair_error_connection">连接错误，请重试。</string>
+    <string name="pair_error_failed">配对失败，请重试。</string>
+
+    <!-- ===== Errors and toasts ===== -->
+    <string name="error_title_connection">连接错误</string>
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+    <string name="close">关闭</string>
+    <string name="error_enter_host">请输入主机地址</string>
+    <string name="error_open_mac_app_url">请在浏览器中打开 %1$s 下载 Mac 应用。</string>
+    <string name="error_open_report_url">请在浏览器中打开 %1$s 报告问题。</string>
+    <string name="error_open_url">请在浏览器中打开 %1$s。</string>
+    <string name="error_demo_failed">无法启动演示：%1$s</string>
+    <string name="error_server_not_running">Mac 服务器未运行。\n\n请先在 Mac 上启动 SharpScreen。</string>
+    <string name="error_unreachable">无法连接到 Mac。\n\n请确保两台设备已通过 USB 数据线连接，并且已配置 ADB reverse。</string>
+    <string name="error_timeout">连接超时。\n\n请检查 Mac 防火墙是否阻止了端口 %1$d。</string>
+    <string name="error_connection_failed">连接失败：%1$s\n\n请尝试：\n• 在 Mac 上启动 SharpScreen\n• 检查 USB 连接\n• 运行：adb reverse tcp:%2$d tcp:%2$d</string>
+    <string name="toast_demo_started">演示模式：打开设置（⚙）或按返回键即可退出</string>
+    <string name="toast_demo_touch">演示模式：连接后，在此处触摸即可在 Mac 上点击、拖动和滚动。</string>
+    <string name="toast_settings_icon_hidden">设置图标已隐藏：使用返回手势可重新显示</string>
+    <string name="toast_decoder_stalled">没有视频输出：串流分辨率可能超出了此平板电脑的解码器上限%1$s。请在 Mac 上降低分辨率或刷新率，或者关闭 HiDPI。</string>
+    <string name="toast_decoder_stalled_cap">"（最高约 %1$d×%2$d）"</string>
+    <string name="toast_decoder_failed">视频解码器出错，请断开连接后重新连接。</string>
+
+    <!-- ===== In-stream display settings ===== -->
+    <string name="display_settings_title">显示设置</string>
+    <string name="display_show_stats">显示统计信息</string>
+    <string name="display_show_stats_summary">FPS、码率、分辨率</string>
+    <string name="display_show_stats_overlay">显示统计信息浮层</string>
+    <string name="display_show_stats_overlay_summary">显示 FPS、码率和分辨率</string>
+    <string name="display_hide_settings_icon">隐藏设置图标</string>
+    <string name="display_hide_settings_icon_summary">串流时可使用返回手势重新显示</string>
+    <string name="display_overlay_opacity">浮层不透明度</string>
+    <string name="display_button_position">设置按钮位置</string>
+    <string name="display_reset_overlay">重置浮层</string>
+    <string name="display_reset_overlay_position">重置浮层位置</string>
+    <string name="display_reset_button">重置按钮</string>
+    <string name="display_disconnect">断开连接</string>
+    <string name="display_exit_demo">退出演示</string>
+    <string name="done">完成</string>
+
+    <!-- ===== QR scanner ===== -->
+    <string name="qr_aim">将相机对准 Mac 上的 QR 码</string>
+    <string name="qr_unavailable">此设备无法扫描 QR 码，请使用 USB 模式</string>
+    <string name="qr_invalid">QR 码无效，需要 SharpScreen 配对码</string>
+
+    <!-- ===== App settings screen ===== -->
+    <string name="settings_title">设置</string>
+    <string name="settings_back">返回</string>
+    <string name="settings_section_general">常规</string>
+    <string name="settings_language">语言</string>
+    <string name="language_system">跟随系统</string>
+    <string name="settings_section_connection">连接</string>
+    <string name="settings_usb_title">USB 连接</string>
+    <string name="settings_usb_summary">通过 USB 数据线连接时 Mac 应用的地址。仅在 Mac 上更改了端口时才需修改。</string>
+    <string name="settings_usb_host">主机</string>
+    <string name="settings_usb_port">端口</string>
+    <string name="settings_usb_port_invalid">请输入 1–65535</string>
+    <string name="settings_usb_reset">恢复默认值（127.0.0.1:54321）</string>
+    <string name="settings_section_about">关于</string>
+    <string name="settings_version">版本</string>
+    <string name="settings_report_problem">报告问题</string>
+    <string name="settings_github">GitHub</string>
+    <string name="settings_get_mac_app">获取 Mac 应用</string>
+    <string name="settings_credit">基于 Tran Vuong Quoc Dat 的 Side Screen（MIT 许可）</string>
+</resources>

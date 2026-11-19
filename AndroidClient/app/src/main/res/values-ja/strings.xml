@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name is not translated: a localized app_name would also override the debug
+         build's "SharpScreen Dev" label. Mac UI labels ("Wireless", "Listening", "Reset Token")
+         stay in English because the Mac app shows them in English for this language. -->
+    <string name="stat_demo_suffix">" (デモ)"</string>
+
+    <!-- ===== Home panel ===== -->
+    <string name="home_subtitle">タブレットをセカンドディスプレイに</string>
+    <string name="home_requires_mac">SharpScreenアプリを実行中のMacが必要です</string>
+    <string name="home_get_mac_app">Macアプリを入手 →</string>
+    <string name="settings_open">設定</string>
+    <string name="mode_usb">USB</string>
+    <string name="mode_wireless">ワイヤレス</string>
+
+    <string name="checklist_title">接続チェックリスト</string>
+    <string name="checklist_developer_mode">開発者モードが有効</string>
+    <string name="checklist_usb_debugging">USBデバッグが有効</string>
+    <string name="checklist_usb_cable">USBケーブル接続済み</string>
+    <string name="checklist_mac_server">Macサーバー実行中</string>
+    <string name="checklist_hint_developer_mode">開発者向けオプションをONにしてください</string>
+    <string name="checklist_hint_usb_debugging">開発者向けオプションでONにしてください</string>
+    <string name="checklist_hint_usb_cable">ケーブルでタブレットとMacを接続してください</string>
+    <string name="checklist_hint_mac_server">Macアプリでストリーミングを開始してください</string>
+
+    <string name="connect">接続</string>
+    <string name="status_ready">接続準備完了</string>
+    <string name="status_not_ready">接続の準備ができていません</string>
+    <string name="status_connecting">接続中…</string>
+    <string name="status_connected">接続済み · ストリーミング中</string>
+    <string name="status_disconnected">切断されました</string>
+    <string name="status_connection_failed">接続に失敗しました</string>
+    <string name="status_no_hevc">このデバイスにはHEVCデコーダーがありません。H.264を使用するには、MacのSharpScreenアプリをアップデートしてください。</string>
+    <string name="status_decoder_failed">ビデオデコーダーのエラー：%1$s</string>
+
+    <string name="watch_demo_video">デモ動画を見る</string>
+    <string name="try_demo">Macがない場合はデモを試す</string>
+    <string name="report_problem">問題を報告</string>
+
+    <!-- ===== Wireless ===== -->
+    <string name="wireless_connecting">接続中…</string>
+    <string name="wireless_connecting_to">%1$sに接続中</string>
+    <string name="wireless_reconnecting_to">%1$sに再接続中</string>
+    <string name="wireless_pair_title">Macとペアリング</string>
+    <string name="wireless_pair_steps">MacでSharpScreenを開く →「Wireless」タブに切り替える → 表示されたQRコードをスキャン</string>
+    <string name="wireless_scan_qr">QRコードをスキャン</string>
+    <string name="wireless_enter_code_no_camera">カメラがない場合はコードを入力</string>
+    <string name="wireless_enter_code_instead">コードを入力</string>
+    <string name="wireless_connected">● 接続済み</string>
+    <string name="wireless_disconnected">○ 切断済み</string>
+    <string name="wireless_disconnect">切断</string>
+    <string name="wireless_forget_mac">このMacを削除</string>
+    <string name="wireless_reconnect">再接続</string>
+    <string name="wireless_repair_title">⚠ 接続できませんでした</string>
+    <string name="wireless_repair_message">Macで新しいQRコードをスキャンして、もう一度ペアリングしてください。</string>
+    <string name="wireless_unreachable_title">⚠ Macに接続できません</string>
+    <string name="wireless_unreachable_cached">%2$s:%3$dの%1$sから応答がありません。\n\nMacのWi-Fiネットワークやポートが変わったか、アプリが起動していない可能性があります。MacでSharpScreenを開き、新しいQRコードをスキャンしてもう一度ペアリングしてください。</string>
+    <string name="wireless_unreachable">Macから応答がありません。両方のデバイスが同じWi-Fiに接続され、Macアプリが起動していることを確認してから、QRコードをもう一度スキャンしてください。</string>
+    <string name="wireless_token_title">⚠ 再ペアリングが必要です</string>
+    <string name="wireless_token_cached">%1$sのペアリングトークンがリセットされました（「Reset Token」のクリックや再インストールなど）。新しいQRコードをスキャンしてもう一度ペアリングしてください。</string>
+    <string name="wireless_token">Macのペアリングトークンがリセットされました。新しいQRコードをスキャンしてもう一度ペアリングしてください。</string>
+    <string name="wireless_protocol_title">⚠ 接続エラー</string>
+    <string name="wireless_protocol">Macとの安全な接続を確立できませんでした。QRコードをもう一度スキャンしてください。</string>
+    <string name="wireless_camera_title">QRコードをスキャンするにはカメラの権限が必要です</string>
+    <string name="wireless_camera_message">権限がブロックされています。設定 → アプリ → SharpScreen → 権限 で許可してください。</string>
+    <string name="wireless_open_settings">設定を開く</string>
+
+    <!-- ===== Code pairing dialog ===== -->
+    <string name="pair_code_title">コードでペアリング</string>
+    <string name="pair_code_intro">コードはMacのSharpScreenでQRコードの下に表示されます。</string>
+    <string name="pair_code_mac_address">Macのアドレス</string>
+    <string name="pair_code_port">ポート</string>
+    <string name="pair_code_code">ペアリングコード</string>
+    <string name="pair_code_dash_hint">ハイフンはあってもなくても構いません。</string>
+    <string name="pair_code_pair">ペアリング</string>
+    <string name="pair_code_pairing">ペアリング中…</string>
+    <string name="pair_error_host">Macのアドレスを入力してください（QRコードの下の「Listening」に表示されています）。</string>
+    <string name="pair_error_port">ポートは1～65535の範囲で指定してください。</string>
+    <string name="pair_error_code_length">コードは%1$d桁です。</string>
+    <string name="pair_error_code_rejected">コードが正しくありません。コードは使用するたびに変わるため、Macで現在のコードを確認してください。</string>
+    <string name="pair_error_host_too_old">コードでペアリングするには、MacのSharpScreenをアップデートしてください。</string>
+    <string name="pair_error_no_response">%1$s:%2$dから応答がありません。両方のデバイスが同じWi-Fiに接続され、Macアプリが起動していることを確認してください。</string>
+    <string name="pair_error_connection">接続エラー。もう一度お試しください。</string>
+    <string name="pair_error_failed">ペアリングに失敗しました。もう一度お試しください。</string>
+
+    <!-- ===== Errors and toasts ===== -->
+    <string name="error_title_connection">接続エラー</string>
+    <string name="ok">OK</string>
+    <string name="cancel">キャンセル</string>
+    <string name="close">閉じる</string>
+    <string name="error_enter_host">ホストアドレスを入力してください</string>
+    <string name="error_open_mac_app_url">ブラウザで%1$sを開いてMacアプリをダウンロードしてください。</string>
+    <string name="error_open_report_url">ブラウザで%1$sを開いて問題を報告してください。</string>
+    <string name="error_open_url">ブラウザで%1$sを開いてください。</string>
+    <string name="error_demo_failed">デモを開始できませんでした：%1$s</string>
+    <string name="error_server_not_running">Macサーバーが起動していません。\n\n先にMacでSharpScreenを起動してください。</string>
+    <string name="error_unreachable">Macに接続できません。\n\n両方のデバイスがUSBケーブルで接続され、ADB reverseが設定されていることを確認してください。</string>
+    <string name="error_timeout">接続がタイムアウトしました。\n\nMacのファイアウォールがポート%1$dをブロックしていないか確認してください。</string>
+    <string name="error_connection_failed">接続に失敗しました：%1$s\n\n次をお試しください：\n• MacでSharpScreenを起動\n• USB接続を確認\n• 実行：adb reverse tcp:%2$d tcp:%2$d</string>
+    <string name="toast_demo_started">デモモード — 終了するには設定（⚙）を開くか、戻るを押してください</string>
+    <string name="toast_demo_touch">デモモード — 接続中は、ここをタッチするとMacでクリック、ドラッグ、スクロールできます。</string>
+    <string name="toast_settings_icon_hidden">設定アイコンを非表示にしました — 戻るジェスチャーで再表示できます</string>
+    <string name="toast_decoder_stalled">映像が出力されません — ストリームの解像度がこのタブレットのデコーダーの上限%1$sを超えている可能性があります。Macで解像度やリフレッシュレートを下げるか、HiDPIをオフにしてください。</string>
+    <string name="toast_decoder_stalled_cap">"（最大 約%1$d×%2$d）"</string>
+    <string name="toast_decoder_failed">ビデオデコーダーのエラー — 切断してから再接続してください。</string>
+
+    <!-- ===== In-stream display settings ===== -->
+    <string name="display_settings_title">表示設定</string>
+    <string name="display_show_stats">統計情報を表示</string>
+    <string name="display_show_stats_summary">FPS、ビットレート、解像度</string>
+    <string name="display_show_stats_overlay">統計オーバーレイを表示</string>
+    <string name="display_show_stats_overlay_summary">FPS、ビットレート、解像度を表示</string>
+    <string name="display_hide_settings_icon">設定アイコンを非表示</string>
+    <string name="display_hide_settings_icon_summary">ストリーミング中は戻るジェスチャーで再表示</string>
+    <string name="display_overlay_opacity">オーバーレイの不透明度</string>
+    <string name="display_button_position">設定ボタンの位置</string>
+    <string name="display_reset_overlay">オーバーレイをリセット</string>
+    <string name="display_reset_overlay_position">オーバーレイの位置をリセット</string>
+    <string name="display_reset_button">ボタンをリセット</string>
+    <string name="display_disconnect">切断</string>
+    <string name="display_exit_demo">デモを終了</string>
+    <string name="done">完了</string>
+
+    <!-- ===== QR scanner ===== -->
+    <string name="qr_aim">MacのQRコードにカメラを向けてください</string>
+    <string name="qr_unavailable">このデバイスではQRスキャンを利用できません — USBモードを使用してください</string>
+    <string name="qr_invalid">無効なQRコードです（SharpScreenのペアリングコードではありません）</string>
+
+    <!-- ===== App settings screen ===== -->
+    <string name="settings_title">設定</string>
+    <string name="settings_back">戻る</string>
+    <string name="settings_section_general">一般</string>
+    <string name="settings_language">言語</string>
+    <string name="language_system">システムのデフォルト</string>
+    <string name="settings_section_connection">接続</string>
+    <string name="settings_usb_title">USB接続</string>
+    <string name="settings_usb_summary">USBケーブル経由で接続するMacアプリのアドレスです。Macでポートを変更した場合にのみ変更してください。</string>
+    <string name="settings_usb_host">ホスト</string>
+    <string name="settings_usb_port">ポート</string>
+    <string name="settings_usb_port_invalid">1～65535で入力</string>
+    <string name="settings_usb_reset">デフォルトに戻す（127.0.0.1:54321）</string>
+    <string name="settings_section_about">アプリ情報</string>
+    <string name="settings_version">バージョン</string>
+    <string name="settings_report_problem">問題を報告</string>
+    <string name="settings_github">GitHub</string>
+    <string name="settings_get_mac_app">Macアプリを入手</string>
+    <string name="settings_credit">Side Screen（Tran Vuong Quoc Dat作、MIT）のフォーク</string>
+</resources>
