@@ -6,6 +6,12 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+### Changed
+- **Text sharpens sooner over USB** (#14). After a window stops moving, the
+  lossless copy of what changed now goes out once it has been still for 40 ms
+  instead of 100 ms: 99% of the screen is lossless 80-97 ms after a drag stops
+  instead of 139-150 ms, for about 5% more tile data. Wi-Fi is unchanged.
+
 ### Added
 - **Latency breakdown** (#13, diagnostics). With the tablet app launched with
   `--ez diag.frameTiming true`, the Mac logs every 2 s how long frames take in

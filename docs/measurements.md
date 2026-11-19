@@ -597,6 +597,38 @@ and the rest.
   kept; the encode stage looks like the hardware encoder's own latency at
   this size and rate.
 
+## Lossless tiles after a drag stops (2026-11-20, issue #14)
+
+`Sharpen:` lines: once 99% of the tiles are lossless after a big change (16+
+tiles in one dirty-rect batch), how long after it. The per-second pipeline
+line adds each tile's last change -> lossless send. A large text window on the
+SharpScreen display was dragged 3 s and held 3 s, four times, over USB without
+ADB (384 KB of tiles a tick); the fifth value of each run is the window
+closing.
+
+| Settle / tile capture | Drag stop -> 99% lossless, typical | Tiles sent / invalidated per run | New-frame age avg |
+|---|---|---|---|
+| 100 ms / 30 fps (before) | 139-150 ms | 7959-8348 / ~8650 | 10.8-11.6 ms |
+| 50 ms / 30 fps | 89-99 ms | ~8650 / ~8650 | 12.1-12.5 ms |
+| **40 ms / 30 fps (USB now)** | **80-97 ms** | 8756-9255 / same | 9.0-11.9 ms |
+| 30 ms / 30 fps | 75-88 ms | 7939-8654 / ~8650 | 11.5-11.8 ms |
+| 100 ms / 120 fps | 196-778 ms | - | - |
+| 50 ms / 120 fps | 220-869 ms | - | - |
+
+- The settle is most of the wait, and shortening it costs ~5% more tiles and
+  no video latency. Below 40 ms the 30 fps tile capture (up to 33 ms) dominates.
+  USB settles after 40 ms now; Wi-Fi keeps 100 ms.
+- A faster tile capture made it slower, not faster.
+- In some sessions a quarter to all of the stops took 400-900 ms: settled tiles
+  waited on a tile frame newer than their change, and the tile stream sent none
+  until something else changed. Stalls come in streaks per session; the tile
+  stream's queue depth (3, 5, 6, 8) did not settle it either way. Asking the
+  tile stream for a fresh frame with `updateConfiguration` made each request
+  count as a whole-screen change (tiles sent 65 -> 234-276 MB a run, typical
+  stop 218-225 ms), like the on-demand screenshots tried before; dropped. Stamping
+  changes with the video frame's composite time instead of its delivery made no
+  difference; dropped.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
