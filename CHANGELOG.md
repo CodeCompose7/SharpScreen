@@ -6,6 +6,8 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-19 — Menu bar icon opens Settings
+
 ### Changed
 - **Menu bar icon: click for Settings, right-click for the menu** (#7). A click
   opens the settings window, or closes it when it is open on this desktop; a
