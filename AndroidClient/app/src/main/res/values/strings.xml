@@ -29,6 +29,7 @@
     <string name="checklist_hint_usb_debugging">Turn on USB debugging in Developer options</string>
     <string name="checklist_hint_usb_cable">Connect the tablet to the Mac with a USB data cable (a charger does not count)</string>
     <string name="checklist_hint_mac_server">Start streaming in the Mac app</string>
+    <string name="checklist_hint_mac_accessory_permission">Tap Connect to allow the USB connection</string>
 
     <string name="connect">Connect</string>
     <string name="status_ready">Ready to connect</string>

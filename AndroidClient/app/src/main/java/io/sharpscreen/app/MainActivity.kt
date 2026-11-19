@@ -54,6 +54,9 @@ internal const val GITHUB_URL = "https://github.com/CodeCompose7/SharpScreen"
 internal const val MAC_APP_URL = "$GITHUB_URL/releases"
 internal const val REPORT_PROBLEM_URL = "$GITHUB_URL/issues"
 
+/** Result of MainActivity.requestAccessoryPermission() (issue #8). */
+internal const val ACTION_ACCESSORY_PERMISSION = "io.sharpscreen.app.ACCESSORY_PERMISSION"
+
 class MainActivity : AppCompatActivity() {
     private lateinit var wirelessController: WirelessTabController
     private lateinit var appUpdater: AppUpdater
@@ -209,33 +212,61 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleAccessoryIntent(intent: Intent?) {
-        if (intent?.action != UsbManager.ACTION_USB_ACCESSORY_ATTACHED) return
-        val accessory = AccessoryLink.accessoryFrom(intent) ?: return
-        // Launched by the Mac plugging in: Android granted the permission with the intent.
+        when (intent?.action) {
+            // Launched by the Mac switching the tablet into accessory mode:
+            // Android granted the permission with the intent.
+            UsbManager.ACTION_USB_ACCESSORY_ATTACHED -> {
+                val accessory = AccessoryLink.accessoryFrom(intent) ?: return
+                openAccessoryAndConnect(accessory)
+            }
+            // The answer to requestAccessoryPermission().
+            ACTION_ACCESSORY_PERMISSION -> {
+                val accessory = AccessoryLink.accessoryFrom(intent) ?: AccessoryLink.attachedAccessory(this)
+                val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                if (granted && accessory != null) {
+                    openAccessoryAndConnect(accessory)
+                } else {
+                    autoConnectAccessory = false
+                    updateStatus(getString(R.string.status_ready))
+                    if (!isConnected) updateChecklist()
+                }
+            }
+        }
+    }
+
+    private fun openAccessoryAndConnect(accessory: android.hardware.usb.UsbAccessory) {
         autoConnectAccessory = true
         AccessoryLink.open(this, accessory)
         if (AccessoryLink.state == AccessoryLink.State.READY) accessoryListener(AccessoryLink.State.READY)
     }
 
-    /** The tablet is already in accessory mode (app opened by hand): pick it up. */
+    /**
+     * Asks once, for a tap on Connect (issue #8). Never on its own: the
+     * system dialog pauses the activity, and asking again on resume after
+     * Cancel brought the dialog straight back, over and over.
+     */
+    private fun requestAccessoryPermission(accessory: android.hardware.usb.UsbAccessory) {
+        // Mutable: Android adds EXTRA_PERMISSION_GRANTED (and the accessory) to it.
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) android.app.PendingIntent.FLAG_MUTABLE else 0
+        val permissionIntent =
+            android.app.PendingIntent.getActivity(
+                this,
+                0,
+                Intent(this, MainActivity::class.java).setAction(ACTION_ACCESSORY_PERMISSION),
+                flags,
+            )
+        getSystemService(UsbManager::class.java).requestPermission(accessory, permissionIntent)
+    }
+
+    /**
+     * The tablet is already in accessory mode (app opened by hand): pick it
+     * up when the permission is there. Without it, Connect asks.
+     */
     private fun resumeAccessory() {
         if (AccessoryLink.state != AccessoryLink.State.CLOSED) return
         val accessory = AccessoryLink.attachedAccessory(this) ?: return
-        val usb = getSystemService(UsbManager::class.java)
-        if (usb.hasPermission(accessory)) {
+        if (getSystemService(UsbManager::class.java).hasPermission(accessory)) {
             AccessoryLink.open(this, accessory)
-        } else {
-            val flags = android.app.PendingIntent.FLAG_IMMUTABLE
-            val permissionIntent =
-                android.app.PendingIntent.getActivity(
-                    this,
-                    0,
-                    Intent(this, MainActivity::class.java)
-                        .setAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED)
-                        .putExtra(UsbManager.EXTRA_ACCESSORY, accessory),
-                    flags,
-                )
-            usb.requestPermission(accessory, permissionIntent)
         }
     }
 
@@ -566,10 +597,17 @@ class MainActivity : AppCompatActivity() {
 
             updateStatus(getString(R.string.status_connecting))
             // Over the USB accessory when the Mac switched the tablet into it.
-            if (AccessoryLink.state == AccessoryLink.State.READY) {
-                connect("127.0.0.1", AccessoryLink.port)
-            } else {
-                connect(host, port)
+            val pendingAccessory = AccessoryLink.attachedAccessory(this)
+            when {
+                AccessoryLink.state == AccessoryLink.State.READY -> connect("127.0.0.1", AccessoryLink.port)
+                AccessoryLink.state != AccessoryLink.State.CLOSED -> autoConnectAccessory = true // connects once the Mac answers
+                pendingAccessory != null ->
+                    if (getSystemService(UsbManager::class.java).hasPermission(pendingAccessory)) {
+                        openAccessoryAndConnect(pendingAccessory)
+                    } else {
+                        requestAccessoryPermission(pendingAccessory)
+                    }
+                else -> connect(host, port)
             }
         }
 
@@ -2039,11 +2077,16 @@ class MainActivity : AppCompatActivity() {
         // Skip if connected (to prevent socket conflicts)
         if (isConnected) return
 
-        // USB accessory mode: no developer options, ADB or probe needed.
-        val accessory = AccessoryLink.state != AccessoryLink.State.CLOSED
+        // USB accessory mode: no developer options, ADB or probe needed. Also
+        // while the accessory waits for the permission (Connect asks for it).
+        val linkOpen = AccessoryLink.state != AccessoryLink.State.CLOSED
+        val accessory = linkOpen || AccessoryLink.attachedAccessory(this) != null
         binding.rowDeveloperMode.visibility = if (accessory) View.GONE else View.VISIBLE
         binding.rowUsbDebugging.visibility = if (accessory) View.GONE else View.VISIBLE
         binding.textMacServer.setText(if (accessory) R.string.checklist_mac_accessory else R.string.checklist_mac_server)
+        binding.hintMacServer.setText(
+            if (accessory && !linkOpen) R.string.checklist_hint_mac_accessory_permission else R.string.checklist_hint_mac_server,
+        )
         if (accessory) {
             val ready = AccessoryLink.state == AccessoryLink.State.READY
             updateChecklistItem(binding.checkUsbConnected, binding.hintUsbConnected, true)

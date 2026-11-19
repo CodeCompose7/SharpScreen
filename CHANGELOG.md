@@ -6,6 +6,30 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-19 — Menu bar icon opens Settings
+
+### Changed
+- **Menu bar icon: click for Settings, right-click for the menu** (#7). A click
+  opens the settings window, or closes it when it is open on this desktop; a
+  right click (or Control-click) opens the menu with the server switch,
+  connection mode, Settings and Quit (⌘T, ⌘S, ⌘Q work there). On a second
+  display's menu bar the menu opens under that display's icon.
+
+### Fixed
+- **The settings window opens on the desktop you are on** (#7). Opening it
+  again after closing it on another desktop (Space) switched back to that
+  desktop.
+- **With several displays, the settings window opens on the display whose
+  menu bar you clicked**, below its menu bar. With the window open on one
+  display, a click on another display's icon moves it there in one click; it no
+  longer ends up with its title bar behind the menu bar.
+- **The settings window comes to the front, active, also under Stage
+  Manager** (#7). It used to come up inactive, or wait in Stage Manager's
+  strip, and a second click on the icon did not close it.
+- **Cancelling the tablet's USB accessory prompt no longer brings it back
+  over and over** (#8). The app asks only when you tap Connect, once per tap,
+  and the checklist says so ("Tap Connect to allow the USB connection").
+
 ## [0.4.1] - 2026-11-19 — The USB check means a computer
 
 ### Fixed

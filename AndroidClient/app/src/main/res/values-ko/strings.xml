@@ -22,6 +22,7 @@
     <string name="checklist_hint_usb_debugging">개발자 옵션에서 USB 디버깅을 켜세요</string>
     <string name="checklist_hint_usb_cable">USB 데이터 케이블로 태블릿을 Mac에 연결하세요 (충전기는 해당 안 됨)</string>
     <string name="checklist_hint_mac_server">Mac 앱에서 스트리밍을 시작하세요</string>
+    <string name="checklist_hint_mac_accessory_permission">연결을 눌러 USB 연결을 허용하세요</string>
 
     <string name="connect">연결</string>
     <string name="status_ready">연결 준비 완료</string>

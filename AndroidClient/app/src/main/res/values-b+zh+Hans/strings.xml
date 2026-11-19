@@ -25,6 +25,7 @@
     <string name="checklist_hint_usb_debugging">请在开发者选项中开启 USB 调试</string>
     <string name="checklist_hint_usb_cable">请用 USB 数据线将平板连接到 Mac（充电器不算）</string>
     <string name="checklist_hint_mac_server">请在 Mac 应用中开始串流</string>
+    <string name="checklist_hint_mac_accessory_permission">点按“连接”以允许 USB 连接</string>
 
     <string name="connect">连接</string>
     <string name="status_ready">已准备好连接</string>

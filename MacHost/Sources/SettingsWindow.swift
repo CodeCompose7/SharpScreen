@@ -321,6 +321,45 @@ class DisplaySettings: ObservableObject {
 // MARK: - Window Controller
 
 class SettingsWindowController: NSWindowController, NSWindowDelegate {
+    /// When the window last stopped being the key window. A click on the
+    /// menu bar icon takes key (and activation) away before its action runs,
+    /// so "in front a moment ago" is how the icon tells "close it" (#7).
+    private(set) var resignedKeyAt: Date?
+
+    func windowDidResignKey(_ notification: Notification) {
+        resignedKeyAt = Date()
+    }
+
+    /// The window is the one in front, or was until the click being handled.
+    var isInFront: Bool {
+        guard let window, window.isVisible else { return false }
+        if NSApp.isActive && window.isKeyWindow { return true }
+        if resignedKeyAt.map({ Date().timeIntervalSince($0) < 0.5 }) == true { return true }
+        return isTopmostOnScreen(window)
+    }
+
+    /// No other app's window lies over it: it is in front even when macOS
+    /// has not (yet) made SharpScreen the active app, which it may refuse
+    /// from macOS 14 on. A window parked in Stage Manager's strip is not.
+    private func isTopmostOnScreen(_ window: NSWindow) -> Bool {
+        guard let screen = window.screen,
+              let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+              as? [[String: Any]] else { return false }
+        // CG window bounds: top-left origin on the primary display.
+        let primaryTop = NSScreen.screens.first?.frame.maxY ?? screen.frame.maxY
+        let mine = window.frame
+        let mineCG = CGRect(x: mine.minX, y: primaryTop - mine.maxY, width: mine.width, height: mine.height)
+        for info in list {
+            guard (info[kCGWindowLayer as String] as? Int) == 0,
+                  let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
+                  let bounds = CGRect(dictionaryRepresentation: boundsDict),
+                  bounds.intersects(mineCG) else { continue }
+            // Front to back: the first normal window over ours decides.
+            return (info[kCGWindowNumber as String] as? Int) == window.windowNumber
+        }
+        return false
+    }
+
     convenience init(settings: DisplaySettings) {
         let window = ConstrainedWindow(
             contentRect: NSRect(origin: .zero, size: SettingsView.size),
@@ -336,19 +375,31 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         window.center()
         window.contentView = NSHostingView(rootView: SettingsView(settings: settings))
         window.isReleasedWhenClosed = false
+        // Open on the desktop (Space) the user is on (issue #7). A closed
+        // window remembers its last Space, and showing it again switched the
+        // user back there.
+        window.collectionBehavior.insert(.moveToActiveSpace)
 
         self.init(window: window)
         window.delegate = self
     }
 
     func windowDidMove(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow,
-              let screen = window.screen ?? NSScreen.main else { return }
-
-        var frame = window.frame
-        let visibleFrame = screen.visibleFrame
+        guard let window = notification.object as? NSWindow else { return }
         let minVisibleWidth: CGFloat = 100
         let minVisibleHeight: CGFloat = 50
+        var frame = window.frame
+        // Enough of it shows on some display: leave it. Checking only
+        // window.screen went wrong mid-move between displays: that is still
+        // the old display, and a window just placed below it (issue #7) was
+        // pulled back up until its top 50 pt sat on the old display, title
+        // bar behind the new display's menu bar.
+        let showing = NSScreen.screens.contains { screen in
+            let part = screen.visibleFrame.intersection(frame)
+            return part.width >= minVisibleWidth && part.height >= minVisibleHeight
+        }
+        guard !showing, let screen = Self.nearestScreen(to: frame) else { return }
+        let visibleFrame = screen.visibleFrame
 
         if frame.maxX < visibleFrame.minX + minVisibleWidth {
             frame.origin.x = visibleFrame.minX - frame.width + minVisibleWidth
@@ -366,18 +417,38 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
             window.setFrame(frame, display: true)
         }
     }
+
+    /// The display a lost window should come back to: the one closest to it.
+    static func nearestScreen(to frame: NSRect) -> NSScreen? {
+        func distance(_ screen: NSScreen) -> CGFloat {
+            let area = screen.visibleFrame
+            let dx = max(area.minX - frame.maxX, frame.minX - area.maxX, 0)
+            let dy = max(area.minY - frame.maxY, frame.minY - area.maxY, 0)
+            return dx * dx + dy * dy
+        }
+        return NSScreen.screens.min { distance($0) < distance($1) }
+    }
 }
 
 class ConstrainedWindow: NSWindow {
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
-        guard let screen = screen ?? self.screen ?? NSScreen.main else {
+        let minVisibleWidth: CGFloat = 100
+        let minVisibleHeight: CGFloat = 50
+        // Enough of it shows on some display: leave it. AppKit passes the
+        // display the window was on, which right after a move to another
+        // display is the old one; constraining to it pulled the window back
+        // across the edge, title bar under the new display's menu bar (#7).
+        let showing = NSScreen.screens.contains { candidate in
+            let part = candidate.visibleFrame.intersection(frameRect)
+            return part.width >= minVisibleWidth && part.height >= minVisibleHeight
+        }
+        if showing { return frameRect }
+        guard let screen = SettingsWindowController.nearestScreen(to: frameRect) ?? screen ?? NSScreen.main else {
             return frameRect
         }
 
         var constrainedRect = frameRect
         let visibleFrame = screen.visibleFrame
-        let minVisibleWidth: CGFloat = 100
-        let minVisibleHeight: CGFloat = 50
 
         if constrainedRect.maxX < visibleFrame.minX + minVisibleWidth {
             constrainedRect.origin.x = visibleFrame.minX - constrainedRect.width + minVisibleWidth
