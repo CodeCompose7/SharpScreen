@@ -12,8 +12,15 @@
 set -euo pipefail
 
 TARGET="${1:?usage: notarize.sh <path.app|path.dmg|path.zip>}"
-: "${APPSTORE_API_KEY_P8:?}" "${APPSTORE_API_KEY_ID:?}" "${APPSTORE_API_ISSUER_ID:?}"
-KEY_ARGS=(--key "$APPSTORE_API_KEY_P8" --key-id "$APPSTORE_API_KEY_ID" --issuer "$APPSTORE_API_ISSUER_ID")
+# Credentials: a notarytool keychain profile (local use, made once with
+#   xcrun notarytool store-credentials sharpscreen-notary --apple-id <id> --team-id YQV3R5Y48H
+# and an app-specific password), or an App Store Connect API key (CI).
+if [ -n "${NOTARY_PROFILE:-}" ]; then
+  KEY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
+else
+  : "${APPSTORE_API_KEY_P8:?set NOTARY_PROFILE or the APPSTORE_API_KEY_* variables}" "${APPSTORE_API_KEY_ID:?}" "${APPSTORE_API_ISSUER_ID:?}"
+  KEY_ARGS=(--key "$APPSTORE_API_KEY_P8" --key-id "$APPSTORE_API_KEY_ID" --issuer "$APPSTORE_API_ISSUER_ID")
+fi
 
 SUBMIT="$TARGET"
 if [[ "$TARGET" == *.app ]]; then

@@ -79,6 +79,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var isDaemonMode = false // Deprecated: keeping variable for ABI compatibility but unused
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        _ = AppLanguage.atLaunch // the language this run is in, before any change
         print("✅ App launched")
 
         // Create menu bar item
