@@ -49,6 +49,11 @@ enum WireMessage {
     static let tileInvalidate: UInt8 = 20
     /// Server→client: LZ4-compressed BGRA tiles (see LosslessTileCodec).
     static let losslessTiles: UInt8 = 21
+    /// Client -> host, only from a tablet launched with diag.frameTiming:
+    /// type + content time (u64) + decode, draw wait, to-vsync (u32 µs each),
+    /// little-endian (issue #13).
+    static let frameTiming: UInt8 = 22
+    static let frameTimingSize = 1 + 8 + 4 + 4 + 4
 }
 
 private extension String {
@@ -368,6 +373,9 @@ class StreamingServer {
     /// The client is over USB (adb reverse, loopback) rather than Wi-Fi.
     private let clientOverUSB = OSAllocatedUnfairLock(initialState: true)
     var clientIsOverUSB: Bool { clientOverUSB.withLock { $0 } }
+
+    /// Per-stage frame latency, from tablets that report it (issue #13).
+    let latency = LatencyBreakdown()
 
     /// When the last frame with new pixels (not a repeat) went out: while
     /// the screen moves, Wi-Fi tiles yield to video (TileRefiner).
@@ -736,6 +744,20 @@ class StreamingServer {
                 pong.append(clientTimestamp)
                 connection.send(content: pong, completion: .contentProcessed { _ in })
 
+            case WireMessage.frameTiming:
+                guard inputBuffer.count >= WireMessage.frameTimingSize else { return }
+                let receivedNs = DispatchTime.now().uptimeNanoseconds
+                let report = LatencyBreakdown.Report(
+                    contentNs: inputLE(at: 1, bytes: 8),
+                    decodeUs: UInt32(inputLE(at: 9, bytes: 4)),
+                    waitUs: UInt32(inputLE(at: 13, bytes: 4)),
+                    presentUs: UInt32(inputLE(at: 17, bytes: 4))
+                )
+                consumeInputBytes(WireMessage.frameTimingSize)
+                if let line = latency.recordReport(report, receivedNs: receivedNs) {
+                    debugLog(line)
+                }
+
             case WireMessage.keyframeRequest:
                 // Keyframe request from Android decoder. The client sends a
                 // two-byte message: type + flags.
@@ -944,6 +966,12 @@ class StreamingServer {
         inputBuffer[inputBuffer.index(inputBuffer.startIndex, offsetBy: offset)]
     }
 
+    private func inputLE(at offset: Int, bytes: Int) -> UInt64 {
+        var value: UInt64 = 0
+        for i in 0..<bytes { value |= UInt64(inputByte(at: offset + i)) << (8 * i) }
+        return value
+    }
+
     private func consumeInputBytes(_ count: Int) {
         let endIndex = inputBuffer.index(inputBuffer.startIndex, offsetBy: count)
         inputBuffer.removeSubrange(inputBuffer.startIndex..<endIndex)
@@ -1024,7 +1052,8 @@ class StreamingServer {
     /// so it can present frames on the source's cadence.
     func sendFrame(_ data: Data, timestamp: UInt64, isKeyframe: Bool = false, isRepeat: Bool = false, contentNs: UInt64 = 0) {
         guard let connection = connection, !isStopped, connectionReady else { return }
-        if !isRepeat { lastNewFrameAt.withLock { $0 = DispatchTime.now().uptimeNanoseconds } }
+        let encodeDoneNs = DispatchTime.now().uptimeNanoseconds
+        if !isRepeat { lastNewFrameAt.withLock { $0 = encodeDoneNs } }
 
         // With short-GOP encoding, a fresh client must start on a keyframe —
         // sending P-frames before the first IDR would feed garbage to its decoder.
@@ -1044,6 +1073,11 @@ class StreamingServer {
 
             let packet = self.makeFramePacket(data, timestamp: contentNs > 0 ? contentNs : timestamp, isKeyframe: isKeyframe)
             let sendCallNs = DispatchTime.now().uptimeNanoseconds
+            // Every frame: the first one sent with a given content time is the
+            // one the tablet reports (idle ticks carry fresh content times too).
+            if contentNs > 0 {
+                self.latency.recordSend(.init(contentNs: contentNs, encodeStartNs: timestamp, encodeDoneNs: encodeDoneNs, sendNs: sendCallNs))
+            }
             let queued = connection.queuedBytes
             if queued > self.maxQueuedBytes { self.maxQueuedBytes = queued }
             if data.count > self.maxFrameBytes { self.maxFrameBytes = data.count; self.maxFrameWasKey = isKeyframe }

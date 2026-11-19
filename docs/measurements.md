@@ -503,6 +503,100 @@ two drags each, twice:
 | Ping during the drag, p90 | 25-32 ms | 12-17 ms |
 | Full screen of tiles after a reset | 0.81 s | 0.95-0.99 s |
 
+## Latency breakdown, Mac screen to tablet glass (2026-11-20, issue #13)
+
+A tablet launched with `--ez diag.frameTiming true` reports, for each new
+frame it draws, the time from arrival to decoder output, from there to its
+draw, and from the draw to the vsync it asked for. The Mac matches the report
+to its own times for that frame and logs a `Latency` line every 2 s. Each side
+only measures intervals on its own clock; the network share is the round trip
+minus the tablet's part, halved.
+
+The reference is the frame's content time: its presentation time on the Mac's
+virtual display (ScreenCaptureKit's PTS), so the total is how far the tablet
+runs behind the Mac's own screen. The encoder often starts before that vsync,
+so the first stage is negative.
+
+Big-window drag, Tab S11 Ultra at 120 Hz, p50 (p90) in ms, 7 windows of 2 s:
+
+| Stage | Wi-Fi, channel 149 | USB (adb reverse) |
+|---|---|---|
+| Mac vsync -> encode start | -2.5 to -0.4 (0.2-1.0) | -3.5 to -2.5 (0.4-0.7) |
+| Encode | 5.4-12.3 (7.6-16.7) | 11.0-11.7 (14.4-17.0) |
+| Encoded -> socket | 0.0 | 0.0 |
+| Network, one way | 5.6-5.8 (6.9-21.8) | 2.1-2.3 (2.8-3.2) |
+| Decode | 3.1-5.8 (7.9-9.1) | 2.1-3.7 (7.7-8.3) |
+| Decoder output -> draw | 1.3-3.6 (4.2-5.9) | 2.9-4.3 (5.9-6.8) |
+| Draw -> its vsync | 20.6-27.7 (27.1-32.0) | 21.9-23.2 (27.1-29.6) |
+| **Total** | **44.3-44.6** (45.4-60.4) | **42.4-43.1** (43.3-43.7) |
+
+- The totals hardly move because the tablet presents each frame at the Mac's
+  content time plus a fixed offset (PresentScheduler, p50): what one stage
+  saves, the wait for the vsync absorbs. Only lowering the earliest a frame
+  can be shown lowers the total. USB's 3.5 ms shorter network leg shows up as
+  only 1.5 ms.
+- The biggest share is the tablet's draw to vsync, 21-23 ms: the scheduler's
+  wait plus the time SurfaceFlinger needs before a queued buffer is on screen.
+- Encoding takes 11-12 ms, twice the 5.4 ms of the first seconds of the drag
+  (and of the earlier 60 fps test window). Worth a look.
+- The network leg over Wi-Fi is 5.7 ms; over USB 2.2 ms.
+
+### The tablet's draw -> vsync: mostly SurfaceFlinger (2026-11-20)
+
+The tablet presents each frame at the Mac's content time plus an offset, the
+p50 of how soon recent frames could make a vsync. Lowering the percentile
+shows frames sooner. Judder by `scripts/present_judder.py`: the app logs each
+new frame's swap and content time, `dumpsys SurfaceFlinger --latency` gives
+each buffer's actual present, and a step is off when two consecutive new
+frames reach the screen at a spacing more than half a vsync away from their
+spacing on the Mac (a stricter matching than the atrace runs above, so the
+baseline is higher). USB, big-window drag, alternating, two runs each:
+
+| Present at | Steps off | App swap -> on screen, p50 | Total behind the Mac, p50 |
+|---|---|---|---|
+| p50 (stock) | 28.2%, 32.5% | 19.4-19.5 ms | 41.7-42.0 ms |
+| p25 | 36.4%, 47.6% | 17.9-18.3 ms | 38.0-39.8 ms |
+| p1 (as soon as possible) | 51.4%, 44.3% | 16.9-17.1 ms | 37.8-38.0 ms |
+
+Even shown as soon as possible, a frame takes ~17 ms from the app's swap to
+the screen: two vsyncs of SurfaceFlinger's pipeline at 120 Hz, which an app
+cannot shorten (front-buffer rendering would, at the price of tearing on a
+moving full-screen picture). The scheduler's own wait is the remaining 2-4 ms,
+and it buys the smoothness: giving it up takes judder from ~30% to ~45-50% of
+steps. p50 stays.
+
+### Encoding: ~12 ms, and what did not change it (2026-11-20)
+
+Big-window drag over USB, ~90-110 new frames a second plus repeats to 120.
+"Encode" is VideoToolbox submit -> output (Latency line); the wait/service
+split below logged, per frame, the time behind the previous frame's output
+and the rest.
+
+| Tried | Encode p50 (p90) | Total behind the Mac, p50 |
+|---|---|---|
+| Stock | 11.1-12.4 (15-17.7) | 38-43 |
+| Lossless tiles off (tablet `diag.lossless false`) | 11.6-12.1 | 42.4-42.6 |
+| No repeat frames (`diag.noRepeats`) | 8.6-8.9 (11.5-11.8) | 41.7-44.6 |
+| Repeats anchored to the next vsync + 1.5 ms instead of a free-running timer | 11.9-13.2 | 39.6-47.7 |
+| PrioritizeEncodingSpeedOverQuality | 9.1-10.3 | 37-44.5 |
+| EnableLowLatencyRateControl | **53-54** | 95-97 |
+| ExpectedFrameRate 240, MaximumRealTimeFrameRate 240, RealTime off | no change (~12) | - |
+| Capture CGColorSpace removed; a plain memcpy copy of the capture; App Nap off | no change | - |
+
+- On a still screen (repeats only, one every 8.33 ms) each frame takes ~12.7
+  ms from submit to output, ~4.3 ms of it after the next frame was already
+  submitted: the encoder keeps about 1.5 frames in flight at 120 fps at
+  2960x1848. During the drag the split is ~8.4 ms service plus ~2-3 ms behind
+  the previous frame.
+- A standalone VideoToolbox benchmark with the same settings gave 5.5-6.1 ms
+  when paced with usleep (which runs late here, ~90 fps) and ~108 ms when paced
+  precisely, from a timer or a spin loop. It does not stand in for the app, so
+  no conclusion is drawn from it.
+- Without repeats the encode stage drops ~3 ms, but the tablet decodes slower
+  at the lower input rate and the total did not improve. Nothing here was
+  kept; the encode stage looks like the hardware encoder's own latency at
+  this size and rate.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
