@@ -451,7 +451,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// moves here instead of closing.
     func toggleSettings() {
         let clickedScreen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) }
+        // Closed only when it is the window in front: visible alone is not
+        // enough, because Stage Manager keeps a window that is not in front
+        // visible in its strip, and the click should bring it forward.
         if let window = settingsWindow?.window, window.isVisible, window.isOnActiveSpace,
+           NSApp.isActive, window.isKeyWindow,
            clickedScreen == nil || window.screen == clickedScreen {
             window.performClose(nil)
         } else {
@@ -526,8 +530,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func showSettings() {
+        // Activate first, then bring the window forward: shown while the app
+        // was still inactive, Stage Manager put it in the strip instead of
+        // the stage. From macOS 14 activate(ignoringOtherApps:) is cooperative
+        // and the plain activate() is the call to use.
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
         settingsWindow?.showWindow(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow?.window?.makeKeyAndOrderFront(nil)
+        settingsWindow?.window?.orderFrontRegardless()
     }
 
     func checkPermissions() async {
