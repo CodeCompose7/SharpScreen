@@ -6,6 +6,8 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-11-19 — Fewer Wi-Fi keyframes
+
 ### Fixed
 - **Less lag when moving windows over Wi-Fi** (#9). While anything moved, the
   tablet asked for a new keyframe every 1.5 s, so the Mac sent a 560-670 KB
