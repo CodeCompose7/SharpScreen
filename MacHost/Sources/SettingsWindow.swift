@@ -393,14 +393,23 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
 class ConstrainedWindow: NSWindow {
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
-        guard let screen = screen ?? self.screen ?? NSScreen.main else {
+        let minVisibleWidth: CGFloat = 100
+        let minVisibleHeight: CGFloat = 50
+        // Enough of it shows on some display: leave it. AppKit passes the
+        // display the window was on, which right after a move to another
+        // display is the old one; constraining to it pulled the window back
+        // across the edge, title bar under the new display's menu bar (#7).
+        let showing = NSScreen.screens.contains { candidate in
+            let part = candidate.visibleFrame.intersection(frameRect)
+            return part.width >= minVisibleWidth && part.height >= minVisibleHeight
+        }
+        if showing { return frameRect }
+        guard let screen = SettingsWindowController.nearestScreen(to: frameRect) ?? screen ?? NSScreen.main else {
             return frameRect
         }
 
         var constrainedRect = frameRect
         let visibleFrame = screen.visibleFrame
-        let minVisibleWidth: CGFloat = 100
-        let minVisibleHeight: CGFloat = 50
 
         if constrainedRect.maxX < visibleFrame.minX + minVisibleWidth {
             constrainedRect.origin.x = visibleFrame.minX - constrainedRect.width + minVisibleWidth
@@ -415,5 +424,16 @@ class ConstrainedWindow: NSWindow {
         }
 
         return constrainedRect
+    }
+
+    // Temporary (issue #7 diagnosis): every frame change.
+    override func setFrame(_ frameRect: NSRect, display flag: Bool) {
+        super.setFrame(frameRect, display: flag)
+        debugLog("Settings window frame: \(frame) on \(screen?.localizedName ?? "-")")
+    }
+
+    override func setFrameOrigin(_ point: NSPoint) {
+        super.setFrameOrigin(point)
+        debugLog("Settings window origin: \(frame) on \(screen?.localizedName ?? "-")")
     }
 }
