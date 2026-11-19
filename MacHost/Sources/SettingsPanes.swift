@@ -682,21 +682,24 @@ struct GeneralPane: View {
     private var languageSection: some View {
         SettingsSection("Language") {
             SettingsRow("App Language", subtitle: "SharpScreen uses this language after it restarts.") {
-                PillSegmentedControl(
-                    selection: Binding(
-                        get: { language },
-                        set: { newValue in
-                            language = newValue
-                            newValue.save()
-                        }
-                    ),
-                    options: [
-                        .init(value: AppLanguage.system, title: "System"),
-                        .init(value: AppLanguage.english, title: "English"),
-                        .init(value: AppLanguage.korean, title: "한국어"),
-                    ],
-                    width: 228
-                )
+                // "System" follows macOS; each language is named in itself so
+                // it can be found from any UI language.
+                Picker("App Language", selection: Binding(
+                    get: { language },
+                    set: { newValue in
+                        language = newValue
+                        newValue.save()
+                    }
+                )) {
+                    Text("System").tag(AppLanguage.system)
+                    Divider()
+                    ForEach(AppLanguage.languages, id: \.self) { lang in
+                        Text(verbatim: lang.nativeName).tag(lang)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize()
             }
             if language != AppLanguage.atLaunch {
                 RowDivider()

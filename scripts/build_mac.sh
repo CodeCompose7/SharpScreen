@@ -74,6 +74,12 @@ cat > "$APP_DIR/Contents/Info.plist" << EOF
     <array>
         <string>en</string>
         <string>ko</string>
+        <string>ja</string>
+        <string>de</string>
+        <string>fr</string>
+        <string>ru</string>
+        <string>zh-Hans</string>
+        <string>es</string>
     </array>
     <key>CFBundleExecutable</key>
     <string>$APP_NAME</string>

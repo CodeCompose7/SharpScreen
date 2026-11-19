@@ -1,0 +1,246 @@
+/* SharpScreen Mac UI strings (Russian). Key = English source text; see
+   en.lproj/Localizable.strings. Keep every format specifier (%@, %lld). */
+
+/* Settings window: tabs */
+"Connection" = "Подключение";
+"Display" = "Дисплей";
+"Streaming" = "Трансляция";
+"General" = "Основные";
+"About" = "О программе";
+
+/* Connection pane */
+"Streaming · %@" = "Трансляция · %@";
+"Streaming to tablet" = "Трансляция на планшет";
+"Waiting for tablet" = "Ожидание планшета";
+"Stopped" = "Остановлено";
+"Start" = "Запустить";
+"Stop" = "Остановить";
+"%lld Hz" = "%lld Hz";
+"Port %@" = "Порт %@";
+"Screen Recording permission required — see General." = "Нужно разрешение на запись экрана — см. «Основные».";
+"USB" = "USB";
+"Wireless" = "Беспроводной";
+"USB Setup" = "Настройка USB";
+"Connect the tablet with a USB cable and allow USB debugging when asked. SharpScreen sets up adb reverse automatically when you click Start." = "Подключите планшет кабелем USB и разрешите отладку по USB, когда появится запрос. При нажатии «Запустить» SharpScreen автоматически настроит adb reverse.";
+"ADB installed" = "ADB установлен";
+"Installed" = "Установлен";
+"Missing" = "Не найден";
+"USB mode tunnels the TCP stream through the cable using `adb reverse`. Requires the `adb` command on the Mac. Searched paths: Homebrew, /usr/local/bin, ~/Library/Android/sdk/platform-tools, and PATH (`which adb`)." = "В режиме USB поток TCP передается по кабелю через `adb reverse`. На Mac нужна команда `adb`. Пути поиска: Homebrew, /usr/local/bin, ~/Library/Android/sdk/platform-tools и PATH (`which adb`).";
+"Install it with Homebrew:" = "Установите через Homebrew:";
+"ADB reverse" = "ADB reverse";
+"OK" = "OK";
+"Pending" = "Ожидание";
+"Whether `adb reverse tcp:%@ tcp:%@` is currently configured. The Mac app sets this up automatically when you click Start. Goes green within ~2 seconds after the tablet is plugged in and authorized." = "Настроен ли сейчас `adb reverse tcp:%@ tcp:%@`. Приложение для Mac настраивает это автоматически при нажатии «Запустить». Индикатор становится зеленым примерно через 2 секунды после подключения и авторизации планшета.";
+"USB device" = "Устройство USB";
+"Detected" = "Обнаружено";
+"Not detected" = "Не обнаружено";
+"An Android device authorized for ADB and visible to your Mac. Plug in via USB-C and tap Allow on the device's USB debugging prompt." = "Устройство Android, авторизованное для ADB и видимое для Mac. Подключите его через USB-C и коснитесь «Разрешить» в запросе на отладку по USB на устройстве.";
+"Network Status" = "Состояние сети";
+"Wi-Fi" = "Wi-Fi";
+"Connected" = "Подключено";
+"Disconnected" = "Отключено";
+"Whether the Mac currently has a working internet route. Wireless mode requires the Mac to be on a Wi-Fi (or Ethernet) network — the same network the tablet is on." = "Есть ли сейчас у Mac рабочее сетевое подключение. Для беспроводного режима Mac должен быть в той же сети Wi-Fi (или Ethernet), что и планшет.";
+"Listening on" = "Адрес приема";
+"The LAN address the tablet must reach. The QR code embeds this exact host:port — if it changes (e.g. you switch Wi-Fi), re-scan the new QR on the tablet." = "Адрес в локальной сети, к которому подключается планшет. QR-код содержит именно этот host:port — если он изменится (например, при смене сети Wi-Fi), отсканируйте новый QR-код на планшете.";
+"Network" = "Сеть";
+"Server Port" = "Порт сервера";
+"Port" = "Порт";
+"Stop the server to change the port." = "Чтобы изменить порт, остановите сервер.";
+"Changing the port invalidates existing pairings — re-scan the QR on each tablet." = "При смене порта существующие пары становятся недействительными — отсканируйте QR-код на каждом планшете заново.";
+"Custom port set — the Android app must use the same port." = "Задан другой порт — приложение Android должно использовать тот же порт.";
+
+/* Connection pane: wireless pairing */
+"Pair Device" = "Создание пары";
+"Click Start above to begin listening, then scan the QR." = "Нажмите «Запустить» выше, чтобы начать прием, затем отсканируйте QR-код.";
+"Generating QR…" = "Создание QR-кода…";
+"Scan this QR from SharpScreen for Android (Wireless tab)" = "Отсканируйте этот QR-код в SharpScreen для Android (вкладка «Беспроводной»)";
+"Listening: %@:%@" = "Прием: %@:%@";
+"Wi-Fi disconnected — no LAN address" = "Wi-Fi отключен — нет адреса в локальной сети";
+"No camera on your tablet?" = "На планшете нет камеры?";
+"Type this one-time code in the Android app instead.\nA new code is issued after each pairing." = "Введите вместо этого одноразовый код в приложении Android.\nПосле каждого создания пары выдается новый код.";
+"Paired Devices (%lld)" = "Устройства в паре (%lld)";
+"No devices paired yet." = "Пока нет устройств в паре.";
+"Forget" = "Забыть";
+"Reset Pairing Token" = "Сбросить токен пары";
+"Forgets every paired device." = "Все устройства в паре будут забыты.";
+"Reset…" = "Сбросить…";
+"Refresh list and timestamps" = "Обновить список и время";
+"Reset Token?" = "Сбросить токен?";
+"This will disconnect all paired devices. They will need to scan the new QR to connect again." = "Все устройства в паре будут отключены. Для повторного подключения им нужно будет отсканировать новый QR-код.";
+"just now" = "только что";
+
+/* Display pane */
+"Resolution" = "Разрешение";
+"Show all" = "Показать все";
+"Custom" = "Другое";
+"User defined" = "Пользовательские";
+"Widescreen" = "Широкий экран";
+"HD/4K" = "HD/4K";
+"Classic" = "Классический";
+"Surface/Pixel" = "Surface/Pixel";
+"Tablet Wide" = "Широкий планшет";
+"iPad" = "iPad";
+"W" = "Ш";
+"H" = "В";
+"Apply" = "Применить";
+"Supported range: 640–7680 × 480–4320" = "Допустимый диапазон: 640–7680 × 480–4320";
+"HiDPI (Retina)" = "HiDPI (Retina)";
+"Renders at 2× resolution for sharper text. Increases bandwidth." = "Отрисовка в 2× разрешении для более четкого текста. Увеличивает нагрузку на канал.";
+"Orientation" = "Ориентация";
+"Portrait" = "Книжная";
+"Landscape" = "Альбомная";
+"Rotation" = "Поворот";
+"Display will be in portrait mode" = "Дисплей будет в книжной ориентации";
+"Flip Horizontally" = "Отразить по горизонтали";
+"Mirror left and right" = "Поменять местами левую и правую стороны";
+"Flip Vertically" = "Отразить по вертикали";
+"Mirror top and bottom" = "Поменять местами верх и низ";
+"Display Arrangement" = "Расположение дисплеев";
+"Position the tablet relative to your other displays." = "Расположите планшет относительно других дисплеев.";
+"Arrange Displays…" = "Расположить дисплеи…";
+"Frame Rate" = "Частота кадров";
+"Refresh Rate" = "Частота обновления";
+"High refresh rate for a smooth experience" = "Высокая частота обновления для плавной картинки";
+"Custom rate — handy when a tablet shows artifacts above a certain FPS" = "Своя частота — полезно, если на планшете появляются артефакты выше определенного FPS";
+
+/* Streaming pane */
+"Gaming Mode" = "Игровой режим";
+"Enable Gaming Mode" = "Включить игровой режим";
+"Optimized for competitive gaming" = "Оптимизирован для соревновательных игр";
+"High bitrate (1000 Mbps)" = "Высокий битрейт (1000 Mbps)";
+"120 Hz refresh rate" = "Частота обновления 120 Hz";
+"Ultra-low latency encoding" = "Кодирование со сверхнизкой задержкой";
+"Bitrate" = "Битрейт";
+"Target bitrate" = "Целевой битрейт";
+"%@ Mbps" = "%@ Mbps";
+"Locked at 1000 Mbps in Gaming Mode" = "В игровом режиме зафиксирован на 1000 Mbps";
+"Quality" = "Качество";
+"Ultra Low" = "Минимальное";
+"Low" = "Низкое";
+"Medium" = "Среднее";
+"High" = "Высокое";
+"Quality locked to Ultra Low in Gaming Mode" = "В игровом режиме качество зафиксировано на минимальном";
+"Fastest encoding, lowest latency" = "Самое быстрое кодирование, минимальная задержка";
+"Touch Input" = "Сенсорный ввод";
+"Enable Touch Input" = "Включить сенсорный ввод";
+"Control the Mac by touching the tablet" = "Управляйте Mac касаниями планшета";
+"Touch input is off — the tablet is display-only" = "Сенсорный ввод выключен — планшет работает только как дисплей";
+"Performance" = "Производительность";
+"FPS" = "FPS";
+
+/* General pane */
+"Startup" = "Запуск";
+"Launch at Login" = "Открывать при входе";
+"Run SharpScreen in the background automatically after you log in." = "Автоматически запускать SharpScreen в фоне после входа в систему.";
+"Auto-start streaming on launch" = "Начинать трансляцию при запуске";
+"Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "Автоматически запускать сервер при открытии приложения, чтобы планшет мог подключиться без действий на Mac.";
+"Startup mode" = "Режим при запуске";
+"Which connection mode to start in when auto-starting." = "Режим подключения при автоматическом запуске.";
+"Permissions & Status" = "Разрешения и состояние";
+"Screen & System Audio" = "Экран и системный звук";
+"Screen Recording" = "Запись экрана";
+"Granted" = "Разрешено";
+"Required" = "Требуется";
+"Optional" = "Необязательно";
+"macOS privacy permission required to capture the virtual display. Grant it in System Settings → Privacy & Security → Screen Recording." = "Разрешение конфиденциальности macOS, необходимое для захвата виртуального дисплея. Предоставьте его в разделе «Системные настройки» → «Конфиденциальность и безопасность» → «Запись экрана».";
+"Accessibility" = "Универсальный доступ";
+"Optional permission. Required only if you want touch input from the tablet to control the Mac. Streaming works without it." = "Необязательное разрешение. Нужно, только если вы хотите управлять Mac касаниями планшета. Трансляция работает и без него.";
+"Virtual Display" = "Виртуальный дисплей";
+"Active" = "Активен";
+"Inactive" = "Неактивен";
+"The macOS virtual display SharpScreen renders into. Created when you click Start; the tablet streams its pixels." = "Виртуальный дисплей macOS, в который выводит изображение SharpScreen. Создается при нажатии «Запустить»; планшет транслирует его содержимое.";
+"Client Connected" = "Клиент подключен";
+"Yes" = "Да";
+"No" = "Нет";
+"Whether the Android app currently has an active stream session." = "Есть ли сейчас у приложения Android активный сеанс трансляции.";
+"Capture Method" = "Метод захвата";
+"Initializing…" = "Инициализация…";
+"Which macOS API is currently capturing the virtual display. SCStream is the modern path; the CGDisplayStream fallback activates if SCStream fails (e.g. on certain virtual display configurations)." = "API macOS, которым сейчас захватывается виртуальный дисплей. SCStream — современный способ; резервный CGDisplayStream включается, если SCStream не работает (например, при некоторых конфигурациях виртуального дисплея).";
+"Screen & System Audio Recording Required" = "Требуется запись экрана и системного аудио";
+"Screen Recording Required" = "Требуется запись экрана";
+"Required to capture the virtual display. Go to System Settings > Privacy & Security > Screen & System Audio Recording." = "Необходимо для захвата виртуального дисплея. Откройте «Системные настройки» > «Конфиденциальность и безопасность» > «Запись экрана и системного аудио».";
+"Required to capture the virtual display." = "Необходимо для захвата виртуального дисплея.";
+"Open System Settings" = "Открыть Системные настройки";
+"Tablet goes black in fullscreen apps" = "Планшет гаснет в полноэкранных приложениях";
+"\"Displays have separate Spaces\" is turned off, so macOS blanks every other display — including the tablet — whenever an app enters fullscreen. Turn it on in System Settings → Desktop & Dock → Mission Control, then log out and back in." = "Параметр «Дисплеи с отдельными пространствами Spaces» выключен, поэтому macOS гасит все остальные дисплеи, включая планшет, когда приложение переходит в полноэкранный режим. Включите его в разделе «Системные настройки» → «Рабочий стол и Dock» → Mission Control, затем выйдите из системы и войдите снова.";
+"Enable Touch Control" = "Включить сенсорное управление";
+"Control your Mac from your tablet." = "Управляйте Mac с планшета.";
+"Open Settings" = "Открыть настройки";
+"App" = "Приложение";
+"Reset Settings" = "Сбросить настройки";
+"Restore every setting to its default value." = "Вернуть всем настройкам значения по умолчанию.";
+"Restart SharpScreen" = "Перезапустить SharpScreen";
+"Restart" = "Перезапустить";
+"Quit SharpScreen" = "Завершить SharpScreen";
+"Stops streaming and removes the virtual display." = "Останавливает трансляцию и удаляет виртуальный дисплей.";
+"Quit" = "Завершить";
+"Quit SharpScreen (⌘Q)" = "Завершить SharpScreen (⌘Q)";
+"Cancel" = "Отменить";
+"Reset" = "Сбросить";
+"This will reset all settings to default values." = "Все настройки будут сброшены до значений по умолчанию.";
+
+/* About pane */
+"Version %@" = "Версия %@";
+"Turn your tablet into a second display" = "Планшет как второй дисплей";
+"Turns an Android tablet or phone into a second display for your Mac — over USB or Wi-Fi, with touch control. Free and open source." = "Превращает планшет или телефон Android во второй дисплей для Mac — через USB или Wi-Fi, с сенсорным управлением. Бесплатно и с открытым исходным кодом.";
+"Check for Updates…" = "Проверить обновления…";
+"Look for a newer version now. SharpScreen also checks once a day." = "Проверить наличие новой версии сейчас. SharpScreen также проверяет раз в день.";
+"Update checks are only available in the released build." = "Проверка обновлений доступна только в релизной сборке.";
+"Links" = "Ссылки";
+"GitHub" = "GitHub";
+"Releases" = "Релизы";
+"Report a Problem" = "Сообщить о проблеме";
+"Credits" = "Благодарности";
+"Fork of Side Screen by Tran Vuong Quoc Dat (MIT)" = "Форк Side Screen от Tran Vuong Quoc Dat (MIT)";
+
+/* Menu bar and app menu */
+"Connected — %@" = "Подключено — %@";
+"Connected to tablet" = "Подключено к планшету";
+"Waiting for tablet on port %@" = "Ожидание планшета на порту %@";
+"Server stopped" = "Сервер остановлен";
+"Start Streaming" = "Начать трансляцию";
+"Stop Streaming" = "Остановить трансляцию";
+"Connection Mode" = "Режим подключения";
+"Settings…" = "Настройки…";
+"About SharpScreen" = "О программе SharpScreen";
+"Edit" = "Правка";
+"Cut" = "Вырезать";
+"Copy" = "Скопировать";
+"Paste" = "Вставить";
+"Select All" = "Выбрать все";
+
+/* Alerts and errors */
+"Screen & System Audio Recording Permission Required" = "Требуется разрешение на запись экрана и системного аудио";
+"Please grant Screen & System Audio Recording permission in System Settings > Privacy & Security." = "Разрешите запись экрана и системного аудио в разделе «Системные настройки» > «Конфиденциальность и безопасность».";
+"Screen Recording Permission Required" = "Требуется разрешение на запись экрана";
+"Please grant Screen Recording permission in System Settings > Privacy & Security." = "Разрешите запись экрана в разделе «Системные настройки» > «Конфиденциальность и безопасность».";
+"Later" = "Позже";
+"Failed to Start Server" = "Не удалось запустить сервер";
+"The streaming server could not be created." = "Не удалось создать сервер трансляции.";
+"The virtual display was created without a display ID." = "Виртуальный дисплей создан без идентификатора дисплея.";
+"Could not listen on port %@: %@" = "Не удалось начать прием на порту %@: %@";
+"Server startup on port %@ was cancelled before the listener became ready." = "Запуск сервера на порту %@ отменен до готовности приема.";
+"Last listener error: %@" = "Последняя ошибка приема: %@";
+"Timed out while waiting for the server to listen on port %@." = "Истекло время ожидания приема сервером на порту %@.";
+"Server startup was awaited more than once." = "Запуск сервера ожидался более одного раза.";
+"Virtual display creation failed: %@" = "Не удалось создать виртуальный дисплей: %@";
+"Settings apply failed: %@" = "Не удалось применить настройки: %@";
+"Virtual display has not been created" = "Виртуальный дисплей не создан";
+"Main display not found" = "Основной дисплей не найден";
+"Display configuration failed: %@" = "Не удалось настроить дисплей: %@";
+"Mirror mode operation failed: %@" = "Ошибка видеоповтора: %@";
+"SCShareableContent timed out after %llds (possible Apple bug FB12114396)" = "Истекло время ожидания SCShareableContent через %lld с (возможно, ошибка Apple FB12114396)";
+"Virtual display ID not set" = "Идентификатор виртуального дисплея не задан";
+"Virtual display with ID %@ not found after 5 attempts" = "Виртуальный дисплей с идентификатором %@ не найден после 5 попыток";
+"Display not initialized" = "Дисплей не инициализирован";
+
+/* Wireless: AWDL warning */
+"AirDrop, Handoff and Universal Control can make wireless streaming stutter." = "Из-за AirDrop, Handoff и Universal Control беспроводная трансляция может прерываться.";
+"They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until the next restart or AirDrop: sudo ifconfig awdl0 down" = "Примерно дважды в секунду они ненадолго уводят Wi-Fi этого Mac с его канала (каждый раз примерно на 80 ms). Отключите их на время трансляции, подключите Mac по Ethernet или используйте USB. Чтобы отключить их до следующей перезагрузки или использования AirDrop: sudo ifconfig awdl0 down";
+
+/* General: language */
+"Language" = "Язык";
+"App Language" = "Язык приложения";
+"SharpScreen uses this language after it restarts." = "SharpScreen будет использовать этот язык после перезапуска.";
+"System" = "Системный";
+"Restart SharpScreen to apply the new language." = "Перезапустите SharpScreen, чтобы применить новый язык.";

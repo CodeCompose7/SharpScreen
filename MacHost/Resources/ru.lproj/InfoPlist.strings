@@ -1,0 +1,3 @@
+/* Privacy prompts shown by macOS (Info.plist keys). */
+"NSScreenCaptureUsageDescription" = "SharpScreen нужен доступ к записи экрана, чтобы захватывать виртуальный дисплей и транслировать его на устройство Android.";
+"NSLocalNetworkUsageDescription" = "SharpScreen нужен доступ к локальной сети, чтобы планшет Android мог подключаться к Mac по Wi-Fi в беспроводном режиме. Без него работают только подключения по USB.";
