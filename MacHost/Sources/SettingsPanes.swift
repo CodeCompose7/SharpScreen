@@ -668,12 +668,43 @@ struct GeneralPane: View {
     @ObservedObject var settings: DisplaySettings
     @State private var daemonEnabled = false
     @State private var showResetConfirmation = false
+    @State private var language = AppLanguage.saved
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            languageSection
             startupSection
             permissionsSection
             appSection
+        }
+    }
+
+    private var languageSection: some View {
+        SettingsSection("Language") {
+            SettingsRow("App Language", subtitle: "SharpScreen uses this language after it restarts.") {
+                PillSegmentedControl(
+                    selection: Binding(
+                        get: { language },
+                        set: { newValue in
+                            language = newValue
+                            newValue.save()
+                        }
+                    ),
+                    options: [
+                        .init(value: AppLanguage.system, title: "System"),
+                        .init(value: AppLanguage.english, title: "English"),
+                        .init(value: AppLanguage.korean, title: "한국어"),
+                    ],
+                    width: 228
+                )
+            }
+            if language != AppLanguage.atLaunch {
+                RowDivider()
+                SettingsRow("Restart SharpScreen to apply the new language.") {
+                    Button("Restart") { restartApp() }
+                        .controlSize(.small)
+                }
+            }
         }
     }
 
