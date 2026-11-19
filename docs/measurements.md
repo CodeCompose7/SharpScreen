@@ -298,6 +298,42 @@ ScreenCaptureKit's 32BGRA buffers carry the display colour space; against the
 session's BT.709 tags VideoToolbox also converted the transfer function. With the
 buffers tagged BT.709 only the matrix applies, which is what the tablet inverts.
 
+## USB without ADB: Android Open Accessory (2026-11-19, issue #3)
+
+Spike: `scripts/aoa_spike.c` (libusb, Mac) against the debug app's
+`AoaSpikeActivity`. Tab S11 Ultra (SM-X930, Android 17), USB-C on the Mac.
+
+- USB tethering is no way out on this tablet: its tethering function is RNDIS
+  (`mUsbTetheringFunction: RNDIS`, no NCM), which macOS has no driver for.
+- The AOA handshake works: protocol version 2, the tablet re-enumerates as
+  18d1:2d01 (accessory + adb) in ~2 s and **stays at SuperSpeed (5 Gb/s,
+  1024-byte bulk packets)**. Android asks once whether SharpScreen should handle
+  the accessory ("always open" can be ticked).
+- Bulk throughput, 256 MB each, two runs:
+
+| | Mac -> tablet | tablet -> Mac |
+|---|---|---|
+| AOA | 68.6-69.8 MB/s | 173-175 MB/s |
+| ADB forward (`nc` echo, both directions at once) | ~193 MB/s | ~193 MB/s |
+
+  Mac -> tablet is bound by f_accessory: one 16 KB read at a time on the
+  tablet (every read returned exactly 16384 bytes).
+- Round trips (echo, Mac clock):
+
+| Size | AOA p50 / p99 | ADB p50 / p99 |
+|---|---|---|
+| 100 B (touch) | 0.19-0.22 / 0.75-0.83 ms | 1.57 / 2.77 ms |
+| 30 KB (P-frame) | 0.61-0.63 / 1.70-1.89 ms | not comparable* |
+| 300 KB (I-frame) | 5.6-5.8 / 9.8-10.5 ms | 7.3 / 52 ms* |
+
+  *The ADB side echoes through `toybox nc -L cat`, whose small writes meet
+  delayed ACKs (30 KB p50 47 ms); only the 100 B row is a fair comparison.
+
+What it means: video (≤ 4 MB/s) fits easily and latency is lower than ADB.
+Lossless tile fills would run at ~70 MB/s instead of the 1 MB/tick (120 MB/s)
+cap, so a full refill takes ~1.7x longer. Not yet tried: AOA with USB debugging
+off (accessory only, 18d1:2d00) and with Samsung Auto Blocker on.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
