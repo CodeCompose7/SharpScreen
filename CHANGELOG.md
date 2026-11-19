@@ -6,6 +6,11 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-19 — Both apps update themselves
+
+Install this version by hand once; from here on the Mac and tablet apps offer new
+versions themselves.
+
 ### Added
 - **The tablet app updates itself** from GitHub Releases. Each release carries
   `android-update.json` (version, APK size and SHA-256); the app checks it once a
