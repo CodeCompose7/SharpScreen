@@ -6,6 +6,14 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-19 — The USB check means a computer
+
+### Fixed
+- **The tablet's USB check turns green only for a computer.** "USB cable
+  connected" (now "Connected to a computer by USB") also went green on a wall
+  charger or with a USB device plugged into the tablet; it now needs a USB data
+  link to a host.
+
 ## [0.4.0] - 2026-11-19 — USB without ADB
 
 Install this version on the tablet once more by hand or through the update card;

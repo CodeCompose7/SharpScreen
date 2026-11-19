@@ -15,12 +15,12 @@
     <string name="checklist_title">연결 체크리스트</string>
     <string name="checklist_developer_mode">개발자 모드 켜짐</string>
     <string name="checklist_usb_debugging">USB 디버깅 켜짐</string>
-    <string name="checklist_usb_cable">USB 케이블 연결됨</string>
+    <string name="checklist_usb_cable">컴퓨터와 USB로 연결됨</string>
     <string name="checklist_mac_server">Mac 서버 실행 중</string>
     <string name="checklist_mac_accessory">Mac 연결 (USB, ADB 불필요)</string>
     <string name="checklist_hint_developer_mode">개발자 옵션을 켜세요</string>
     <string name="checklist_hint_usb_debugging">개발자 옵션에서 USB 디버깅을 켜세요</string>
-    <string name="checklist_hint_usb_cable">케이블로 태블릿을 Mac에 연결하세요</string>
+    <string name="checklist_hint_usb_cable">USB 데이터 케이블로 태블릿을 Mac에 연결하세요 (충전기는 해당 안 됨)</string>
     <string name="checklist_hint_mac_server">Mac 앱에서 스트리밍을 시작하세요</string>
 
     <string name="connect">연결</string>

@@ -17,12 +17,12 @@
     <string name="checklist_title">Liste de contrôle de connexion</string>
     <string name="checklist_developer_mode">Mode développeur activé</string>
     <string name="checklist_usb_debugging">Débogage USB activé</string>
-    <string name="checklist_usb_cable">Câble USB connecté</string>
+    <string name="checklist_usb_cable">Connectée à un ordinateur en USB</string>
     <string name="checklist_mac_server">Serveur Mac actif</string>
     <string name="checklist_mac_accessory">Liaison avec le Mac en USB (sans ADB)</string>
     <string name="checklist_hint_developer_mode">Activez les options de développement</string>
     <string name="checklist_hint_usb_debugging">Activez-le dans les options de développement</string>
-    <string name="checklist_hint_usb_cable">Reliez la tablette au Mac avec un câble</string>
+    <string name="checklist_hint_usb_cable">Reliez la tablette au Mac avec un câble USB de données (un chargeur ne compte pas)</string>
     <string name="checklist_hint_mac_server">Lancez le streaming dans l\'app Mac</string>
 
     <string name="connect">Connecter</string>
