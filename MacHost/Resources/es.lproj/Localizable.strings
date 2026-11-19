@@ -271,3 +271,4 @@
 "Use ADB Only" = "Solo ADB";
 "Waiting for your approval or for ADB" = "Esperando tu aprobación o ADB";
 "While streaming, SharpScreen switches this device into USB accessory mode, so developer options and ADB are not needed. It returns to normal when streaming stops or the cable is unplugged." = "Durante la transmisión, SharpScreen pasa este dispositivo al modo accesorio USB, así que no hacen falta las opciones de desarrollador ni ADB. Vuelve a la normalidad al detener la transmisión o desconectar el cable.";
+"Not needed" = "No necesario";

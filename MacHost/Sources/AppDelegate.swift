@@ -185,8 +185,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 let target = self.usbManager.adbTarget
 
                 self.settings.usbDeviceConnected = !devices.isEmpty || !self.settings.usbDevices.isEmpty
-                self.settings.adbReverseConfigured =
-                    target.map { reversed[$0] == true } ?? self.settings.usbDevices.contains { $0.transport == .accessory }
+                self.settings.adbReverseConfigured = target.map { reversed[$0] == true } ?? false
 
                 // Self-healing USB bridge (level-triggered, not edge-triggered):
                 // whenever we are in USB mode with the server running, the
