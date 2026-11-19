@@ -420,7 +420,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let buttonWindow = button.window, buttonWindow.frame.insetBy(dx: -1, dy: -1).contains(mouse) {
             // Clicked on the item itself: the system places the menu and draws
             // the item as selected while it is open.
-            debugLog("Status menu: on the item (\(buttonWindow.screen?.localizedName ?? "-"))")
             item.popUpMenu(menu)
         } else if let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) }) {
             // Clicked on its copy in another display's menu bar: open there,
@@ -429,7 +428,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let offset = event?.window === button.window ? event?.locationInWindow.x ?? 0 : button.bounds.midX
             let barBottom = screen.visibleFrame.maxY < screen.frame.maxY
                 ? screen.visibleFrame.maxY : screen.frame.maxY - NSStatusBar.system.thickness
-            debugLog("Status menu: on \(screen.localizedName) at \(mouse.x - offset), \(barBottom); item is on \(button.window?.screen?.localizedName ?? "-")")
             menu.popUp(positioning: nil, at: NSPoint(x: mouse.x - offset, y: barBottom), in: nil)
         }
     }
@@ -479,7 +477,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if frame.maxY > top { frame.origin.y = max(screen.frame.minY, top - frame.height) }
         guard frame.origin != window.frame.origin else { return }
         window.setFrameOrigin(frame.origin)
-        debugLog("Settings window placed on \(screen.localizedName) at \(frame.origin)")
     }
 
     /// The menu bar's height on `screen`, also when it hides itself there.

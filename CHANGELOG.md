@@ -17,6 +17,10 @@ Side Screen's history up to the fork is in the git log and in
 - **The settings window opens on the desktop you are on** (#7). Opening it
   again after closing it on another desktop (Space) switched back to that
   desktop.
+- **With several displays, the settings window opens on the display whose
+  menu bar you clicked**, below its menu bar. With the window open on one
+  display, a click on another display's icon moves it there in one click; it no
+  longer ends up with its title bar behind the menu bar.
 
 ## [0.4.1] - 2026-11-19 — The USB check means a computer
 

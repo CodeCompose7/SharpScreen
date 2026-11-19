@@ -425,15 +425,4 @@ class ConstrainedWindow: NSWindow {
 
         return constrainedRect
     }
-
-    // Temporary (issue #7 diagnosis): every frame change.
-    override func setFrame(_ frameRect: NSRect, display flag: Bool) {
-        super.setFrame(frameRect, display: flag)
-        debugLog("Settings window frame: \(frame) on \(screen?.localizedName ?? "-")")
-    }
-
-    override func setFrameOrigin(_ point: NSPoint) {
-        super.setFrameOrigin(point)
-        debugLog("Settings window origin: \(frame) on \(screen?.localizedName ?? "-")")
-    }
 }
