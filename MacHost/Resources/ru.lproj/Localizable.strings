@@ -236,7 +236,7 @@
 
 /* Wireless: AWDL warning */
 "AirDrop, Handoff and Universal Control can make wireless streaming stutter." = "Из-за AirDrop, Handoff и Universal Control беспроводная трансляция может прерываться.";
-"They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until the next restart or AirDrop: sudo ifconfig awdl0 down" = "Примерно дважды в секунду они ненадолго уводят Wi-Fi этого Mac с его канала (каждый раз примерно на 80 ms). Отключите их на время трансляции, подключите Mac по Ethernet или используйте USB. Чтобы отключить их до следующей перезагрузки или использования AirDrop: sudo ifconfig awdl0 down";
+"They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Best fix: set your router's 5 GHz channel to 149 (44 in some countries), the channel they use, so the Mac never has to leave it. Or turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until macOS turns them back on (restart, AirDrop): sudo ifconfig awdl0 down" = "Примерно дважды в секунду они ненадолго уводят Wi-Fi этого Mac с его канала (каждый раз примерно на 80 ms). Лучшее решение: установите на роутере канал 5 ГГц 149 (в некоторых странах 44) — канал, который они используют, и Mac не придётся с него уходить. Или отключите их на время трансляции, подключите Mac по Ethernet или используйте USB. Чтобы отключить их, пока macOS не включит их снова (перезагрузка, AirDrop): sudo ifconfig awdl0 down";
 
 /* General: language */
 "Language" = "Язык";
