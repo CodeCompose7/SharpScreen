@@ -369,6 +369,11 @@ class StreamingServer {
     private let clientOverUSB = OSAllocatedUnfairLock(initialState: true)
     var clientIsOverUSB: Bool { clientOverUSB.withLock { $0 } }
 
+    /// When the last frame with new pixels (not a repeat) went out: while
+    /// the screen moves, Wi-Fi tiles yield to video (TileRefiner).
+    private let lastNewFrameAt = OSAllocatedUnfairLock(initialState: UInt64(0))
+    var lastNewFrameNs: UInt64 { lastNewFrameAt.withLock { $0 } }
+
     /// The client comes through an AccessoryLink (USB without ADB), whose
     /// link is slower than adb's (69-104 MB/s to the tablet, not ~190).
     private let clientOverAccessory = OSAllocatedUnfairLock(initialState: false)
@@ -1019,6 +1024,7 @@ class StreamingServer {
     /// so it can present frames on the source's cadence.
     func sendFrame(_ data: Data, timestamp: UInt64, isKeyframe: Bool = false, isRepeat: Bool = false, contentNs: UInt64 = 0) {
         guard let connection = connection, !isStopped, connectionReady else { return }
+        if !isRepeat { lastNewFrameAt.withLock { $0 = DispatchTime.now().uptimeNanoseconds } }
 
         // With short-GOP encoding, a fresh client must start on a keyframe —
         // sending P-frames before the first IDR would feed garbage to its decoder.

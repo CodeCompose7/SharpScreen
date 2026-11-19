@@ -54,6 +54,15 @@ enum CaptureDiagnostics {
         return (v > 0 ? v : 128) * 1024
     }
 
+    /// Over Wi-Fi while the screen moves (stock 16 = ~2 MB/s): tiles at the
+    /// full Wi-Fi budget ran at ~3.7 MB/s during a drag and made the tablet's
+    /// display stops 32-36 ms instead of 25 ms (issue #9). When nothing moves
+    /// the full budget applies again. diag.tileKBPerTickWirelessMoving.
+    static var tileBytesPerTickWirelessMoving: Int {
+        let v = UserDefaults.standard.integer(forKey: "diag.tileKBPerTickWirelessMoving")
+        return (v > 0 ? v : 16) * 1024
+    }
+
     /// The same over a USB accessory link (stock 384 = 46 MB/s): the link
     /// carries 69 MB/s to the tablet with USB debugging on (104 MB/s off), and
     /// tiles above that would queue video frames behind them.

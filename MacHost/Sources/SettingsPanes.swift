@@ -1035,7 +1035,7 @@ struct WirelessSection: View {
                             Text("AirDrop, Handoff and Universal Control can make wireless streaming stutter.")
                                 .font(.system(size: 11, weight: .medium))
                                 .fixedSize(horizontal: false, vertical: true)
-                            Text("They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until the next restart or AirDrop: sudo ifconfig awdl0 down")
+                            Text("They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Best fix: set your router's 5 GHz channel to 149 (44 in some countries), the channel they use, so the Mac never has to leave it. Or turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until macOS turns them back on (restart, AirDrop): sudo ifconfig awdl0 down")
                                 .font(.system(size: 10))
                                 .foregroundColor(.secondary)
                                 .textSelection(.enabled)

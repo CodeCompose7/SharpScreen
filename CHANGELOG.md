@@ -6,6 +6,25 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-11-19 — Smoother Wi-Fi dragging
+
+### Fixed
+- **Smoother dragging over Wi-Fi** (#9). Lossless tiles (the sharp copy of
+  text that has stopped changing) now give way to video over Wi-Fi while the
+  screen moves, and go at full speed again as soon as it is still. While
+  dragging, tablet display pauses drop from 33-40 to 26-31 ms and frames
+  arriving in a rush from 27-30% to 12-18%; a full screen still sharpens in
+  about a second.
+
+### Changed
+- **Wi-Fi notice: put the router on channel 149** (#9). AirDrop, Handoff and
+  Universal Control take the Mac's Wi-Fi off its channel about twice a second;
+  with the router's 5 GHz channel on 149 (44 in some countries), the one they
+  use, the Mac never leaves it. Measured with them on: idle ping spikes over
+  40 ms went from 7% to none, and the longest display pause while dragging
+  from ~90 to ~35 ms. The notice in Settings > Connection and the README now
+  recommend this first.
+
 ## [0.4.4] - 2026-11-19 — Fewer Wi-Fi keyframes
 
 ### Fixed
