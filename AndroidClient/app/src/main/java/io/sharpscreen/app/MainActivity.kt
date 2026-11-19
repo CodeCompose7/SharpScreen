@@ -32,7 +32,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
 import com.google.android.material.switchmaterial.SwitchMaterial
@@ -40,6 +42,7 @@ import io.sharpscreen.app.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -96,6 +99,7 @@ class MainActivity : AppCompatActivity() {
         set(value) {
             field = value
             applyRefreshRatePreference()
+            onStreamingUiChanged()
         }
 
     // Demo mode: plays a bundled clip so the app can be tried without a Mac
@@ -104,6 +108,7 @@ class MainActivity : AppCompatActivity() {
         set(value) {
             field = value
             applyRefreshRatePreference()
+            onStreamingUiChanged()
         }
     private var demoTouchHintShown = false
 
@@ -115,6 +120,7 @@ class MainActivity : AppCompatActivity() {
 
         DiagLog.init(applicationContext)
         prefs = PreferencesManager(this)
+        SelfUpdater.init(this)
 
         // Allow rotation based on device sensor when not connected
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
@@ -140,6 +146,9 @@ class MainActivity : AppCompatActivity() {
         // `--ez diag.vsyncPresent false`: present frames as soon as drawn (before M4).
         GlCompositor.vsyncPresent = intent?.getBooleanExtra("diag.vsyncPresent", true) ?: true
         intent?.getIntExtra("diag.presentPercentile", 0)?.takeIf { it in 1..99 }?.let { PresentScheduler.PERCENTILE = it }
+        // `--es diag.updateFeedURL http://127.0.0.1:8766/android-update.json`: read updates from
+        // a test feed instead of the GitHub Release (this launch only).
+        SelfUpdater.feedUrlOverride = intent?.getStringExtra("diag.updateFeedURL")?.takeIf { it.isNotBlank() }
 
         // Enable edge-to-edge display (draw behind system bars and cutout)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -168,6 +177,59 @@ class MainActivity : AppCompatActivity() {
         startChecklistUpdates()
         setupModeToggle()
         setupWirelessController()
+        setupUpdateCard()
+    }
+
+    // ==================== Self-update card ====================
+
+    private fun setupUpdateCard() {
+        binding.updateButton.setOnClickListener { UpdateUi.startUpdate(this) }
+        binding.updateNotesButton.setOnClickListener {
+            SelfUpdater.state.value.manifestOrNull?.let { UpdateUi.openReleaseNotes(this, it) }
+        }
+        binding.updateDismissButton.setOnClickListener {
+            SelfUpdater.state.value.manifestOrNull?.let { SelfUpdater.dismiss(it) }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(SelfUpdater.state, SelfUpdater.refreshTick) { state, _ -> state }
+                    .collect { renderUpdateCard(it) }
+            }
+        }
+    }
+
+    private fun renderUpdateCard(state: UpdateState) {
+        val manifest = state.manifestOrNull
+        if (manifest == null || !SelfUpdater.cardVisible(state)) {
+            binding.updateCard.visibility = View.GONE
+            return
+        }
+        binding.updateCard.visibility = View.VISIBLE
+        binding.updateTitle.text = getString(R.string.update_available_title, manifest.versionName)
+        binding.updateBody.text =
+            getString(
+                R.string.update_available_body,
+                SelfUpdater.installedVersionName(),
+                android.text.format.Formatter.formatShortFileSize(this, manifest.size),
+            )
+        val busy = state is UpdateState.Downloading || state is UpdateState.Installing
+        binding.updateProgress.visibility = if (busy) View.VISIBLE else View.GONE
+        if (state is UpdateState.Downloading) {
+            binding.updateProgress.setProgressCompat(state.percent.coerceAtLeast(0), true)
+        } else if (state is UpdateState.Installing) {
+            binding.updateProgress.setProgressCompat(100, true)
+        }
+        val status = UpdateUi.progressText(this, state)
+        binding.updateStatus.text = status
+        binding.updateStatus.visibility = if (status != null) View.VISIBLE else View.GONE
+        binding.updateButton.isEnabled = !busy
+        binding.updateDismissButton.visibility = if (busy) View.INVISIBLE else View.VISIBLE
+    }
+
+    /** Streams and the demo hold off update checks and installs; back home, check if due. */
+    private fun onStreamingUiChanged() {
+        SelfUpdater.streaming = isStreamingUi
+        if (!isStreamingUi && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) SelfUpdater.maybeAutoCheck()
     }
 
     private fun setupModeToggle() {
@@ -1846,6 +1908,16 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         // Only nudge about updates while idle — never over a live stream or the demo.
         if (!isStreamingUi) appUpdater.checkForUpdate()
+        SelfUpdater.onActivityResumed(this)
+        if (!isStreamingUi) SelfUpdater.maybeAutoCheck()
+        SelfUpdater.takeUpdatedTo()?.let {
+            android.widget.Toast.makeText(this, getString(R.string.update_done, it), android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        SelfUpdater.onActivityPaused(this)
     }
 
     override fun onDestroy() {
