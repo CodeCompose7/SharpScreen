@@ -53,6 +53,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var settingsWindow: SettingsWindowController?
     var statusItem: NSStatusItem?
     private var statusPanel: MenuBarPanelController?
+    /// The one USB tablet, over an accessory link or adb (issue #3).
+    private lazy var usbManager = UsbConnectionManager(settings: settings)
     let pairedDeviceStore = PairedDeviceStore()
     let deviceProfileStore = DeviceProfileStore()
     /// Profile key of the tablet currently streaming (nil when none, or when
@@ -171,29 +173,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let port = Int(settings.port)
         Task.detached { [weak self] in
             let devices = StatusDetector.usbDevices()
-            // Every attached device needs its own reverse (see setupADBReverse).
-            let reverseOK = !devices.isEmpty
-                && devices.allSatisfy { StatusDetector.adbReverseConfigured(port: port, serial: $0) }
+            var reversed: [String: Bool] = [:]
+            for serial in devices {
+                reversed[serial] = StatusDetector.adbReverseConfigured(port: port, serial: serial)
+            }
             await MainActor.run { [weak self] in
                 guard let self = self else { return }
-                
-                let isConnected = !devices.isEmpty
 
-                self.settings.usbDeviceConnected = isConnected
-                self.settings.adbReverseConfigured = reverseOK
+                let serving = self.settings.connectionMode == .usb && self.settings.isRunning
+                self.usbManager.refresh(serving: serving, port: UInt16(port), adbSerials: devices)
+                let target = self.usbManager.adbTarget
+
+                self.settings.usbDeviceConnected = !devices.isEmpty || !self.settings.usbDevices.isEmpty
+                self.settings.adbReverseConfigured = target.map { reversed[$0] == true } ?? false
 
                 // Self-healing USB bridge (level-triggered, not edge-triggered):
-                // whenever we are in USB mode with the server running and a
-                // device present but adb reverse missing, (re)establish it.
-                // Covers replug, adb-server restart, etc. The server lifecycle
-                // is NOT tied to device events — it stays up and the tablet
+                // whenever we are in USB mode with the server running, the
+                // active tablet uses adb and its reverse is missing,
+                // (re)establish it. Covers replug, adb-server restart, etc.
+                // Every other tablet loses its reverse, so it cannot connect
+                // and cut the active one's stream. The server lifecycle is NOT
+                // tied to device events — it stays up and the tablet
                 // reconnects via its own connect button.
-                if self.settings.connectionMode == .usb
-                    && isConnected
-                    && self.settings.isRunning
-                    && !reverseOK {
+                guard serving else { return }
+                if let target, reversed[target] != true {
                     debugLog("🔌 USB bridge missing while running — (re)establishing adb reverse")
                     Task { await self.setupADBReverse() }
+                }
+                for (serial, on) in reversed where on && serial != target {
+                    Task.detached { StatusDetector.removeAdbReverse(port: port, serial: serial) }
                 }
             }
         }
@@ -398,6 +406,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func setupSettingsWindow() {
         settingsWindow = SettingsWindowController(settings: settings)
 
+        settings.onSelectUsbDevice = { [weak self] serial in
+            self?.usbManager.select(serial)
+        }
+        settings.onForgetUsbDevice = { [weak self] serial in
+            self?.usbManager.forget(serial)
+        }
+        settings.onSetUsbDeviceDecision = { [weak self] serial, decision in
+            self?.usbManager.setDecision(decision, for: serial)
+        }
+        settings.onUsbDevicesChanged = { [weak self] in
+            Task { @MainActor in self?.refreshStatusIndicators() }
+        }
         settings.onToggleServer = { [weak self] in
             guard let self else { return }
             if self.settings.isRunning {
@@ -493,7 +513,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 print("💡 No authorized Android device found — plug in via USB and allow debugging")
                 return
             }
-            for serial in serials {
+            // Only the active tablet (UsbConnectionManager); none while it
+            // uses an accessory link instead.
+            let target = await MainActor.run { () -> String? in
+                self.usbManager.refresh(serving: true, port: port, adbSerials: serials)
+                return self.usbManager.adbTarget
+            }
+            for serial in serials where serial == target {
                 if StatusDetector.adbReverseConfigured(port: Int(port), serial: serial) {
                     debugLog("ADB reverse already configured for \(serial)")
                     continue
@@ -626,6 +652,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             configureDisplayGeometry(on: streamingServer, for: manager)
             streamingServer?.onPrepareForClient = { [weak self] key, name in
+                if let self, self.streamingServer?.clientIsOverUSB == true {
+                    Task { @MainActor in self.usbManager.noteClientName(name) }
+                }
                 guard let self = self, let key = key else { return true }
                 Task { @MainActor in await self.prepareProfile(key: key, name: name) }
                 return false
@@ -921,6 +950,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settings.pairingCode = nil
         streamingServer?.expectedPairingCode = nil
 
+        usbManager.stop()
         screenCapture?.stopStreaming()
         streamingServer?.stop()
         virtualDisplayManager?.destroyDisplay()

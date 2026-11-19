@@ -18,6 +18,7 @@
     <string name="checklist_usb_debugging">Depuración USB activada</string>
     <string name="checklist_usb_cable">Cable USB conectado</string>
     <string name="checklist_mac_server">Servidor del Mac activo</string>
+    <string name="checklist_mac_accessory">Conexión con el Mac por USB (sin ADB)</string>
     <string name="checklist_hint_developer_mode">Activa las opciones de desarrollador</string>
     <string name="checklist_hint_usb_debugging">Actívala en las opciones de desarrollador</string>
     <string name="checklist_hint_usb_cable">Conecta la tablet al Mac con un cable</string>

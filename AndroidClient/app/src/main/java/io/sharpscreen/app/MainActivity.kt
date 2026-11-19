@@ -178,6 +178,65 @@ class MainActivity : AppCompatActivity() {
         setupModeToggle()
         setupWirelessController()
         setupUpdateCard()
+        AccessoryLink.addListener(accessoryListener)
+        handleAccessoryIntent(intent)
+    }
+
+    // ==================== USB accessory (no ADB, issue #3) ====================
+
+    /** Opened by an accessory intent: connect as soon as the Mac answers. */
+    private var autoConnectAccessory = false
+
+    private val accessoryListener: (AccessoryLink.State) -> Unit = { state ->
+        log("USB accessory: $state")
+        if (state == AccessoryLink.State.READY && autoConnectAccessory && !isConnected) {
+            autoConnectAccessory = false
+            if (prefs.connectionMode != ConnectionMode.USB) binding.modeToggleGroup.check(R.id.modeUSB)
+            updateStatus(getString(R.string.status_connecting))
+            connect("127.0.0.1", AccessoryLink.port)
+        }
+        if (state == AccessoryLink.State.CLOSED && isConnected && connectedOverAccessory) disconnect()
+        if (!isConnected) updateChecklist()
+    }
+
+    /** The current stream goes through AccessoryLink. */
+    private var connectedOverAccessory = false
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleAccessoryIntent(intent)
+    }
+
+    private fun handleAccessoryIntent(intent: Intent?) {
+        if (intent?.action != UsbManager.ACTION_USB_ACCESSORY_ATTACHED) return
+        val accessory = AccessoryLink.accessoryFrom(intent) ?: return
+        // Launched by the Mac plugging in: Android granted the permission with the intent.
+        autoConnectAccessory = true
+        AccessoryLink.open(this, accessory)
+        if (AccessoryLink.state == AccessoryLink.State.READY) accessoryListener(AccessoryLink.State.READY)
+    }
+
+    /** The tablet is already in accessory mode (app opened by hand): pick it up. */
+    private fun resumeAccessory() {
+        if (AccessoryLink.state != AccessoryLink.State.CLOSED) return
+        val accessory = AccessoryLink.attachedAccessory(this) ?: return
+        val usb = getSystemService(UsbManager::class.java)
+        if (usb.hasPermission(accessory)) {
+            AccessoryLink.open(this, accessory)
+        } else {
+            val flags = android.app.PendingIntent.FLAG_IMMUTABLE
+            val permissionIntent =
+                android.app.PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java)
+                        .setAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED)
+                        .putExtra(UsbManager.EXTRA_ACCESSORY, accessory),
+                    flags,
+                )
+            usb.requestPermission(accessory, permissionIntent)
+        }
     }
 
     // ==================== Self-update card ====================
@@ -506,7 +565,12 @@ class MainActivity : AppCompatActivity() {
             }
 
             updateStatus(getString(R.string.status_connecting))
-            connect(host, port)
+            // Over the USB accessory when the Mac switched the tablet into it.
+            if (AccessoryLink.state == AccessoryLink.State.READY) {
+                connect("127.0.0.1", AccessoryLink.port)
+            } else {
+                connect(host, port)
+            }
         }
 
         binding.disconnectButton.setOnClickListener {
@@ -1565,6 +1629,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 log("Connecting to $host:$port...")
 
+                connectedOverAccessory = AccessoryLink.state == AccessoryLink.State.READY && port == AccessoryLink.port
                 streamClient = StreamClient(host, port, applicationContext)
                 streamClient?.onTileInvalidate = { tiles -> videoDecoder?.compositor?.invalidateTiles(tiles) }
                 streamClient?.onLosslessTiles = { tileSize, tiles -> videoDecoder?.compositor?.applyTiles(tileSize, tiles) }
@@ -1910,6 +1975,7 @@ class MainActivity : AppCompatActivity() {
         if (!isStreamingUi) appUpdater.checkForUpdate()
         SelfUpdater.onActivityResumed(this)
         if (!isStreamingUi) SelfUpdater.maybeAutoCheck()
+        resumeAccessory()
         SelfUpdater.takeUpdatedTo()?.let {
             android.widget.Toast.makeText(this, getString(R.string.update_done, it), android.widget.Toast.LENGTH_LONG).show()
         }
@@ -1921,6 +1987,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        AccessoryLink.removeListener(accessoryListener)
         super.onDestroy()
         stopChecklistUpdates()
         cleanup()
@@ -1971,6 +2038,19 @@ class MainActivity : AppCompatActivity() {
     private fun updateChecklist() {
         // Skip if connected (to prevent socket conflicts)
         if (isConnected) return
+
+        // USB accessory mode: no developer options, ADB or probe needed.
+        val accessory = AccessoryLink.state != AccessoryLink.State.CLOSED
+        binding.rowDeveloperMode.visibility = if (accessory) View.GONE else View.VISIBLE
+        binding.rowUsbDebugging.visibility = if (accessory) View.GONE else View.VISIBLE
+        binding.textMacServer.setText(if (accessory) R.string.checklist_mac_accessory else R.string.checklist_mac_server)
+        if (accessory) {
+            val ready = AccessoryLink.state == AccessoryLink.State.READY
+            updateChecklistItem(binding.checkUsbConnected, binding.hintUsbConnected, true)
+            updateChecklistItem(binding.checkMacServer, binding.hintMacServer, ready)
+            updateMainStatus(ready)
+            return
+        }
 
         // Check Developer Mode (if we can run this app with USB debugging, dev mode is enabled)
         val isDeveloperModeEnabled =

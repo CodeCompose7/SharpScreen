@@ -244,3 +244,35 @@
 "SharpScreen uses this language after it restarts." = "SharpScreen usará este idioma después de reiniciarse.";
 "System" = "Sistema";
 "Restart SharpScreen to apply the new language." = "Reinicia SharpScreen para aplicar el nuevo idioma.";
+
+/* USB devices, accessory mode (issue #3) */
+"ADB (Optional)" = "ADB (opcional)";
+"Asks once per tablet before switching it into accessory mode." = "Pregunta una vez por tableta antes de pasarla al modo accesorio.";
+"Connect" = "Conectar";
+"Connect without ADB" = "Conectar sin ADB";
+"Connect “%@” over USB without ADB?" = "¿Conectar «%@» por USB sin ADB?";
+"Connected · ADB" = "Conectada · ADB";
+"Connected · not in use" = "Conectada · sin usar";
+"In use · ADB" = "En uso · ADB";
+"In use · USB accessory" = "En uso · accesorio USB";
+"No Android device on USB." = "No hay ningún dispositivo Android en USB.";
+"Not Now" = "Ahora no";
+"Open SharpScreen on the tablet" = "Abre SharpScreen en la tableta";
+"Reconnect" = "Reconectar";
+"Start streaming to look for tablets on USB." = "Inicia la transmisión para buscar tabletas en USB.";
+"Switching to USB accessory…" = "Cambiando a accesorio USB…";
+"Tablet" = "Tableta";
+"Tablets you approve connect in USB accessory mode: no developer options on the tablet and no adb on the Mac. One tablet streams at a time; pick it here or in the menu." = "Las tabletas que apruebes se conectan en modo accesorio USB: sin opciones de desarrollador en la tableta ni adb en el Mac. Transmite una tableta a la vez; elígela aquí o en el menú.";
+"Tablets you keep on ADB need USB debugging on the tablet and adb on the Mac. SharpScreen sets up adb reverse for the tablet in use." = "Las tabletas que sigan con ADB necesitan la depuración USB en la tableta y adb en el Mac. SharpScreen configura adb reverse para la tableta en uso.";
+"USB Devices" = "Dispositivos USB";
+"USB accessory stopped · click Reconnect" = "Accesorio USB detenido · haz clic en Reconectar";
+"Use" = "Usar";
+"Use ADB Only" = "Solo ADB";
+"Waiting for your approval or for ADB" = "Esperando tu aprobación o ADB";
+"While streaming, SharpScreen switches this device into USB accessory mode, so developer options and ADB are not needed. It returns to normal when streaming stops or the cable is unplugged." = "Durante la transmisión, SharpScreen pasa este dispositivo al modo accesorio USB, así que no hacen falta las opciones de desarrollador ni ADB. Vuelve a la normalidad al detener la transmisión o desconectar el cable.";
+"Not needed" = "No necesario";
+"Ask Again" = "Volver a preguntar";
+"How this tablet connects over USB." = "Cómo se conecta esta tableta por USB.";
+"Not set" = "Sin definir";
+"Without ADB" = "Sin ADB";
+"Without ADB (USB accessory)" = "Sin ADB (accesorio USB)";

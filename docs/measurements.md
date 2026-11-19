@@ -298,6 +298,68 @@ ScreenCaptureKit's 32BGRA buffers carry the display colour space; against the
 session's BT.709 tags VideoToolbox also converted the transfer function. With the
 buffers tagged BT.709 only the matrix applies, which is what the tablet inverts.
 
+## USB without ADB: Android Open Accessory (2026-11-19, issue #3)
+
+Spike: `scripts/aoa_spike.c` (libusb, Mac) against the debug app's
+`AoaSpikeActivity`. Tab S11 Ultra (SM-X930, Android 17), USB-C on the Mac.
+
+- USB tethering is no way out on this tablet: its tethering function is RNDIS
+  (`mUsbTetheringFunction: RNDIS`, no NCM), which macOS has no driver for.
+- The AOA handshake works: protocol version 2, the tablet re-enumerates as
+  18d1:2d01 (accessory + adb) in ~2 s and **stays at SuperSpeed (5 Gb/s,
+  1024-byte bulk packets)**. Android asks once whether SharpScreen should handle
+  the accessory ("always open" can be ticked).
+- Bulk throughput, 256 MB each, two runs:
+
+| | Mac -> tablet | tablet -> Mac |
+|---|---|---|
+| AOA | 68.6-69.8 MB/s | 173-175 MB/s |
+| ADB forward (`nc` echo, both directions at once) | ~193 MB/s | ~193 MB/s |
+
+  Mac -> tablet is bound by f_accessory: one 16 KB read at a time on the
+  tablet (every read returned exactly 16384 bytes).
+- Round trips (echo, Mac clock):
+
+| Size | AOA p50 / p99 | ADB p50 / p99 |
+|---|---|---|
+| 100 B (touch) | 0.19-0.22 / 0.75-0.83 ms | 1.57 / 2.77 ms |
+| 30 KB (P-frame) | 0.61-0.63 / 1.70-1.89 ms | not comparable* |
+| 300 KB (I-frame) | 5.6-5.8 / 9.8-10.5 ms | 7.3 / 52 ms* |
+
+  *The ADB side echoes through `toybox nc -L cat`, whose small writes meet
+  delayed ACKs (30 KB p50 47 ms); only the 100 B row is a fair comparison.
+
+**With USB debugging off** (developer options untouched otherwise, USB mode
+"File transfer") the same handshake gives 18d1:2d00, accessory only, still
+SuperSpeed, and the link is faster (three runs):
+
+| | Mac -> tablet | tablet -> Mac | 100 B p50 / p99 | 30 KB p50 / p99 | 300 KB p50 / p99 |
+|---|---|---|---|---|---|
+| AOA, no ADB | 103-105 MB/s | 165-166 MB/s | 0.17 / 0.77-0.80 ms | 0.37-0.41 / 1.1-1.2 ms | 3.8-3.9 / 10-14 ms |
+
+The starting USB mode does not matter: from "File transfer" (mtp,adb) the
+switch and the numbers were the same as from charging-only.
+
+What it means: video (≤ 4 MB/s) fits easily and latency is lower than ADB.
+Lossless tile fills run at ~70 MB/s (with ADB on) to ~105 MB/s (ADB off)
+instead of the 1 MB/tick (120 MB/s) cap. Not yet tried: Samsung Auto Blocker
+on. The tablet leaves accessory mode only when the cable is unplugged (or, with
+ADB, `svc usb setFunctions`).
+
+### In the app (2026-11-19)
+
+AccessoryLink (Mac, IOUSBHost) and AccessoryLink.kt (tablet) relay the
+streaming TCP connection over the accessory, framed by UsbLink (session ids so a
+finished stream never leaks into the next). USB debugging on (18d1:2d01):
+
+- 120 fps, average frame age 11-12 ms (max < 20 ms), as over adb.
+- Lossless tiles capped at 384 KB/tick (46 MB/s, below the link's 69 MB/s so video
+  never queues behind tiles): a full 2960x1848 refill (13.6 MB) takes 288-291 ms
+  instead of 76-95 ms over adb at 1 MB/tick.
+- Quitting the Mac app resets the device: the tablet leaves accessory mode at once
+  and the app sees the accessory detach. Killing the tablet app makes the Mac's next
+  write time out (3 s); the Mac then resets the device and waits for Reconnect.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
