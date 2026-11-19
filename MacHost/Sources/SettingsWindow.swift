@@ -321,6 +321,45 @@ class DisplaySettings: ObservableObject {
 // MARK: - Window Controller
 
 class SettingsWindowController: NSWindowController, NSWindowDelegate {
+    /// When the window last stopped being the key window. A click on the
+    /// menu bar icon takes key (and activation) away before its action runs,
+    /// so "in front a moment ago" is how the icon tells "close it" (#7).
+    private(set) var resignedKeyAt: Date?
+
+    func windowDidResignKey(_ notification: Notification) {
+        resignedKeyAt = Date()
+    }
+
+    /// The window is the one in front, or was until the click being handled.
+    var isInFront: Bool {
+        guard let window, window.isVisible else { return false }
+        if NSApp.isActive && window.isKeyWindow { return true }
+        if resignedKeyAt.map({ Date().timeIntervalSince($0) < 0.5 }) == true { return true }
+        return isTopmostOnScreen(window)
+    }
+
+    /// No other app's window lies over it: it is in front even when macOS
+    /// has not (yet) made SharpScreen the active app, which it may refuse
+    /// from macOS 14 on. A window parked in Stage Manager's strip is not.
+    private func isTopmostOnScreen(_ window: NSWindow) -> Bool {
+        guard let screen = window.screen,
+              let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+              as? [[String: Any]] else { return false }
+        // CG window bounds: top-left origin on the primary display.
+        let primaryTop = NSScreen.screens.first?.frame.maxY ?? screen.frame.maxY
+        let mine = window.frame
+        let mineCG = CGRect(x: mine.minX, y: primaryTop - mine.maxY, width: mine.width, height: mine.height)
+        for info in list {
+            guard (info[kCGWindowLayer as String] as? Int) == 0,
+                  let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
+                  let bounds = CGRect(dictionaryRepresentation: boundsDict),
+                  bounds.intersects(mineCG) else { continue }
+            // Front to back: the first normal window over ours decides.
+            return (info[kCGWindowNumber as String] as? Int) == window.windowNumber
+        }
+        return false
+    }
+
     convenience init(settings: DisplaySettings) {
         let window = ConstrainedWindow(
             contentRect: NSRect(origin: .zero, size: SettingsView.size),

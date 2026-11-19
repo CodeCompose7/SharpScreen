@@ -451,7 +451,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// moves here instead of closing.
     func toggleSettings() {
         let clickedScreen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) }
-        if let window = settingsWindow?.window, window.isVisible, window.isOnActiveSpace,
+        // Closed only when it is the window in front: visible alone is not
+        // enough, because Stage Manager keeps a window that is not in front
+        // visible in its strip, and the click should bring it forward.
+        if let window = settingsWindow?.window, settingsWindow?.isInFront == true, window.isOnActiveSpace,
            clickedScreen == nil || window.screen == clickedScreen {
             window.performClose(nil)
         } else {
@@ -526,8 +529,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func showSettings() {
+        // Activate first, then bring the window forward: shown while the app
+        // was still inactive, Stage Manager put it in the strip instead of
+        // the stage. From macOS 14 activate(ignoringOtherApps:) is cooperative
+        // and the plain activate() is the call to use.
+        if #available(macOS 14.0, *) {
+            // Activation is cooperative from macOS 14: ask as a handoff from
+            // the app in front, which a click on our menu bar icon allows;
+            // a plain request was often refused and the window came up
+            // inactive.
+            if let front = NSWorkspace.shared.frontmostApplication, front != NSRunningApplication.current {
+                NSRunningApplication.current.activate(from: front, options: [])
+            }
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
         settingsWindow?.showWindow(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow?.window?.makeKeyAndOrderFront(nil)
+        settingsWindow?.window?.orderFrontRegardless()
     }
 
     func checkPermissions() async {
