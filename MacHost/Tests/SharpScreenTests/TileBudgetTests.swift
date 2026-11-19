@@ -29,3 +29,10 @@ final class TileBudgetTests: XCTestCase {
         XCTAssertEqual(budget(now: 999 * ms, last: 1_000 * ms), still)
     }
 }
+
+final class TileSettleTests: XCTestCase {
+    func testUSBSettlesSoonerThanWiFi() {
+        XCTAssertEqual(TileRefiner.settleNs(overUSB: true), 40_000_000)
+        XCTAssertEqual(TileRefiner.settleNs(overUSB: false), 100_000_000)
+    }
+}

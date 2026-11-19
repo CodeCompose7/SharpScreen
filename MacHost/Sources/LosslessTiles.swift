@@ -62,6 +62,9 @@ final class TileTracker {
         var grid: TileGrid
         var lastChangeNs: [UInt64]
         var valid: [Bool]
+        /// The last change that touched at least `bigChangeTiles` tiles at
+        /// once (a window moving, not a caret blinking).
+        var lastBigChangeNs: UInt64 = 0
     }
 
     private let lock: OSAllocatedUnfairLock<State>
@@ -73,6 +76,9 @@ final class TileTracker {
     }
 
     var grid: TileGrid { lock.withLock { $0.grid } }
+
+    static let bigChangeTiles = 16
+    var lastBigChangeNs: UInt64 { lock.withLock { $0.lastBigChangeNs } }
 
     /// A new tile session (new client, resync, new size): nothing is valid
     /// on the client. On the same grid the change history stays: it is
@@ -95,8 +101,11 @@ final class TileTracker {
     func markDirty(_ rects: [CGRect], atNs: UInt64) -> [Int] {
         lock.withLock { s in
             var invalidated: [Int] = []
+            var touched = 0
+            defer { if touched >= Self.bigChangeTiles, atNs > s.lastBigChangeNs { s.lastBigChangeNs = atNs } }
             for r in rects {
                 for t in s.grid.tiles(covering: r) {
+                    touched += 1
                     if atNs > s.lastChangeNs[t] { s.lastChangeNs[t] = atNs }
                     if s.valid[t] {
                         s.valid[t] = false
@@ -131,11 +140,16 @@ final class TileTracker {
     /// Of `tiles`, those still unchanged since a frame captured at `captureNs`
     /// and not yet valid; marks them valid. Call right before sending them.
     func claimForSend(_ tiles: [Int], capturedAtNs captureNs: UInt64) -> [Int] {
+        claimForSendWithChanges(tiles, capturedAtNs: captureNs).map(\.tile)
+    }
+
+    /// claimForSend, with each claimed tile's last change time.
+    func claimForSendWithChanges(_ tiles: [Int], capturedAtNs captureNs: UInt64) -> [(tile: Int, changedNs: UInt64)] {
         lock.withLock { s in
-            tiles.filter { t in
-                guard t < s.grid.count, !s.valid[t], s.lastChangeNs[t] < captureNs else { return false }
+            tiles.compactMap { t in
+                guard t < s.grid.count, !s.valid[t], s.lastChangeNs[t] < captureNs else { return nil }
                 s.valid[t] = true
-                return true
+                return (tile: t, changedNs: s.lastChangeNs[t])
             }
         }
     }
