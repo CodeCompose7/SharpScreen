@@ -148,6 +148,14 @@ class MainActivity : AppCompatActivity() {
         GlCompositor.losslessTiles = intent?.getBooleanExtra("diag.lossless", true) ?: true
         // `--ez diag.vsyncPresent false`: present frames as soon as drawn (before M4).
         GlCompositor.vsyncPresent = intent?.getBooleanExtra("diag.vsyncPresent", true) ?: true
+        // `--ez diag.frameTiming true`: report each frame's tablet-side timing to the
+        // host for its latency breakdown (issue #13). The host must be 0.4.7 or later.
+        GlCompositor.onFrameTiming =
+            if (intent?.getBooleanExtra("diag.frameTiming", false) == true) {
+                { host, decodeUs, waitUs, presentUs -> streamClient?.sendFrameTiming(host, decodeUs, waitUs, presentUs) }
+            } else {
+                null
+            }
         intent?.getIntExtra("diag.presentPercentile", 0)?.takeIf { it in 1..99 }?.let { PresentScheduler.PERCENTILE = it }
         // `--es diag.updateFeedURL http://127.0.0.1:8766/android-update.json`: read updates from
         // a test feed instead of the GitHub Release (this launch only).

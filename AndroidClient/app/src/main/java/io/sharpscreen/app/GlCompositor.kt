@@ -319,7 +319,41 @@ class GlCompositor(
             }
         }
         compose(fromVideo = true)
-        recordTiming(startNs, System.nanoTime())
+        val endNs = System.nanoTime()
+        recordTiming(startNs, endNs)
+        reportFrameTiming(host, released, startNs, endNs)
+    }
+
+    private var lastReportedHostNs = 0L
+
+    /**
+     * Latency breakdown (issue #13): for each new frame (not a repeat), how long
+     * it took from arrival to decoder output, from decoder output to this draw,
+     * and from this draw to the vsync it was asked for (or to the swap without
+     * vsync pacing). The arrival time is the decoder PTS (StreamClient's
+     * receive time, µs).
+     */
+    private fun reportFrameTiming(
+        host: Long?,
+        decodedNs: Long,
+        drawNs: Long,
+        swappedNs: Long,
+    ) {
+        val report = onFrameTiming ?: return
+        if (host == null || host <= lastReportedHostNs) return
+        lastReportedHostNs = host
+        val arrivalNs = surfaceTexture.timestamp
+        if (arrivalNs <= 0L || decodedNs < arrivalNs || decodedNs > drawNs) return
+        val s = scheduler
+        val requested = pendingPresentNs
+        val presentNs =
+            if (s != null && requested != null) requested + s.periodNs / 2 else swappedNs
+        report(
+            host,
+            ((decodedNs - arrivalNs) / 1000).toInt(),
+            ((drawNs - decodedNs) / 1000).toInt(),
+            ((presentNs - drawNs).coerceAtLeast(0L) / 1000).toInt(),
+        )
     }
 
     /** Draw video with the lossless layer on top and present. GL thread. */
@@ -469,6 +503,14 @@ class GlCompositor(
         var losslessTiles = true
 
         private const val COMPOSE_DEFER_MS = 12L
+
+        /**
+         * Latency breakdown (issue #13): host content time, then µs from arrival to
+         * decoder output, from decoder output to draw, and from draw to the vsync.
+         * Set only with diag.frameTiming. GL thread.
+         */
+        @Volatile
+        var onFrameTiming: ((Long, Int, Int, Int) -> Unit)? = null
 
         /** Present each frame on the host's cadence (PresentScheduler); diag.vsyncPresent=false turns it off. */
         @Volatile

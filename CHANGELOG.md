@@ -6,6 +6,12 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+### Added
+- **Latency breakdown** (#13, diagnostics). With the tablet app launched with
+  `--ez diag.frameTiming true`, the Mac logs every 2 s how long frames take in
+  each stage, from the Mac's own screen to the tablet's: encode, network,
+  decode, waiting to draw, and to the vsync. See `docs/measurements.md`.
+
 ## [0.4.6] - 2026-11-19 — Settings at launch
 
 ### Added
