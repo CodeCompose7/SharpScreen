@@ -160,6 +160,7 @@ class StreamClient(
                 advertiseIdentity() // Likewise: the Mac picks this tablet's profile when type 8 lands
                 advertiseLosslessTilesSupport()
                 advertiseFrameMetadataSupport()
+                advertiseFrameAcks()
                 isConnected = true
                 lastKeyframeReceivedNs = 0L
                 synchronized(keyframeRequestLock) {
@@ -393,6 +394,7 @@ class StreamClient(
                 advertiseIdentity() // Likewise: the Mac picks this tablet's profile when type 8 lands
                 advertiseLosslessTilesSupport()
                 advertiseFrameMetadataSupport()
+                advertiseFrameAcks()
                 isConnected = true
                 acquireWifiLowLatency()
                 diagLog("Wireless connected to $host:$port")
@@ -451,6 +453,39 @@ class StreamClient(
             out.writeByte(LosslessTileWire.PROTOCOL_BYTE)
             out.flush()
             diagLog("Advertised lossless tiles support")
+        }
+    }
+
+    /**
+     * Type 22 (issue #9): this client can acknowledge video frames. A Mac that
+     * understands answers with type 22, and only then are acks (type 23)
+     * sent, so older Macs never see them. With acks the Mac stops encoding
+     * while frames pile up on a slow link (Wi-Fi) instead of queueing them.
+     */
+    private fun advertiseFrameAcks() {
+        outputStream?.let { out ->
+            out.write(byteArrayOf(MESSAGE_FRAME_ACKS.toByte(), 0x81.toByte()))
+            out.flush()
+        }
+    }
+
+    @Volatile private var frameAcksOn = false
+    private var framesForAck = 0
+
+    /** [23][0x80|hi7][0x80|lo7]: video frames received so far, mod 16384. */
+    private fun ackFrame() {
+        if (!frameAcksOn) return
+        framesForAck = (framesForAck + 1) and 0x3FFF
+        val count = framesForAck
+        val message = byteArrayOf(MESSAGE_FRAME_ACK.toByte(), (0x80 or (count shr 7)).toByte(), (0x80 or (count and 0x7F)).toByte())
+        touchScope.launch {
+            try {
+                socket?.getOutputStream()?.let { out ->
+                    out.write(message)
+                    out.flush()
+                }
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -557,6 +592,7 @@ class StreamClient(
     private var quickAckFd: android.os.ParcelFileDescriptor? = null
 
     private fun quickAck() {
+        if (!quickAckEnabled) return
         val pfd = quickAckFd ?: return
         try {
             android.system.Os.setsockoptInt(pfd.fileDescriptor, android.system.OsConstants.IPPROTO_TCP, TCP_QUICKACK, 1)
@@ -583,10 +619,18 @@ class StreamClient(
                     when (type.toInt()) {
                         MESSAGE_VIDEO_FRAME -> {
                             receiveVideoFrame(input, hasMetadata = false)
+                            ackFrame()
                         }
 
                         MESSAGE_VIDEO_FRAME_WITH_METADATA -> {
                             receiveVideoFrame(input, hasMetadata = true)
+                            ackFrame()
+                        }
+
+                        MESSAGE_FRAME_ACKS -> {
+                            framesForAck = 0
+                            frameAcksOn = true
+                            diagLog("Mac takes frame acks")
                         }
 
                         1 -> {
@@ -855,7 +899,7 @@ class StreamClient(
 
     @Suppress("DEPRECATION")
     private fun acquireWifiLowLatency() {
-        if (wifiLock != null) return
+        if (wifiLock != null || !wifiLowLatencyLock) return
         try {
             val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as android.net.wifi.WifiManager
             val mode =
@@ -939,6 +983,14 @@ class StreamClient(
         private const val MESSAGE_DESKTOP_GEOMETRY = 13
         private const val MESSAGE_CLIENT_DECODER_LIMIT_TABLE = 14
         private const val MESSAGE_CLIENT_IDENTITY = 18 // 15–17 reserved
+        /** `--ez diag.wifiLock false`: no Wi-Fi low-latency lock (this launch only). */
+        @Volatile var wifiLowLatencyLock = true
+
+        /** `--ez diag.quickAck false`: no TCP_QUICKACK re-arming (this launch only). */
+        @Volatile var quickAckEnabled = true
+
+        private const val MESSAGE_FRAME_ACKS = 22
+        private const val MESSAGE_FRAME_ACK = 23
         private const val FRAME_FLAG_KEYFRAME = 1
         private const val KEYFRAME_REQUEST_FLAG_FORCE = 1
 

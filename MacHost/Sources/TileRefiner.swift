@@ -71,6 +71,8 @@ final class TileRefiner {
 
     private func tick() {
         guard let server, server.clientWantsLosslessTiles else { return }
+        // Tiles would only deepen a backed-up link (issue #9).
+        if server.isNetworkBacklogged { return }
         let frame = latest.withLockUnchecked { $0 }
         guard let buffer = frame.buffer else { return }
         let startNs = DispatchTime.now().uptimeNanoseconds

@@ -391,6 +391,7 @@ class ScreenCapture {
         let newPacer = FramePacer(fps: refreshRate, encodeQueue: queue) { [weak self] buffer, pts, isRepeat, contentNs in
             self?.encoder?.encode(pixelBuffer: buffer, presentationTimeStamp: pts, isRepeat: isRepeat, contentNs: contentNs)
         }
+        newPacer.networkBusy = { [weak self] in self?.currentServer?.isNetworkBacklogged ?? false }
         pacer = newPacer
         newPacer.start()
         debugLog("Frame pacing \(newPacer.pacingEnabled ? "on" : "off") at \(refreshRate) fps (\(label))")

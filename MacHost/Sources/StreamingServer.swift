@@ -49,6 +49,13 @@ enum WireMessage {
     static let tileInvalidate: UInt8 = 20
     /// Server→client: LZ4-compressed BGRA tiles (see LosslessTileCodec).
     static let losslessTiles: UInt8 = 21
+    /// Client→server, one byte 0x81: "I can acknowledge video frames"
+    /// (issue #9). The server answers with the same type, payload-free, and
+    /// only then does the client send type 23. Older servers drop both bytes.
+    static let frameAcks: UInt8 = 22
+    /// Client→server: video frames received so far, mod 16384, as two 7-bit
+    /// bytes with the high bit set ([23][0x80|hi][0x80|lo]).
+    static let frameAck: UInt8 = 23
 }
 
 private extension String {
@@ -398,6 +405,7 @@ class StreamingServer {
         clientSupportsDesktopGeometry = false
         clientIdentity = nil
         handshakeDeviceName = nil
+        frameAckState.withLock { $0 = FrameAckState() }
         startupPrepared = false
         startupHeld = false
         waitingForSyncFrame = true
@@ -822,6 +830,30 @@ class StreamingServer {
                     resetLosslessTiles(grid: tileTracker.grid)
                 }
 
+            case WireMessage.frameAcks:
+                guard inputBuffer.count >= 2 else { return }
+                let version = inputByte(at: 1) & 0x7F
+                consumeInputBytes(2)
+                if version >= 1 {
+                    // On the frame queue, so both sides start counting at the
+                    // same frame: every frame sent after this reply counts.
+                    frameQueue.async { [weak self] in
+                        guard let self else { return }
+                        self.frameAckState.withLock { s in
+                            s = FrameAckState()
+                            s.enabled = true
+                        }
+                        connection.send(content: Data([WireMessage.frameAcks]), completion: .contentProcessed { _ in })
+                    }
+                    debugLog("Client acknowledges video frames: sending backs off when the network lags")
+                }
+
+            case WireMessage.frameAck:
+                guard inputBuffer.count >= 3 else { return }
+                let count = UInt64(inputByte(at: 1) & 0x7F) << 7 | UInt64(inputByte(at: 2) & 0x7F)
+                consumeInputBytes(3)
+                frameAckState.withLock { $0.acknowledge(count14: count) }
+
             case WireMessage.clientSupportsFrameMetadata:
                 // One-byte opt-in from newer clients. Keeping this payload-free
                 // lets older hosts safely ignore it without misaligning input.
@@ -988,10 +1020,79 @@ class StreamingServer {
 
         let actionOffset = 2 + pointerCount * 8
         let action = data.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: actionOffset, as: Int32.self) }
+        if Self.touchStatsEnabled { noteTouchArrival(action: Int(action)) }
 
         DispatchQueue.main.async {
             self.onTouchEvent?(x1, y1, Int(action), pointerCount, x2, y2)
         }
+    }
+
+    // MARK: - Frame acknowledgements (issue #9)
+
+    /// Video frames handed to the connection vs acknowledged by the client.
+    struct FrameAckState {
+        static let window = 256
+        var enabled = false
+        var sent: UInt64 = 0
+        var acked: UInt64 = 0
+        var sendNs = [UInt64](repeating: 0, count: window)
+
+        mutating func noteSent(atNs ns: UInt64) {
+            sendNs[Int(sent % UInt64(Self.window))] = ns
+            sent += 1
+        }
+
+        /// `count14`: frames the client has received, mod 16384.
+        mutating func acknowledge(count14: UInt64) {
+            let behind = ((sent & 0x3FFF) &- count14) & 0x3FFF
+            guard behind <= sent else { return }
+            acked = max(acked, sent - behind)
+        }
+
+        /// The oldest unacknowledged frame has waited longer than `limitNs`.
+        func backlogged(nowNs: UInt64, limitNs: UInt64) -> Bool {
+            guard enabled, sent > acked else { return false }
+            if sent - acked >= UInt64(Self.window) { return true }
+            let oldest = sendNs[Int(acked % UInt64(Self.window))]
+            return nowNs > oldest && nowNs - oldest > limitNs
+        }
+    }
+
+    private let frameAckState = OSAllocatedUnfairLock(initialState: FrameAckState())
+
+    /// Frames are piling up between here and the client (Wi-Fi slowing
+    /// down): capture skips new encodes and tiles wait, so the client gets
+    /// the newest screen when the link catches up instead of a queue of old
+    /// ones. diag.backlogMs (stock 30).
+    var isNetworkBacklogged: Bool {
+        let now = DispatchTime.now().uptimeNanoseconds
+        return frameAckState.withLock { $0.backlogged(nowNs: now, limitNs: Self.backlogLimitNs) }
+    }
+
+    private static let backlogLimitNs: UInt64 = {
+        let ms = UserDefaults.standard.object(forKey: "diag.backlogMs") as? Int ?? 30
+        return UInt64(max(ms, 1)) * 1_000_000
+    }()
+
+    // diag.touchStats: how evenly touch moves arrive (issue #9).
+    private static let touchStatsEnabled = UserDefaults.standard.bool(forKey: "diag.touchStats")
+    private var touchMoveTimes: [UInt64] = []
+    private var touchStatsSince: UInt64 = 0
+
+    private func noteTouchArrival(action: Int) {
+        let now = DispatchTime.now().uptimeNanoseconds
+        if action == 1 { touchMoveTimes.append(now) } // move (0 down, 1 move, 2 up)
+        if touchStatsSince == 0 { touchStatsSince = now }
+        guard now - touchStatsSince >= 2_000_000_000 else { return }
+        touchStatsSince = now
+        let times = touchMoveTimes
+        touchMoveTimes.removeAll(keepingCapacity: true)
+        guard times.count > 2 else { return }
+        let gaps = zip(times.dropFirst(), times).map { Double($0 - $1) / 1e6 }.sorted()
+        func pct(_ p: Double) -> Double { gaps[min(gaps.count - 1, Int(Double(gaps.count - 1) * p))] }
+        let bunched = gaps.filter { $0 < 1 }.count
+        debugLog(String(format: "Touch moves: %d in 2 s, gap p50 %.1f p90 %.1f p99 %.1f max %.1f ms, <1 ms apart %d%%",
+                        times.count, pct(0.5), pct(0.9), pct(0.99), gaps.last ?? 0, bunched * 100 / gaps.count))
     }
 
     private func inputByte(at offset: Int) -> UInt8 {
@@ -1097,6 +1198,7 @@ class StreamingServer {
 
             let packet = self.makeFramePacket(data, timestamp: contentNs > 0 ? contentNs : timestamp, isKeyframe: isKeyframe)
             let sendCallNs = DispatchTime.now().uptimeNanoseconds
+            self.frameAckState.withLock { $0.noteSent(atNs: sendCallNs) }
 
             connection.send(content: packet, completion: .contentProcessed { error in
                 if error != nil {

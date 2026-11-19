@@ -383,6 +383,25 @@ trips of p50 21 / p90 197 / max 435 ms tablet -> Mac and p50 8 / p90 58 /
 max 498 ms Mac -> tablet (router p99 33, max 151 ms). A running stream keeps
 both radios awake.
 
+### Dragging a large window (issue #9, still open)
+
+A large, text-filled window swept across the tablet display shows what a small
+one did not: over Wi-Fi the Mac's sends stall for 24-107 ms (USB: under 1 ms)
+and the tablet's display stops for 60-140 ms, at only 7-10 Mbps of video plus
+0.6-2 MB/s of tiles. Ping stays at p99 ~11 ms meanwhile, and the tablet reads
+the socket at once (its receive queue stays at 0).
+
+The tablet's kernel counts 15-27% of the stream's TCP segments arriving out of
+order (`TcpExt:TCPOFOQueue`); TCP holds everything behind each gap. It is per
+connection and looks random: the same minimal NWListener test gave 0% on some
+connections and ~26% on others, whatever its parameters (peer-to-peer,
+interface type, service class). Connections the Mac opened to the tablet
+(Python, NWConnection; uniform, bursty, mixed and bidirectional traffic, also
+while the Mac drags a window) stayed at 0-0.5%. The stream's own connection was
+on the bad side every time it was measured. Not the cause: the Wi-Fi
+low-latency lock, TCP_QUICKACK, tile volume, keyframes, Mac CPU/GPU load.
+Next step: a packet capture on the Mac to see which side reorders.
+
 A still screen sent ~2.7 Mbps over Wi-Fi, mostly a ~200 KB keyframe a second
 (1.1 Mbps with keyframes every 10 s). Keyframes now come every 10 s over
 Wi-Fi (1 s over USB); the stream socket is marked interactive video (WMM
