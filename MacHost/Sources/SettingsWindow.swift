@@ -346,13 +346,21 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowDidMove(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow,
-              let screen = window.screen ?? NSScreen.main else { return }
-
-        var frame = window.frame
-        let visibleFrame = screen.visibleFrame
+        guard let window = notification.object as? NSWindow else { return }
         let minVisibleWidth: CGFloat = 100
         let minVisibleHeight: CGFloat = 50
+        var frame = window.frame
+        // Enough of it shows on some display: leave it. Checking only
+        // window.screen went wrong mid-move between displays: that is still
+        // the old display, and a window just placed below it (issue #7) was
+        // pulled back up until its top 50 pt sat on the old display, title
+        // bar behind the new display's menu bar.
+        let showing = NSScreen.screens.contains { screen in
+            let part = screen.visibleFrame.intersection(frame)
+            return part.width >= minVisibleWidth && part.height >= minVisibleHeight
+        }
+        guard !showing, let screen = Self.nearestScreen(to: frame) else { return }
+        let visibleFrame = screen.visibleFrame
 
         if frame.maxX < visibleFrame.minX + minVisibleWidth {
             frame.origin.x = visibleFrame.minX - frame.width + minVisibleWidth
@@ -369,6 +377,17 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         if window.frame != frame {
             window.setFrame(frame, display: true)
         }
+    }
+
+    /// The display a lost window should come back to: the one closest to it.
+    static func nearestScreen(to frame: NSRect) -> NSScreen? {
+        func distance(_ screen: NSScreen) -> CGFloat {
+            let area = screen.visibleFrame
+            let dx = max(area.minX - frame.maxX, frame.minX - area.maxX, 0)
+            let dy = max(area.minY - frame.maxY, frame.minY - area.maxY, 0)
+            return dx * dx + dy * dy
+        }
+        return NSScreen.screens.min { distance($0) < distance($1) }
     }
 }
 
