@@ -98,7 +98,7 @@ static int find_endpoints(libusb_device_handle *h) {
 static int xfer(libusb_device_handle *h, unsigned char ep, void *buf, int len) {
     int done = 0, got;
     while (done < len) {
-        int r = libusb_bulk_transfer(h, ep, (unsigned char *)buf + done, len - done, &got, 10000);
+        int r = libusb_bulk_transfer(h, ep, (unsigned char *)buf + done, len - done, &got, 60000);
         if (r) { fprintf(stderr, "bulk 0x%02x: %s after %d/%d\n", ep, libusb_error_name(r), done, len); return -1; }
         done += got;
     }
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
     libusb_device_handle *h = open_accessory(ctx);
     if (!h) {
         if (!switch_to_accessory(ctx)) { fprintf(stderr, "no AOA-capable device\n"); return 1; }
-        for (int i = 0; i < 50 && !h; i++) { usleep(100000); h = open_accessory(ctx); }
+        for (int i = 0; i < 200 && !h; i++) { usleep(100000); h = open_accessory(ctx); }
         if (!h) { fprintf(stderr, "accessory did not appear\n"); return 1; }
     }
     if (!find_endpoints(h)) { fprintf(stderr, "no bulk endpoints\n"); return 1; }

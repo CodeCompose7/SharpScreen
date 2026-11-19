@@ -329,10 +329,22 @@ Spike: `scripts/aoa_spike.c` (libusb, Mac) against the debug app's
   *The ADB side echoes through `toybox nc -L cat`, whose small writes meet
   delayed ACKs (30 KB p50 47 ms); only the 100 B row is a fair comparison.
 
+**With USB debugging off** (developer options untouched otherwise, USB mode
+"File transfer") the same handshake gives 18d1:2d00, accessory only, still
+SuperSpeed, and the link is faster (three runs):
+
+| | Mac -> tablet | tablet -> Mac | 100 B p50 / p99 | 30 KB p50 / p99 | 300 KB p50 / p99 |
+|---|---|---|---|---|---|
+| AOA, no ADB | 103-105 MB/s | 165-166 MB/s | 0.17 / 0.77-0.80 ms | 0.37-0.41 / 1.1-1.2 ms | 3.8-3.9 / 10-14 ms |
+
+The starting USB mode does not matter: from "File transfer" (mtp,adb) the
+switch and the numbers were the same as from charging-only.
+
 What it means: video (≤ 4 MB/s) fits easily and latency is lower than ADB.
-Lossless tile fills would run at ~70 MB/s instead of the 1 MB/tick (120 MB/s)
-cap, so a full refill takes ~1.7x longer. Not yet tried: AOA with USB debugging
-off (accessory only, 18d1:2d00) and with Samsung Auto Blocker on.
+Lossless tile fills run at ~70 MB/s (with ADB on) to ~105 MB/s (ADB off)
+instead of the 1 MB/tick (120 MB/s) cap. Not yet tried: Samsung Auto Blocker
+on. The tablet leaves accessory mode only when the cable is unplugged (or, with
+ADB, `svc usb setFunctions`).
 
 ## Tablet decoders
 
