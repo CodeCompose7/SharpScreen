@@ -1019,15 +1019,43 @@ class StreamingServer {
 
     /// Send tiles cut from a frame captured at `capturedAtNs`, dropping any
     /// that changed since (their pixels would be older than the video).
+    /// frameQueue only (issue #14): last change -> lossless send per tile,
+    /// and when the screen is sharp again after a big change.
+    private var tileChangeToSendMs: [Double] = []
+    private var lastReportedBigChangeNs: UInt64 = 0
+
+    private func noteSharpening(_ changedNs: [UInt64]) {
+        let now = DispatchTime.now().uptimeNanoseconds
+        for c in changedNs where c > 0 && c <= now { tileChangeToSendMs.append(Double(now - c) / 1e6) }
+        let big = tileTracker.lastBigChangeNs
+        guard big > lastReportedBigChangeNs, big <= now else { return }
+        let grid = tileTracker.grid
+        let valid = tileTracker.validCount
+        // 99%, not all: a caret or a clock keeps a few tiles changing.
+        guard valid >= grid.count - grid.count / 100 else { return }
+        lastReportedBigChangeNs = big
+        debugLog("Sharpen: \(valid)/\(grid.count) tiles lossless \(String(format: "%.0f", Double(now - big) / 1e6)) ms after the last big change (settle \(TileRefiner.settleNs(overUSB: clientIsOverUSB) / 1_000_000) ms, tile capture \(CaptureDiagnostics.tileStreamFps) fps)")
+    }
+
+    private func drainSharpeningStats() -> String? {
+        guard !tileChangeToSendMs.isEmpty else { return nil }
+        let v = tileChangeToSendMs.sorted()
+        tileChangeToSendMs.removeAll(keepingCapacity: true)
+        let p = { (q: Double) in v[min(v.count - 1, Int(Double(v.count - 1) * q))] }
+        return String(format: "tile change->send p50 %.0f p90 %.0f max %.0f ms (%d)", p(0.5), p(0.9), v.last ?? 0, v.count)
+    }
+
     func sendLosslessTiles(_ tiles: [EncodedTile], capturedAtNs: UInt64, tileSize: Int) {
         guard clientWantsLosslessTiles, !tiles.isEmpty else { return }
         frameQueue.async { [weak self] in
             guard let self, let connection = self.connection, self.connectionReady, !self.isStopped else { return }
-            let claimed = Set(self.tileTracker.claimForSend(tiles.map(\.index), capturedAtNs: capturedAtNs))
+            let claimedWithChanges = self.tileTracker.claimForSendWithChanges(tiles.map(\.index), capturedAtNs: capturedAtNs)
+            let claimed = Set(claimedWithChanges.map(\.tile))
             let fresh = tiles.filter { claimed.contains($0.index) }
             guard !fresh.isEmpty else { return }
             let msg = LosslessTileCodec.tilesMessage(fresh, tileSize: tileSize)
             connection.send(content: msg, completion: .contentProcessed { _ in })
+            self.noteSharpening(claimedWithChanges.map(\.changedNs))
             self.tilesSent += fresh.count
             self.tilesSentBytes += msg.count
             if let start = self.tileFillStartNs {
@@ -1041,7 +1069,7 @@ class StreamingServer {
                 if valid >= grid.count - grid.count / 100 {
                     self.tileFillStartNs = nil
                     let ms = Double(DispatchTime.now().uptimeNanoseconds - start) / 1e6
-                    debugLog("Lossless tiles: \(valid)/\(grid.count) valid \(String(format: "%.0f", ms)) ms after reset (first tiles at \(String(format: "%.0f", Double(self.tileFillFirstNs - start) / 1e6)) ms, \(self.tileFillBatches) batches, \(self.tileFillBytes / 1024) KB, settle \(TileRefiner.settleNs / 1_000_000) ms)")
+                    debugLog("Lossless tiles: \(valid)/\(grid.count) valid \(String(format: "%.0f", ms)) ms after reset (first tiles at \(String(format: "%.0f", Double(self.tileFillFirstNs - start) / 1e6)) ms, \(self.tileFillBatches) batches, \(self.tileFillBytes / 1024) KB, settle \(TileRefiner.settleNs(overUSB: self.clientIsOverUSB) / 1_000_000) ms)")
                 }
             }
         }
@@ -1162,7 +1190,7 @@ class StreamingServer {
             // Log pipeline latency profile
             if profiledFrameCount > 0 {
                 let avgAgeMs = Double(totalFrameAgeNs) / Double(profiledFrameCount) / 1_000_000.0
-                debugLog("Pipeline: \(String(format: "%.1f", fps))fps, \(String(format: "%.1f", mbps))Mbps, avg frame age: \(String(format: "%.1f", avgAgeMs))ms, max \(String(format: "%.1f", Double(maxFrameAgeNs) / 1e6))ms, >20ms: \(lateFrames), max send-done \(String(format: "%.1f", Double(maxSendDoneNs) / 1e6))ms, send queue max \(maxQueuedBytes / 1024) KB, largest frame \(maxFrameBytes / 1024) KB\(maxFrameWasKey ? " (key)" : ""), tiles: \(tilesSent) (\(tilesSentBytes / 1024) KB, \(tileTracker.validCount) valid, \(invalidatesSent) invalidated), new frames: \(newFrames) avg \(String(format: "%.1f", newFrames > 0 ? Double(newFrameAgeNs) / Double(newFrames) / 1e6 : 0))ms max \(String(format: "%.1f", Double(maxNewFrameAgeNs) / 1e6))ms, dropped: \(droppedFrames)")
+                debugLog("Pipeline: \(String(format: "%.1f", fps))fps, \(String(format: "%.1f", mbps))Mbps, avg frame age: \(String(format: "%.1f", avgAgeMs))ms, max \(String(format: "%.1f", Double(maxFrameAgeNs) / 1e6))ms, >20ms: \(lateFrames), max send-done \(String(format: "%.1f", Double(maxSendDoneNs) / 1e6))ms, send queue max \(maxQueuedBytes / 1024) KB, largest frame \(maxFrameBytes / 1024) KB\(maxFrameWasKey ? " (key)" : ""), tiles: \(tilesSent) (\(tilesSentBytes / 1024) KB, \(tileTracker.validCount) valid, \(invalidatesSent) invalidated), new frames: \(newFrames) avg \(String(format: "%.1f", newFrames > 0 ? Double(newFrameAgeNs) / Double(newFrames) / 1e6 : 0))ms max \(String(format: "%.1f", Double(maxNewFrameAgeNs) / 1e6))ms, dropped: \(droppedFrames)\(drainSharpeningStats().map { ", " + $0 } ?? "")")
             }
 
             bytesSent = 0
