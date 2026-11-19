@@ -41,7 +41,7 @@
     <string name="wireless_connecting_to">%1$s에 연결 중</string>
     <string name="wireless_reconnecting_to">%1$s에 다시 연결 중</string>
     <string name="wireless_pair_title">Mac과 페어링</string>
-    <string name="wireless_pair_steps">Mac에서 SharpScreen 열기 → 무선 탭으로 이동 → 표시된 QR 코드 스캔</string>
+    <string name="wireless_pair_steps">Mac에서 SharpScreen 열기 → 연결 탭에서 무선 선택 → 표시된 QR 코드 스캔</string>
     <string name="wireless_scan_qr">QR 코드 스캔</string>
     <string name="wireless_enter_code_no_camera">카메라가 없나요? 코드로 입력</string>
     <string name="wireless_enter_code_instead">코드로 입력</string>
@@ -56,7 +56,7 @@
     <string name="wireless_unreachable_cached">%2$s:%3$d의 %1$s에서 응답이 없습니다.\n\nMac의 Wi-Fi 네트워크나 포트가 바뀌었거나 앱이 실행 중이 아닐 수 있습니다. Mac에서 SharpScreen을 열고 새 QR 코드를 스캔해 다시 페어링하세요.</string>
     <string name="wireless_unreachable">Mac에서 응답이 없습니다. 두 기기가 같은 Wi-Fi에 연결되어 있고 Mac 앱이 실행 중인지 확인한 다음 QR 코드를 다시 스캔하세요.</string>
     <string name="wireless_token_title">⚠ 다시 페어링 필요</string>
-    <string name="wireless_token_cached">%1$s의 페어링 토큰이 초기화되었습니다(토큰 재설정 또는 재설치). 새 QR 코드를 스캔해 다시 페어링하세요.</string>
+    <string name="wireless_token_cached">%1$s의 페어링 토큰이 초기화되었습니다(페어링 토큰 재설정 또는 재설치). 새 QR 코드를 스캔해 다시 페어링하세요.</string>
     <string name="wireless_token">Mac의 페어링 토큰이 초기화되었습니다. 새 QR 코드를 스캔해 다시 페어링하세요.</string>
     <string name="wireless_protocol_title">⚠ 연결 오류</string>
     <string name="wireless_protocol">Mac과 보안 연결을 완료하지 못했습니다. QR 코드를 다시 스캔하세요.</string>
@@ -73,7 +73,7 @@
     <string name="pair_code_dash_hint">대시(-)는 있어도 없어도 됩니다.</string>
     <string name="pair_code_pair">페어링</string>
     <string name="pair_code_pairing">페어링 중…</string>
-    <string name="pair_error_host">Mac 주소를 입력하세요(QR 코드 아래 \"Listening\" 옆에 표시됨).</string>
+    <string name="pair_error_host">Mac 주소를 입력하세요(Mac 앱 연결 탭의 \"수신 주소\"에 표시됨).</string>
     <string name="pair_error_port">포트는 1~65535 사이여야 합니다.</string>
     <string name="pair_error_code_length">코드는 %1$d자리입니다.</string>
     <string name="pair_error_code_rejected">코드가 맞지 않습니다. 코드는 사용할 때마다 바뀌니 Mac에서 현재 코드를 확인하세요.</string>

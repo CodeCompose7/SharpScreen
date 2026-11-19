@@ -1,0 +1,3 @@
+/* Privacy prompts shown by macOS (Info.plist keys). */
+"NSScreenCaptureUsageDescription" = "SharpScreenが仮想ディスプレイをキャプチャしてAndroidデバイスにストリーミングするには、画面収録へのアクセスが必要です。";
+"NSLocalNetworkUsageDescription" = "ワイヤレスモードでAndroidタブレットがWi-Fi経由でMacに接続するには、SharpScreenにローカルネットワークへのアクセスが必要です。許可しない場合は、USB接続のみ使用できます。";

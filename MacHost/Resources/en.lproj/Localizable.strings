@@ -239,3 +239,10 @@
 /* Wireless: AWDL warning */
 "AirDrop, Handoff and Universal Control can make wireless streaming stutter." = "AirDrop, Handoff and Universal Control can make wireless streaming stutter.";
 "They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until the next restart or AirDrop: sudo ifconfig awdl0 down" = "They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until the next restart or AirDrop: sudo ifconfig awdl0 down";
+
+/* General: language */
+"Language" = "Language";
+"App Language" = "App Language";
+"SharpScreen uses this language after it restarts." = "SharpScreen uses this language after it restarts.";
+"System" = "System";
+"Restart SharpScreen to apply the new language." = "Restart SharpScreen to apply the new language.";

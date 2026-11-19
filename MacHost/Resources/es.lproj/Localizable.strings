@@ -1,0 +1,246 @@
+/* SharpScreen Mac UI strings (Spanish). Key = English source text; see
+   en.lproj/Localizable.strings. Keep every format specifier (%@, %lld). */
+
+/* Settings window: tabs */
+"Connection" = "Conexión";
+"Display" = "Pantalla";
+"Streaming" = "Transmisión";
+"General" = "General";
+"About" = "Acerca de";
+
+/* Connection pane */
+"Streaming · %@" = "Transmitiendo · %@";
+"Streaming to tablet" = "Transmitiendo a la tableta";
+"Waiting for tablet" = "Esperando la tableta";
+"Stopped" = "Detenido";
+"Start" = "Iniciar";
+"Stop" = "Detener";
+"%lld Hz" = "%lld Hz";
+"Port %@" = "Puerto %@";
+"Screen Recording permission required — see General." = "Se necesita permiso de grabación de pantalla; consulta General.";
+"USB" = "USB";
+"Wireless" = "Inalámbrico";
+"USB Setup" = "Configuración USB";
+"Connect the tablet with a USB cable and allow USB debugging when asked. SharpScreen sets up adb reverse automatically when you click Start." = "Conecta la tableta con un cable USB y permite la depuración USB cuando se te pida. SharpScreen configura adb reverse automáticamente al hacer clic en Iniciar.";
+"ADB installed" = "ADB instalado";
+"Installed" = "Instalado";
+"Missing" = "No encontrado";
+"USB mode tunnels the TCP stream through the cable using `adb reverse`. Requires the `adb` command on the Mac. Searched paths: Homebrew, /usr/local/bin, ~/Library/Android/sdk/platform-tools, and PATH (`which adb`)." = "El modo USB envía el flujo TCP por el cable mediante `adb reverse`. Requiere el comando `adb` en el Mac. Rutas en las que se busca: Homebrew, /usr/local/bin, ~/Library/Android/sdk/platform-tools y PATH (`which adb`).";
+"Install it with Homebrew:" = "Instálalo con Homebrew:";
+"ADB reverse" = "ADB reverse";
+"OK" = "OK";
+"Pending" = "Pendiente";
+"Whether `adb reverse tcp:%@ tcp:%@` is currently configured. The Mac app sets this up automatically when you click Start. Goes green within ~2 seconds after the tablet is plugged in and authorized." = "Indica si `adb reverse tcp:%@ tcp:%@` está configurado. La app del Mac lo configura automáticamente al hacer clic en Iniciar. Se pone en verde unos 2 segundos después de conectar y autorizar la tableta.";
+"USB device" = "Dispositivo USB";
+"Detected" = "Detectado";
+"Not detected" = "No detectado";
+"An Android device authorized for ADB and visible to your Mac. Plug in via USB-C and tap Allow on the device's USB debugging prompt." = "Un dispositivo Android autorizado para ADB y visible para el Mac. Conéctalo por USB-C y toca Permitir en el aviso de depuración USB del dispositivo.";
+"Network Status" = "Estado de la red";
+"Wi-Fi" = "Wi-Fi";
+"Connected" = "Conectado";
+"Disconnected" = "Desconectado";
+"Whether the Mac currently has a working internet route. Wireless mode requires the Mac to be on a Wi-Fi (or Ethernet) network — the same network the tablet is on." = "Indica si el Mac tiene ahora una conexión de red que funcione. El modo inalámbrico requiere que el Mac esté en una red Wi-Fi (o Ethernet), la misma que la tableta.";
+"Listening on" = "Escuchando en";
+"The LAN address the tablet must reach. The QR code embeds this exact host:port — if it changes (e.g. you switch Wi-Fi), re-scan the new QR on the tablet." = "La dirección LAN a la que debe llegar la tableta. El código QR incluye exactamente este host:port; si cambia (p. ej., al cambiar de red Wi-Fi), vuelve a escanear el nuevo QR en la tableta.";
+"Network" = "Red";
+"Server Port" = "Puerto del servidor";
+"Port" = "Puerto";
+"Stop the server to change the port." = "Detén el servidor para cambiar el puerto.";
+"Changing the port invalidates existing pairings — re-scan the QR on each tablet." = "Cambiar el puerto invalida las vinculaciones existentes; vuelve a escanear el QR en cada tableta.";
+"Custom port set — the Android app must use the same port." = "Puerto personalizado; la app de Android debe usar el mismo puerto.";
+
+/* Connection pane: wireless pairing */
+"Pair Device" = "Vincular dispositivo";
+"Click Start above to begin listening, then scan the QR." = "Haz clic en Iniciar arriba para empezar a escuchar y luego escanea el QR.";
+"Generating QR…" = "Generando QR…";
+"Scan this QR from SharpScreen for Android (Wireless tab)" = "Escanea este QR desde SharpScreen para Android (pestaña Inalámbrico)";
+"Listening: %@:%@" = "Escuchando: %@:%@";
+"Wi-Fi disconnected — no LAN address" = "Wi-Fi desconectado: sin dirección LAN";
+"No camera on your tablet?" = "¿Tu tableta no tiene cámara?";
+"Type this one-time code in the Android app instead.\nA new code is issued after each pairing." = "Escribe este código de un solo uso en la app de Android.\nSe genera un código nuevo después de cada vinculación.";
+"Paired Devices (%lld)" = "Dispositivos vinculados (%lld)";
+"No devices paired yet." = "Todavía no hay dispositivos vinculados.";
+"Forget" = "Olvidar";
+"Reset Pairing Token" = "Restablecer token de vinculación";
+"Forgets every paired device." = "Olvida todos los dispositivos vinculados.";
+"Reset…" = "Restablecer…";
+"Refresh list and timestamps" = "Actualizar lista y horas";
+"Reset Token?" = "¿Restablecer el token?";
+"This will disconnect all paired devices. They will need to scan the new QR to connect again." = "Se desconectarán todos los dispositivos vinculados. Tendrán que escanear el nuevo QR para volver a conectarse.";
+"just now" = "ahora mismo";
+
+/* Display pane */
+"Resolution" = "Resolución";
+"Show all" = "Mostrar todas";
+"Custom" = "Personalizada";
+"User defined" = "Definida por el usuario";
+"Widescreen" = "Panorámica";
+"HD/4K" = "HD/4K";
+"Classic" = "Clásica";
+"Surface/Pixel" = "Surface/Pixel";
+"Tablet Wide" = "Tableta panorámica";
+"iPad" = "iPad";
+"W" = "Ancho";
+"H" = "Alto";
+"Apply" = "Aplicar";
+"Supported range: 640–7680 × 480–4320" = "Rango admitido: 640–7680 × 480–4320";
+"HiDPI (Retina)" = "HiDPI (Retina)";
+"Renders at 2× resolution for sharper text. Increases bandwidth." = "Renderiza a resolución 2× para un texto más nítido. Aumenta el ancho de banda.";
+"Orientation" = "Orientación";
+"Portrait" = "Vertical";
+"Landscape" = "Horizontal";
+"Rotation" = "Rotación";
+"Display will be in portrait mode" = "La pantalla estará en orientación vertical";
+"Flip Horizontally" = "Voltear horizontalmente";
+"Mirror left and right" = "Invertir izquierda y derecha";
+"Flip Vertically" = "Voltear verticalmente";
+"Mirror top and bottom" = "Invertir arriba y abajo";
+"Display Arrangement" = "Disposición de pantallas";
+"Position the tablet relative to your other displays." = "Coloca la tableta respecto a tus otras pantallas.";
+"Arrange Displays…" = "Organizar pantallas…";
+"Frame Rate" = "Velocidad de fotogramas";
+"Refresh Rate" = "Frecuencia de actualización";
+"High refresh rate for a smooth experience" = "Frecuencia alta para una imagen fluida";
+"Custom rate — handy when a tablet shows artifacts above a certain FPS" = "Frecuencia personalizada: útil si una tableta muestra defectos por encima de ciertos FPS";
+
+/* Streaming pane */
+"Gaming Mode" = "Modo juego";
+"Enable Gaming Mode" = "Activar modo juego";
+"Optimized for competitive gaming" = "Optimizado para juegos competitivos";
+"High bitrate (1000 Mbps)" = "Tasa de bits alta (1000 Mbps)";
+"120 Hz refresh rate" = "Frecuencia de 120 Hz";
+"Ultra-low latency encoding" = "Codificación de latencia ultrabaja";
+"Bitrate" = "Tasa de bits";
+"Target bitrate" = "Tasa de bits objetivo";
+"%@ Mbps" = "%@ Mbps";
+"Locked at 1000 Mbps in Gaming Mode" = "Fijada en 1000 Mbps en el modo juego";
+"Quality" = "Calidad";
+"Ultra Low" = "Muy baja";
+"Low" = "Baja";
+"Medium" = "Media";
+"High" = "Alta";
+"Quality locked to Ultra Low in Gaming Mode" = "Calidad fijada en Muy baja en el modo juego";
+"Fastest encoding, lowest latency" = "Codificación más rápida, latencia mínima";
+"Touch Input" = "Entrada táctil";
+"Enable Touch Input" = "Activar entrada táctil";
+"Control the Mac by touching the tablet" = "Controla el Mac tocando la tableta";
+"Touch input is off — the tablet is display-only" = "La entrada táctil está desactivada: la tableta solo muestra la imagen";
+"Performance" = "Rendimiento";
+"FPS" = "FPS";
+
+/* General pane */
+"Startup" = "Inicio";
+"Launch at Login" = "Abrir al iniciar sesión";
+"Run SharpScreen in the background automatically after you log in." = "Ejecutar SharpScreen en segundo plano automáticamente al iniciar sesión.";
+"Auto-start streaming on launch" = "Iniciar la transmisión al abrir";
+"Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "Inicia el servidor automáticamente al abrir la app, para que la tableta pueda conectarse sin tocar el Mac.";
+"Startup mode" = "Modo de inicio";
+"Which connection mode to start in when auto-starting." = "Modo de conexión que se usa al iniciar automáticamente.";
+"Permissions & Status" = "Permisos y estado";
+"Screen & System Audio" = "Pantalla y audio del sistema";
+"Screen Recording" = "Grabación de pantalla";
+"Granted" = "Concedido";
+"Required" = "Necesario";
+"Optional" = "Opcional";
+"macOS privacy permission required to capture the virtual display. Grant it in System Settings → Privacy & Security → Screen Recording." = "Permiso de privacidad de macOS necesario para capturar la pantalla virtual. Concédelo en Ajustes del Sistema → Privacidad y seguridad → Grabación de pantalla.";
+"Accessibility" = "Accesibilidad";
+"Optional permission. Required only if you want touch input from the tablet to control the Mac. Streaming works without it." = "Permiso opcional. Solo es necesario si quieres controlar el Mac con la entrada táctil de la tableta. La transmisión funciona sin él.";
+"Virtual Display" = "Pantalla virtual";
+"Active" = "Activa";
+"Inactive" = "Inactiva";
+"The macOS virtual display SharpScreen renders into. Created when you click Start; the tablet streams its pixels." = "La pantalla virtual de macOS en la que dibuja SharpScreen. Se crea al hacer clic en Iniciar; la tableta transmite su contenido.";
+"Client Connected" = "Cliente conectado";
+"Yes" = "Sí";
+"No" = "No";
+"Whether the Android app currently has an active stream session." = "Indica si la app de Android tiene ahora una sesión de transmisión activa.";
+"Capture Method" = "Método de captura";
+"Initializing…" = "Inicializando…";
+"Which macOS API is currently capturing the virtual display. SCStream is the modern path; the CGDisplayStream fallback activates if SCStream fails (e.g. on certain virtual display configurations)." = "La API de macOS que está capturando la pantalla virtual. SCStream es la vía moderna; la alternativa CGDisplayStream se activa si SCStream falla (p. ej., con ciertas configuraciones de pantalla virtual).";
+"Screen & System Audio Recording Required" = "Se necesita grabación de pantalla y audio del sistema";
+"Screen Recording Required" = "Se necesita grabación de pantalla";
+"Required to capture the virtual display. Go to System Settings > Privacy & Security > Screen & System Audio Recording." = "Necesario para capturar la pantalla virtual. Ve a Ajustes del Sistema > Privacidad y seguridad > Grabación de pantalla y audio del sistema.";
+"Required to capture the virtual display." = "Necesario para capturar la pantalla virtual.";
+"Open System Settings" = "Abrir Ajustes del Sistema";
+"Tablet goes black in fullscreen apps" = "La tableta se queda en negro con apps a pantalla completa";
+"\"Displays have separate Spaces\" is turned off, so macOS blanks every other display — including the tablet — whenever an app enters fullscreen. Turn it on in System Settings → Desktop & Dock → Mission Control, then log out and back in." = "La opción «Las pantallas tienen espacios independientes» está desactivada, así que macOS apaga las demás pantallas (incluida la tableta) cada vez que una app pasa a pantalla completa. Actívala en Ajustes del Sistema → Escritorio y Dock → Mission Control y, después, cierra sesión y vuelve a iniciarla.";
+"Enable Touch Control" = "Activar control táctil";
+"Control your Mac from your tablet." = "Controla el Mac desde la tableta.";
+"Open Settings" = "Abrir Ajustes";
+"App" = "App";
+"Reset Settings" = "Restablecer ajustes";
+"Restore every setting to its default value." = "Devuelve todos los ajustes a sus valores predeterminados.";
+"Restart SharpScreen" = "Reiniciar SharpScreen";
+"Restart" = "Reiniciar";
+"Quit SharpScreen" = "Salir de SharpScreen";
+"Stops streaming and removes the virtual display." = "Detiene la transmisión y elimina la pantalla virtual.";
+"Quit" = "Salir";
+"Quit SharpScreen (⌘Q)" = "Salir de SharpScreen (⌘Q)";
+"Cancel" = "Cancelar";
+"Reset" = "Restablecer";
+"This will reset all settings to default values." = "Todos los ajustes volverán a sus valores predeterminados.";
+
+/* About pane */
+"Version %@" = "Versión %@";
+"Turn your tablet into a second display" = "Tu tableta como segunda pantalla";
+"Turns an Android tablet or phone into a second display for your Mac — over USB or Wi-Fi, with touch control. Free and open source." = "Convierte una tableta o un teléfono Android en una segunda pantalla para el Mac, por USB o Wi-Fi y con control táctil. Gratis y de código abierto.";
+"Check for Updates…" = "Buscar actualizaciones…";
+"Look for a newer version now. SharpScreen also checks once a day." = "Buscar ahora una versión más reciente. SharpScreen también lo comprueba una vez al día.";
+"Update checks are only available in the released build." = "La búsqueda de actualizaciones solo está disponible en la versión publicada.";
+"Links" = "Enlaces";
+"GitHub" = "GitHub";
+"Releases" = "Versiones";
+"Report a Problem" = "Informar de un problema";
+"Credits" = "Créditos";
+"Fork of Side Screen by Tran Vuong Quoc Dat (MIT)" = "Fork de Side Screen de Tran Vuong Quoc Dat (MIT)";
+
+/* Menu bar and app menu */
+"Connected — %@" = "Conectado: %@";
+"Connected to tablet" = "Conectado a la tableta";
+"Waiting for tablet on port %@" = "Esperando en el puerto %@";
+"Server stopped" = "Servidor detenido";
+"Start Streaming" = "Iniciar transmisión";
+"Stop Streaming" = "Detener transmisión";
+"Connection Mode" = "Modo de conexión";
+"Settings…" = "Ajustes…";
+"About SharpScreen" = "Acerca de SharpScreen";
+"Edit" = "Edición";
+"Cut" = "Cortar";
+"Copy" = "Copiar";
+"Paste" = "Pegar";
+"Select All" = "Seleccionar todo";
+
+/* Alerts and errors */
+"Screen & System Audio Recording Permission Required" = "Se necesita permiso de grabación de pantalla y audio del sistema";
+"Please grant Screen & System Audio Recording permission in System Settings > Privacy & Security." = "Concede el permiso de grabación de pantalla y audio del sistema en Ajustes del Sistema > Privacidad y seguridad.";
+"Screen Recording Permission Required" = "Se necesita permiso de grabación de pantalla";
+"Please grant Screen Recording permission in System Settings > Privacy & Security." = "Concede el permiso de grabación de pantalla en Ajustes del Sistema > Privacidad y seguridad.";
+"Later" = "Más tarde";
+"Failed to Start Server" = "No se ha podido iniciar el servidor";
+"The streaming server could not be created." = "No se ha podido crear el servidor de transmisión.";
+"The virtual display was created without a display ID." = "La pantalla virtual se ha creado sin ID de pantalla.";
+"Could not listen on port %@: %@" = "No se puede escuchar en el puerto %@: %@";
+"Server startup on port %@ was cancelled before the listener became ready." = "El inicio del servidor en el puerto %@ se canceló antes de que la escucha estuviera lista.";
+"Last listener error: %@" = "Último error de escucha: %@";
+"Timed out while waiting for the server to listen on port %@." = "Se agotó el tiempo de espera para que el servidor escuche en el puerto %@.";
+"Server startup was awaited more than once." = "Se esperó el inicio del servidor más de una vez.";
+"Virtual display creation failed: %@" = "No se ha podido crear la pantalla virtual: %@";
+"Settings apply failed: %@" = "No se han podido aplicar los ajustes: %@";
+"Virtual display has not been created" = "No se ha creado la pantalla virtual";
+"Main display not found" = "No se encuentra la pantalla principal";
+"Display configuration failed: %@" = "Error al configurar la pantalla: %@";
+"Mirror mode operation failed: %@" = "Error en la duplicación de pantalla: %@";
+"SCShareableContent timed out after %llds (possible Apple bug FB12114396)" = "SCShareableContent agotó el tiempo tras %lld s (posible error de Apple FB12114396)";
+"Virtual display ID not set" = "ID de la pantalla virtual sin definir";
+"Virtual display with ID %@ not found after 5 attempts" = "No se encuentra la pantalla virtual con ID %@ tras 5 intentos";
+"Display not initialized" = "Pantalla sin inicializar";
+
+/* Wireless: AWDL warning */
+"AirDrop, Handoff and Universal Control can make wireless streaming stutter." = "AirDrop, Handoff y Universal Control pueden provocar tirones en la transmisión inalámbrica.";
+"They briefly take this Mac's Wi-Fi off its channel about twice a second (~80 ms each). Turn them off while streaming, connect the Mac by Ethernet, or use USB. To turn them off until the next restart or AirDrop: sudo ifconfig awdl0 down" = "Unas dos veces por segundo sacan brevemente el Wi-Fi de este Mac de su canal (unos 80 ms cada vez). Desactívalos mientras transmites, conecta el Mac por Ethernet o usa USB. Para desactivarlos hasta el próximo reinicio o uso de AirDrop: sudo ifconfig awdl0 down";
+
+/* General: language */
+"Language" = "Idioma";
+"App Language" = "Idioma de la app";
+"SharpScreen uses this language after it restarts." = "SharpScreen usará este idioma después de reiniciarse.";
+"System" = "Sistema";
+"Restart SharpScreen to apply the new language." = "Reinicia SharpScreen para aplicar el nuevo idioma.";

@@ -6,6 +6,21 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-19 — Eight languages, notarized
+
+The Mac app is notarized by Apple from this release on.
+
+### Added
+- **Six more languages** in both apps: Japanese, German, French, Russian,
+  Simplified Chinese and Spanish, alongside English and Korean (#2). The Mac app
+  has its own language setting (General ▸ Language: System or any of the eight,
+  applied on restart); the tablet app's Settings lists all eight.
+
+### Fixed
+- The tablet app's pairing steps and hints named Mac screens that changed in the
+  redesign (a Wireless tab, "Listening", "Reset Token"); they now match the Mac
+  app in each language.
+
 ## [0.3.0] - 2026-11-19 — Korean, a redesign, steadier frames
 
 Includes everything in 0.3.0-beta.1 below. Measurements are in
