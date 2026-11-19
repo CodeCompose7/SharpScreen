@@ -424,10 +424,14 @@ object SelfUpdater {
             .apply()
         selfDiag("package replaced; now ${installedVersionName()}, started from app: $recent")
         if (recent) {
+            // Like the launcher icon: brings back the existing task (some Android builds have
+            // already reopened it) instead of stacking a second MainActivity. Android may
+            // refuse this from the background; the app then simply stays closed.
             try {
-                app.startActivity(
-                    Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-                )
+                val launch =
+                    app.packageManager.getLaunchIntentForPackage(app.packageName)
+                        ?: Intent(app, MainActivity::class.java)
+                app.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED))
             } catch (e: Exception) {
                 selfDiag("relaunch failed: $e")
             }
