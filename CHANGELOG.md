@@ -6,6 +6,19 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+### Added
+- **USB without ADB** (#3). In USB mode the Mac switches an approved tablet into
+  USB accessory mode (Android Open Accessory): no developer options or USB
+  debugging on the tablet, and no `adb` on the Mac. The Mac asks once per
+  tablet; the tablet asks once whether SharpScreen should open, then connects by
+  itself and returns to normal when streaming stops or the cable comes out.
+  Measured on a Tab S11 Ultra: 120 fps, the same frame age as over adb, a full
+  lossless refill in ~290 ms. Tablets left on ADB connect as before.
+- **One tablet at a time over USB.** With several tablets plugged in, only the
+  one in use gets a connection (accessory link or adb reverse); pick it in the
+  menu or in Settings ▸ Connection ▸ USB Devices. Before, a second tablet's app
+  could cut the first one's stream every two seconds.
+
 ## [0.3.3] - 2026-11-19 — The display is called SharpScreen
 
 ### Fixed

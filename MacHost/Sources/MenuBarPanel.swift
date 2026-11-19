@@ -198,6 +198,10 @@ struct MenuBarPanelView: View {
     private var statusText: String {
         guard settings.isRunning else { return String(localized: "Server stopped") }
         guard settings.clientConnected else {
+            if settings.connectionMode == .usb,
+               let active = settings.usbDevices.first(where: \.isActive), active.transport == .accessory {
+                return UsbDeviceText.status(active)
+            }
             return String(localized: "Waiting for tablet on port \(String(settings.port))")
         }
         if let device = settings.currentWirelessDevice {
@@ -259,6 +263,19 @@ struct MenuBarPanelView: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
                 ModeSegmentedControl(selection: mode, width: 272)
+                if settings.connectionMode == .usb, settings.usbDevices.count > 1 {
+                    // One tablet streams at a time (issue #3).
+                    Picker("Tablet", selection: Binding(
+                        get: { settings.usbDevices.first(where: \.isActive)?.serial ?? "" },
+                        set: { settings.onSelectUsbDevice?($0) }
+                    )) {
+                        ForEach(settings.usbDevices) { device in
+                            Text(verbatim: device.name).tag(device.serial)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .font(.system(size: 12))
+                }
                 Text(detail)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)

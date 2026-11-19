@@ -46,6 +46,15 @@ enum CaptureDiagnostics {
         return (v > 0 ? v : 128) * 1024
     }
 
+    /// The same over a USB accessory link (stock 384 = 46 MB/s): the link
+    /// carries 69 MB/s to the tablet with USB debugging on (104 MB/s off), and
+    /// tiles above that would queue video frames behind them.
+    /// diag.tileKBPerTickAccessory.
+    static var tileBytesPerTickAccessory: Int {
+        let v = UserDefaults.standard.integer(forKey: "diag.tileKBPerTickAccessory")
+        return (v > 0 ? v : 384) * 1024
+    }
+
     /// SCStreamConfiguration.minimumFrameInterval. Stock: 1/fps.
     /// diag.minFrameIntervalHz = 0 means no limit (CMTime.zero), N means 1/N s.
     static func minimumFrameInterval(fps: Int) -> CMTime {

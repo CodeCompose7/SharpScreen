@@ -29,6 +29,7 @@ struct ConnectionPane: View {
             }
 
             if settings.connectionMode == .usb {
+                UsbDevicesSection(settings: settings)
                 usbSection
             } else {
                 wirelessStatusSection
@@ -42,13 +43,17 @@ struct ConnectionPane: View {
 
     private var usbSection: some View {
         let port = String(settings.port)
-        return SettingsSection("USB Setup",
-                               footer: "Connect the tablet with a USB cable and allow USB debugging when asked. SharpScreen sets up adb reverse automatically when you click Start.") {
+        // With accessory mode on, adb only matters for tablets left on ADB.
+        let adbOptional = settings.usbAccessoryEnabled
+        return SettingsSection(adbOptional ? "ADB (Optional)" : "USB Setup",
+                               footer: adbOptional
+                                   ? "Tablets you keep on ADB need USB debugging on the tablet and adb on the Mac. SharpScreen sets up adb reverse for the tablet in use."
+                                   : "Connect the tablet with a USB cable and allow USB debugging when asked. SharpScreen sets up adb reverse automatically when you click Start.") {
             StatusRow(title: "ADB installed",
                       status: settings.adbInstalled ? String(localized: "Installed") : String(localized: "Missing"),
-                      color: settings.adbInstalled ? .green : .red,
+                      color: settings.adbInstalled ? .green : (adbOptional ? .secondary : .red),
                       hint: "USB mode tunnels the TCP stream through the cable using `adb reverse`. Requires the `adb` command on the Mac. Searched paths: Homebrew, /usr/local/bin, ~/Library/Android/sdk/platform-tools, and PATH (`which adb`).")
-            if !settings.adbInstalled {
+            if !settings.adbInstalled && !adbOptional {
                 SettingsBlock {
                     Text("Install it with Homebrew:")
                         .font(.system(size: 11))
@@ -66,12 +71,12 @@ struct ConnectionPane: View {
             RowDivider()
             StatusRow(title: "ADB reverse",
                       status: settings.adbReverseConfigured ? String(localized: "OK") : String(localized: "Pending"),
-                      color: settings.adbReverseConfigured ? .green : .orange,
+                      color: settings.adbReverseConfigured ? .green : (adbOptional ? .secondary : .orange),
                       hint: "Whether `adb reverse tcp:\(port) tcp:\(port)` is currently configured. The Mac app sets this up automatically when you click Start. Goes green within ~2 seconds after the tablet is plugged in and authorized.")
             RowDivider()
             StatusRow(title: "USB device",
                       status: settings.usbDeviceConnected ? String(localized: "Detected") : String(localized: "Not detected"),
-                      color: settings.usbDeviceConnected ? .green : .red,
+                      color: settings.usbDeviceConnected ? .green : (adbOptional ? .secondary : .red),
                       hint: "An Android device authorized for ADB and visible to your Mac. Plug in via USB-C and tap Allow on the device's USB debugging prompt.")
         }
     }
@@ -1229,5 +1234,94 @@ struct WirelessSection: View {
             rounded = (elapsed / 86400).rounded(.down) * 86400
         }
         return Self.relativeFormatter.localizedString(fromTimeInterval: -rounded)
+    }
+}
+
+// MARK: - USB devices (issue #3)
+
+/// Accessory mode on/off and the tablets on USB: one is in use, the others
+/// can be picked; approved tablets can be forgotten.
+struct UsbDevicesSection: View {
+    @ObservedObject var settings: DisplaySettings
+
+    var body: some View {
+        SettingsSection("USB Devices",
+                        footer: "Tablets you approve connect in USB accessory mode: no developer options on the tablet and no adb on the Mac. One tablet streams at a time; pick it here or in the menu.") {
+            SettingsRow("Connect without ADB", subtitle: "Asks once per tablet before switching it into accessory mode.") {
+                Toggle("", isOn: $settings.usbAccessoryEnabled)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .controlSize(.small)
+            }
+            if settings.usbDevices.isEmpty {
+                RowDivider()
+                SettingsBlock {
+                    Text(settings.isRunning ? "No Android device on USB." : "Start streaming to look for tablets on USB.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+            }
+            ForEach(settings.usbDevices) { device in
+                RowDivider()
+                UsbDeviceRow(device: device,
+                             onUse: { settings.onSelectUsbDevice?(device.serial) },
+                             onForget: { settings.onForgetUsbDevice?(device.serial) })
+            }
+        }
+    }
+}
+
+private struct UsbDeviceRow: View {
+    let device: UsbDeviceEntry
+    let onUse: () -> Void
+    let onForget: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: device.isActive ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(device.isActive ? .sharpAccent : .secondary)
+                .font(.system(size: 14))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: device.name)
+                    .font(.system(size: 13))
+                Text(verbatim: UsbDeviceText.status(device))
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+            Spacer(minLength: 8)
+            if !device.isActive {
+                Button("Use", action: onUse)
+                    .controlSize(.small)
+            } else if case .failed = device.linkState {
+                Button("Reconnect", action: onUse)
+                    .controlSize(.small)
+            }
+            Button("Forget", action: onForget)
+                .controlSize(.small)
+                .help("Ask again before using this tablet in accessory mode.")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+}
+
+enum UsbDeviceText {
+    static func status(_ device: UsbDeviceEntry) -> String {
+        guard device.isActive else {
+            return device.transport == .adb ? String(localized: "Connected · ADB") : String(localized: "Connected · not in use")
+        }
+        switch device.transport {
+        case .accessory:
+            switch device.linkState {
+            case .ready: return String(localized: "In use · USB accessory")
+            case .waitingForApp: return String(localized: "Open SharpScreen on the tablet")
+            case .failed: return String(localized: "USB accessory stopped · click Reconnect")
+            case .switching, nil: return String(localized: "Switching to USB accessory…")
+            }
+        case .adb:
+            return String(localized: "In use · ADB")
+        case .none:
+            return String(localized: "Waiting for your approval or for ADB")
+        }
     }
 }

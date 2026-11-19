@@ -425,10 +425,22 @@ class StreamingServer {
     private let clientOverUSB = OSAllocatedUnfairLock(initialState: true)
     var clientIsOverUSB: Bool { clientOverUSB.withLock { $0 } }
 
+    /// The client comes through an AccessoryLink (USB without ADB), whose
+    /// link is slower than adb's (69-104 MB/s to the tablet, not ~190).
+    private let clientOverAccessory = OSAllocatedUnfairLock(initialState: false)
+    var clientIsOverAccessory: Bool { clientOverAccessory.withLock { $0 } }
+
     private func onConnectionReady(_ conn: NWConnection) {
         clientOverUSB.withLock { $0 = conn.endpoint.isLoopback }
+        var viaAccessory = false
+        if case .hostPort(_, let remotePort) = conn.endpoint, conn.endpoint.isLoopback {
+            viaAccessory = AccessoryClientPorts.contains(remotePort.rawValue)
+        }
+        clientOverAccessory.withLock { $0 = viaAccessory }
         if conn.endpoint.isLoopback {
-            debugLog("Client connected via loopback (USB) — skipping auth")
+            debugLog(viaAccessory
+                ? "Client connected via USB accessory — skipping auth"
+                : "Client connected via loopback (USB) — skipping auth")
             beginExistingProtocol(on: conn)
             return
         }

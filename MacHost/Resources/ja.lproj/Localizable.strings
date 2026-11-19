@@ -244,3 +244,30 @@
 "SharpScreen uses this language after it restarts." = "SharpScreenを再起動すると、この言語で表示されます。";
 "System" = "システム";
 "Restart SharpScreen to apply the new language." = "新しい言語を適用するには、SharpScreenを再起動してください。";
+
+/* USB devices, accessory mode (issue #3) */
+"ADB (Optional)" = "ADB（任意）";
+"Ask again before using this tablet in accessory mode." = "このタブレットをアクセサリモードで使う前にもう一度確認します。";
+"Asks once per tablet before switching it into accessory mode." = "タブレットごとに、アクセサリモードに切り替える前に一度確認します。";
+"Connect" = "接続";
+"Connect without ADB" = "ADBなしで接続";
+"Connect “%@” over USB without ADB?" = "“%@”をADBなしでUSB接続しますか？";
+"Connected · ADB" = "接続済み · ADB";
+"Connected · not in use" = "接続済み · 未使用";
+"In use · ADB" = "使用中 · ADB";
+"In use · USB accessory" = "使用中 · USBアクセサリ";
+"No Android device on USB." = "USBに接続されたAndroidデバイスはありません。";
+"Not Now" = "後で";
+"Open SharpScreen on the tablet" = "タブレットでSharpScreenを開いてください";
+"Reconnect" = "再接続";
+"Start streaming to look for tablets on USB." = "ストリーミングを開始すると、USB上のタブレットを探します。";
+"Switching to USB accessory…" = "USBアクセサリに切り替え中…";
+"Tablet" = "タブレット";
+"Tablets you approve connect in USB accessory mode: no developer options on the tablet and no adb on the Mac. One tablet streams at a time; pick it here or in the menu." = "許可したタブレットはUSBアクセサリモードで接続します。タブレットの開発者オプションもMacのadbも不要です。ストリーミングは一度に1台で、ここかメニューで選べます。";
+"Tablets you keep on ADB need USB debugging on the tablet and adb on the Mac. SharpScreen sets up adb reverse for the tablet in use." = "ADBで接続するタブレットには、タブレットのUSBデバッグとMacのadbが必要です。SharpScreenは使用中のタブレットにadb reverseを設定します。";
+"USB Devices" = "USBデバイス";
+"USB accessory stopped · click Reconnect" = "USBアクセサリが停止しました · 「再接続」をクリック";
+"Use" = "使用";
+"Use ADB Only" = "ADBのみ使用";
+"Waiting for your approval or for ADB" = "許可またはADBを待っています";
+"While streaming, SharpScreen switches this device into USB accessory mode, so developer options and ADB are not needed. It returns to normal when streaming stops or the cable is unplugged." = "ストリーミング中、SharpScreenはこのデバイスをUSBアクセサリモードに切り替えるため、開発者オプションとADBは不要です。ストリーミングを止めるかケーブルを抜くと元に戻ります。";
