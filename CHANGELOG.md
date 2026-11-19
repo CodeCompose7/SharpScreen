@@ -6,6 +6,8 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-19 — Smoother Wi-Fi
+
 ### Fixed
 - **Dragging windows over Wi-Fi no longer stutters** (#9). The Mac's stream
   connections came from Network.framework's listener, which on Wi-Fi sent in
