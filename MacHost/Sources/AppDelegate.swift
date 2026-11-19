@@ -52,7 +52,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var settings = DisplaySettings()
     var settingsWindow: SettingsWindowController?
     var statusItem: NSStatusItem?
-    private var statusPanel: MenuBarPanelController?
     /// The one USB tablet, over an accessory link or adb (issue #3).
     private lazy var usbManager = UsbConnectionManager(settings: settings)
     let pairedDeviceStore = PairedDeviceStore()
@@ -348,32 +347,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
-        // A popup panel rather than an NSMenu (see MenuBarPanelController).
-        statusPanel = MenuBarPanelController(
-            settings: settings,
-            actions: .init(
-                toggleServer: { [weak self] in self?.toggleServerFromMenu() },
-                showSettings: { [weak self] in self?.showSettings() },
-                quit: { NSApp.terminate(nil) }
-            )
-        )
-
+        // Click: toggle the settings window. Right click or Control-click:
+        // the menu (issue #7).
         if let button = statusItem?.button {
             button.image = MenuBarIcon.image(faint: true)
-            if #available(macOS 27.0, *), let item = statusItem {
-                // The system opens and closes the panel and draws the item as
-                // selected meanwhile (setting the highlight in code no longer
-                // shows on macOS 27).
-                item.expandedInterfaceDelegate = self
-                statusPanel?.systemManagesSelection = true
-                statusPanel?.onDismiss = { [weak item] in item?.expandedInterfaceSession?.cancel() }
-            } else {
-                button.target = self
-                button.action = #selector(statusItemClicked(_:))
-                // On release: acting on the press let the button's own
-                // mouse-up clear the selected look set while the panel is open.
-                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            }
+            button.target = self
+            button.action = #selector(statusItemClicked(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
         // Solid while a tablet is connected, faint otherwise: at-a-glance
@@ -390,7 +370,89 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
-        statusPanel?.toggle(from: sender)
+        if Self.isMenuClick(NSApp.currentEvent) {
+            showStatusMenu()
+        } else {
+            toggleSettings()
+        }
+    }
+
+    /// The menu (right click, Control-click): the panel's content in an
+    /// NSMenu, so the system tracks it (Escape, clicks outside) and, when the
+    /// click lands on the item itself, draws the item as selected.
+    private var statusMenuOpen = false
+
+    private func showStatusMenu() {
+        // One right click can arrive twice (the menu bar is mirrored on every
+        // display); never stack a second menu behind the first.
+        guard !statusMenuOpen, let item = statusItem, let button = item.button else { return }
+        statusMenuOpen = true
+        defer { statusMenuOpen = false }
+        let menu = NSMenu()
+        let entry = NSMenuItem()
+        let host = NSHostingView(rootView: MenuBarPanelView(
+            settings: settings,
+            actions: .init(
+                toggleServer: { [weak self] in self?.toggleServerFromMenu() },
+                showSettings: { [weak self, weak menu] in
+                    menu?.cancelTracking()
+                    self?.showSettings()
+                },
+                quit: { NSApp.terminate(nil) }
+            )
+        ))
+        host.frame.size = host.fittingSize
+        entry.view = host
+        menu.addItem(entry)
+        // The shortcuts the panel shows, as hidden items.
+        for (key, action) in [("t", #selector(toggleServerFromMenu)),
+                              ("s", #selector(showSettings)),
+                              ("q", #selector(NSApplication.terminate(_:)))] {
+            let shortcut = NSMenuItem(title: key, action: action, keyEquivalent: key)
+            shortcut.target = action == #selector(NSApplication.terminate(_:)) ? NSApp : self
+            shortcut.isHidden = true
+            shortcut.allowsKeyEquivalentWhenHidden = true
+            menu.addItem(shortcut)
+        }
+
+        let mouse = NSEvent.mouseLocation
+        if let buttonWindow = button.window, buttonWindow.frame.insetBy(dx: -1, dy: -1).contains(mouse) {
+            // Clicked on the item itself: the system places the menu and draws
+            // the item as selected while it is open.
+            item.popUpMenu(menu)
+        } else if let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) }) {
+            // Clicked on its copy in another display's menu bar: open there,
+            // under the icon (same offset from the click as on the item).
+            let event = NSApp.currentEvent
+            let offset = event?.window === button.window ? event?.locationInWindow.x ?? 0 : button.bounds.midX
+            let barBottom = screen.visibleFrame.maxY < screen.frame.maxY
+                ? screen.visibleFrame.maxY : screen.frame.maxY - NSStatusBar.system.thickness
+            menu.popUp(positioning: nil, at: NSPoint(x: mouse.x - offset, y: barBottom), in: nil)
+        }
+    }
+
+    /// Right click (or Control-click) opens the menu; a plain click toggles
+    /// the settings window (issue #7).
+    static func isMenuClick(_ event: NSEvent?) -> Bool {
+        guard let event else { return false }
+        switch event.type {
+        case .rightMouseDown, .rightMouseUp:
+            return true
+        case .leftMouseDown, .leftMouseUp:
+            return event.modifierFlags.contains(.control)
+        default:
+            return false
+        }
+    }
+
+    /// Shows the settings window, or closes it when it is open on this
+    /// desktop.
+    func toggleSettings() {
+        if let window = settingsWindow?.window, window.isVisible, window.isOnActiveSpace {
+            window.performClose(nil)
+        } else {
+            showSettings()
+        }
     }
 
     @objc private func toggleServerFromMenu() {
@@ -1381,17 +1443,5 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
-    }
-}
-
-@available(macOS 27.0, *)
-extension AppDelegate: NSStatusItemExpandedInterfaceDelegate {
-    func statusItem(_ statusItem: NSStatusItem, didBegin expandedInterfaceSession: NSStatusItemExpandedInterfaceSession) {
-        guard let button = statusItem.button else { return }
-        statusPanel?.show(from: button)
-    }
-
-    func statusItemDidEndExpandedInterfaceSession(_ statusItem: NSStatusItem, animated: Bool) {
-        statusPanel?.close()
     }
 }

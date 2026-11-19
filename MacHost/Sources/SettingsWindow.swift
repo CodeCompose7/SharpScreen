@@ -336,6 +336,10 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         window.center()
         window.contentView = NSHostingView(rootView: SettingsView(settings: settings))
         window.isReleasedWhenClosed = false
+        // Open on the desktop (Space) the user is on (issue #7). A closed
+        // window remembers its last Space, and showing it again switched the
+        // user back there.
+        window.collectionBehavior.insert(.moveToActiveSpace)
 
         self.init(window: window)
         window.delegate = self
