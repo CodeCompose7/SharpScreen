@@ -8,6 +8,7 @@ import android.opengl.EGLDisplay
 import android.opengl.EGLExt
 import android.opengl.EGLSurface
 import android.os.Build
+import android.util.Log
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.os.Handler
@@ -348,6 +349,9 @@ class GlCompositor(
         val requested = pendingPresentNs
         val presentNs =
             if (s != null && requested != null) requested + s.periodNs / 2 else swappedNs
+        // For matching against `dumpsys SurfaceFlinger --latency` (actual present
+        // per buffer): this swap's end and the frame's host content time.
+        Log.d("PresentTrace", "$swappedNs $host")
         report(
             host,
             ((decodedNs - arrivalNs) / 1000).toInt(),

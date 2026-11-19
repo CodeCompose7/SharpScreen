@@ -541,6 +541,30 @@ Big-window drag, Tab S11 Ultra at 120 Hz, p50 (p90) in ms, 7 windows of 2 s:
   (and of the earlier 60 fps test window). Worth a look.
 - The network leg over Wi-Fi is 5.7 ms; over USB 2.2 ms.
 
+### The tablet's draw -> vsync: mostly SurfaceFlinger (2026-11-20)
+
+The tablet presents each frame at the Mac's content time plus an offset, the
+p50 of how soon recent frames could make a vsync. Lowering the percentile
+shows frames sooner. Judder by `scripts/present_judder.py`: the app logs each
+new frame's swap and content time, `dumpsys SurfaceFlinger --latency` gives
+each buffer's actual present, and a step is off when two consecutive new
+frames reach the screen at a spacing more than half a vsync away from their
+spacing on the Mac (a stricter matching than the atrace runs above, so the
+baseline is higher). USB, big-window drag, alternating, two runs each:
+
+| Present at | Steps off | App swap -> on screen, p50 | Total behind the Mac, p50 |
+|---|---|---|---|
+| p50 (stock) | 28.2%, 32.5% | 19.4-19.5 ms | 41.7-42.0 ms |
+| p25 | 36.4%, 47.6% | 17.9-18.3 ms | 38.0-39.8 ms |
+| p1 (as soon as possible) | 51.4%, 44.3% | 16.9-17.1 ms | 37.8-38.0 ms |
+
+Even shown as soon as possible, a frame takes ~17 ms from the app's swap to
+the screen: two vsyncs of SurfaceFlinger's pipeline at 120 Hz, which an app
+cannot shorten (front-buffer rendering would, at the price of tearing on a
+moving full-screen picture). The scheduler's own wait is the remaining 2-4 ms,
+and it buys the smoothness: giving it up takes judder from ~30% to ~45-50% of
+steps. p50 stays.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
