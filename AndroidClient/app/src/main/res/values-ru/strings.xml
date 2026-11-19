@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name is not translated: a localized app_name would also override the debug
+         build's "SharpScreen Dev" label. Mac UI labels ("Wireless", "Listening", "Reset Token")
+         stay in English because the Mac app shows them in English for this language. -->
+    <string name="stat_demo_suffix">" (демо)"</string>
+
+    <!-- ===== Home panel ===== -->
+    <string name="home_subtitle">Используйте планшет как второй экран</string>
+    <string name="home_requires_mac">Требуется Mac с запущенным приложением SharpScreen</string>
+    <string name="home_get_mac_app">Скачать приложение для Mac →</string>
+    <string name="settings_open">Настройки</string>
+    <string name="mode_usb">USB</string>
+    <string name="mode_wireless">Wi-Fi</string>
+
+    <string name="checklist_title">Проверка подключения</string>
+    <string name="checklist_developer_mode">Режим разработчика включен</string>
+    <string name="checklist_usb_debugging">Отладка по USB включена</string>
+    <string name="checklist_usb_cable">USB-кабель подключен</string>
+    <string name="checklist_mac_server">Сервер на Mac запущен</string>
+    <string name="checklist_hint_developer_mode">Включите параметры разработчика</string>
+    <string name="checklist_hint_usb_debugging">Включите в параметрах разработчика</string>
+    <string name="checklist_hint_usb_cable">Подключите планшет к Mac кабелем</string>
+    <string name="checklist_hint_mac_server">Начните трансляцию на Mac</string>
+
+    <string name="connect">Подключить</string>
+    <string name="status_ready">Готово к подключению</string>
+    <string name="status_not_ready">Не готово к подключению</string>
+    <string name="status_connecting">Подключение…</string>
+    <string name="status_connected">Подключено · Идет трансляция</string>
+    <string name="status_disconnected">Отключено</string>
+    <string name="status_connection_failed">Не удалось подключиться</string>
+    <string name="status_no_hevc">На этом устройстве нет декодера HEVC. Обновите приложение SharpScreen на Mac, чтобы включить поддержку H.264.</string>
+    <string name="status_decoder_failed">Ошибка видеодекодера: %1$s</string>
+
+    <string name="watch_demo_video">Смотреть демо-видео</string>
+    <string name="try_demo">Нет Mac? Попробуйте демо</string>
+    <string name="report_problem">Сообщить о проблеме</string>
+
+    <!-- ===== Wireless ===== -->
+    <string name="wireless_connecting">Подключение…</string>
+    <string name="wireless_connecting_to">Подключение к %1$s</string>
+    <string name="wireless_reconnecting_to">Повторное подключение к %1$s</string>
+    <string name="wireless_pair_title">Сопряжение с Mac</string>
+    <string name="wireless_pair_steps">Откройте SharpScreen на Mac → вкладка «Wireless» → отсканируйте показанный QR-код</string>
+    <string name="wireless_scan_qr">Сканировать QR-код</string>
+    <string name="wireless_enter_code_no_camera">Нет камеры? Введите код</string>
+    <string name="wireless_enter_code_instead">Ввести код</string>
+    <string name="wireless_connected">● Подключено</string>
+    <string name="wireless_disconnected">○ Отключено</string>
+    <string name="wireless_disconnect">Отключить</string>
+    <string name="wireless_forget_mac">Забыть этот Mac</string>
+    <string name="wireless_reconnect">Подключить снова</string>
+    <string name="wireless_repair_title">⚠ Не удалось подключиться</string>
+    <string name="wireless_repair_message">Отсканируйте новый QR-код на Mac, чтобы выполнить сопряжение заново.</string>
+    <string name="wireless_unreachable_title">⚠ Mac недоступен</string>
+    <string name="wireless_unreachable_cached">Нет ответа от %1$s по адресу %2$s:%3$d.\n\nВозможно, Mac подключился к другой сети Wi-Fi, сменил порт или приложение не запущено. Откройте SharpScreen на Mac и отсканируйте новый QR-код, чтобы выполнить сопряжение заново.</string>
+    <string name="wireless_unreachable">Нет ответа от Mac. Убедитесь, что оба устройства подключены к одной сети Wi-Fi и приложение на Mac запущено, затем снова отсканируйте QR-код.</string>
+    <string name="wireless_token_title">⚠ Требуется повторное сопряжение</string>
+    <string name="wireless_token_cached">На %1$s сброшен токен сопряжения (например, нажата кнопка «Reset Token» или приложение переустановлено). Отсканируйте новый QR-код, чтобы выполнить сопряжение заново.</string>
+    <string name="wireless_token">На Mac сброшен токен сопряжения. Отсканируйте новый QR-код, чтобы выполнить сопряжение заново.</string>
+    <string name="wireless_protocol_title">⚠ Ошибка подключения</string>
+    <string name="wireless_protocol">Не удалось установить защищенное соединение с Mac. Отсканируйте QR-код еще раз.</string>
+    <string name="wireless_camera_title">Для сканирования QR-кода нужен доступ к камере</string>
+    <string name="wireless_camera_message">Вы запретили доступ. Разрешите его в разделе Настройки → Приложения → SharpScreen → Разрешения.</string>
+    <string name="wireless_open_settings">Открыть настройки</string>
+
+    <!-- ===== Code pairing dialog ===== -->
+    <string name="pair_code_title">Сопряжение по коду</string>
+    <string name="pair_code_intro">Код показан под QR-кодом в SharpScreen на Mac.</string>
+    <string name="pair_code_mac_address">Адрес Mac</string>
+    <string name="pair_code_port">Порт</string>
+    <string name="pair_code_code">Код сопряжения</string>
+    <string name="pair_code_dash_hint">Можно вводить с дефисом или без него.</string>
+    <string name="pair_code_pair">Подключить</string>
+    <string name="pair_code_pairing">Сопряжение…</string>
+    <string name="pair_error_host">Введите адрес Mac (он указан под QR-кодом в строке «Listening»).</string>
+    <string name="pair_error_port">Порт должен быть от 1 до 65535.</string>
+    <string name="pair_error_code_length">Код должен содержать %1$d цифр.</string>
+    <string name="pair_error_code_rejected">Код не принят. Код меняется после каждого использования — проверьте текущий код на Mac.</string>
+    <string name="pair_error_host_too_old">Обновите SharpScreen на Mac, чтобы использовать сопряжение по коду.</string>
+    <string name="pair_error_no_response">Нет ответа от %1$s:%2$d. Убедитесь, что оба устройства подключены к одной сети Wi-Fi и приложение на Mac запущено.</string>
+    <string name="pair_error_connection">Ошибка подключения. Повторите попытку.</string>
+    <string name="pair_error_failed">Не удалось выполнить сопряжение. Повторите попытку.</string>
+
+    <!-- ===== Errors and toasts ===== -->
+    <string name="error_title_connection">Ошибка подключения</string>
+    <string name="ok">ОК</string>
+    <string name="cancel">Отмена</string>
+    <string name="close">Закрыть</string>
+    <string name="error_enter_host">Введите адрес хоста</string>
+    <string name="error_open_mac_app_url">Откройте %1$s в браузере, чтобы скачать приложение для Mac.</string>
+    <string name="error_open_report_url">Откройте %1$s в браузере, чтобы сообщить о проблеме.</string>
+    <string name="error_open_url">Откройте %1$s в браузере.</string>
+    <string name="error_demo_failed">Не удалось запустить демо: %1$s</string>
+    <string name="error_server_not_running">Сервер на Mac не запущен.\n\nСначала запустите SharpScreen на Mac.</string>
+    <string name="error_unreachable">Mac недоступен.\n\nУбедитесь, что устройства соединены USB-кабелем и настроен ADB reverse.</string>
+    <string name="error_timeout">Время ожидания подключения истекло.\n\nПроверьте, не блокирует ли брандмауэр Mac порт %1$d.</string>
+    <string name="error_connection_failed">Не удалось подключиться: %1$s\n\nПопробуйте:\n• Запустить SharpScreen на Mac\n• Проверить USB-подключение\n• Выполнить: adb reverse tcp:%2$d tcp:%2$d</string>
+    <string name="toast_demo_started">Демо-режим — чтобы выйти, откройте настройки (⚙) или нажмите «Назад»</string>
+    <string name="toast_demo_touch">Демо-режим — после подключения касания здесь позволяют нажимать, перетаскивать и прокручивать на Mac.</string>
+    <string name="toast_settings_icon_hidden">Значок настроек скрыт — чтобы показать его, используйте жест «Назад»</string>
+    <string name="toast_decoder_stalled">Нет видео — возможно, разрешение потока превышает предел декодера этого планшета%1$s. Уменьшите разрешение или частоту обновления либо отключите HiDPI на Mac.</string>
+    <string name="toast_decoder_stalled_cap">" (макс. ~%1$d×%2$d)"</string>
+    <string name="toast_decoder_failed">Ошибка видеодекодера — отключитесь и подключитесь снова.</string>
+
+    <!-- ===== In-stream display settings ===== -->
+    <string name="display_settings_title">Настройки экрана</string>
+    <string name="display_show_stats">Показывать статистику</string>
+    <string name="display_show_stats_summary">FPS, битрейт, разрешение</string>
+    <string name="display_show_stats_overlay">Показывать статистику поверх экрана</string>
+    <string name="display_show_stats_overlay_summary">Отображать FPS, битрейт и разрешение</string>
+    <string name="display_hide_settings_icon">Скрыть значок настроек</string>
+    <string name="display_hide_settings_icon_summary">Во время трансляции его можно показать жестом «Назад»</string>
+    <string name="display_overlay_opacity">Непрозрачность наложения</string>
+    <string name="display_button_position">Положение кнопки настроек</string>
+    <string name="display_reset_overlay">Сбросить наложение</string>
+    <string name="display_reset_overlay_position">Сбросить положение наложения</string>
+    <string name="display_reset_button">Сбросить кнопку</string>
+    <string name="display_disconnect">Отключить</string>
+    <string name="display_exit_demo">Выйти из демо</string>
+    <string name="done">Готово</string>
+
+    <!-- ===== QR scanner ===== -->
+    <string name="qr_aim">Наведите камеру на QR-код на Mac</string>
+    <string name="qr_unavailable">Сканирование QR-кодов недоступно на этом устройстве — используйте режим USB</string>
+    <string name="qr_invalid">Неверный QR-код: ожидается код сопряжения SharpScreen</string>
+
+    <!-- ===== App settings screen ===== -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_back">Назад</string>
+    <string name="settings_section_general">Общие</string>
+    <string name="settings_language">Язык</string>
+    <string name="language_system">Язык системы</string>
+    <string name="settings_section_connection">Подключение</string>
+    <string name="settings_usb_title">Подключение по USB</string>
+    <string name="settings_usb_summary">Адрес приложения на Mac при подключении по USB-кабелю. Меняйте, только если изменили порт на Mac.</string>
+    <string name="settings_usb_host">Хост</string>
+    <string name="settings_usb_port">Порт</string>
+    <string name="settings_usb_port_invalid">Допустимо 1–65535</string>
+    <string name="settings_usb_reset">Восстановить по умолчанию (127.0.0.1:54321)</string>
+    <string name="settings_section_about">О приложении</string>
+    <string name="settings_version">Версия</string>
+    <string name="settings_report_problem">Сообщить о проблеме</string>
+    <string name="settings_github">GitHub</string>
+    <string name="settings_get_mac_app">Скачать приложение для Mac</string>
+    <string name="settings_credit">Форк Side Screen от Tran Vuong Quoc Dat (MIT)</string>
+</resources>
