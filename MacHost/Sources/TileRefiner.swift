@@ -25,6 +25,10 @@ final class TileRefiner {
     static let maxBytesPerTick = CaptureDiagnostics.tileBytesPerTick
     static let maxBytesPerTickWireless = CaptureDiagnostics.tileBytesPerTickWireless
     static let maxBytesPerTickAccessory = CaptureDiagnostics.tileBytesPerTickAccessory
+    static let maxBytesPerTickWirelessMoving = CaptureDiagnostics.tileBytesPerTickWirelessMoving
+    /// How long after a frame with new pixels the screen counts as moving:
+    /// bridges the gaps between a drag's frames (8-17 ms) with room to spare.
+    static let movingHoldNs: UInt64 = 100_000_000
     static let maxWorkNsPerTick: UInt64 = 4_000_000    // leave the queue idle half the tick
 
     private struct Latest {
@@ -107,8 +111,24 @@ final class TileRefiner {
     }
 
     private func byteBudget(_ server: StreamingServer) -> Int {
-        if !server.clientIsOverUSB { return Self.maxBytesPerTickWireless }
+        if !server.clientIsOverUSB {
+            return Self.wirelessBudget(nowNs: DispatchTime.now().uptimeNanoseconds, lastNewFrameNs: server.lastNewFrameNs)
+        }
         return server.clientIsOverAccessory ? Self.maxBytesPerTickAccessory : Self.maxBytesPerTick
+    }
+
+    /// Over Wi-Fi, tiles share the air with video. While the screen moves
+    /// they take the small budget so the frames of the motion are not held
+    /// behind them; once it has been still for `movingHoldNs`, the full one,
+    /// so text sharpens as fast as before (issue #9).
+    static func wirelessBudget(
+        nowNs: UInt64,
+        lastNewFrameNs: UInt64,
+        moving: Int = maxBytesPerTickWirelessMoving,
+        still: Int = maxBytesPerTickWireless
+    ) -> Int {
+        let isMoving = lastNewFrameNs > 0 && nowNs >= lastNewFrameNs && nowNs - lastNewFrameNs < movingHoldNs
+        return isMoving ? moving : still
     }
 
     /// SCStreamFrameInfo.dirtyRects: pixel rects, origin top-left (measured on
