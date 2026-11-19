@@ -16,12 +16,12 @@
     <string name="checklist_title">Verbindungs-Checkliste</string>
     <string name="checklist_developer_mode">Entwicklermodus aktiviert</string>
     <string name="checklist_usb_debugging">USB-Debugging aktiviert</string>
-    <string name="checklist_usb_cable">USB-Kabel verbunden</string>
+    <string name="checklist_usb_cable">Per USB mit einem Computer verbunden</string>
     <string name="checklist_mac_server">Mac-Server läuft</string>
     <string name="checklist_mac_accessory">Mac-Verbindung über USB (ohne ADB)</string>
     <string name="checklist_hint_developer_mode">Entwickleroptionen aktivieren</string>
     <string name="checklist_hint_usb_debugging">In den Entwickleroptionen aktivieren</string>
-    <string name="checklist_hint_usb_cable">Tablet per Kabel mit dem Mac verbinden</string>
+    <string name="checklist_hint_usb_cable">Verbinde das Tablet per USB-Datenkabel mit dem Mac (ein Ladegerät zählt nicht)</string>
     <string name="checklist_hint_mac_server">Streaming in der Mac-App starten</string>
 
     <string name="connect">Verbinden</string>
