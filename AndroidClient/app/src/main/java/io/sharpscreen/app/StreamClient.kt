@@ -730,6 +730,36 @@ class StreamClient(
     }
 
     /**
+     * Latency breakdown (issue #13, diag.frameTiming only): where the tablet's
+     * share of a frame's time went, keyed by the host content time the frame
+     * carried. The host matches it to its own capture/encode/send times. Never
+     * sent unless asked for: older hosts skip unknown types one byte at a time.
+     */
+    fun sendFrameTiming(
+        hostContentNs: Long,
+        decodeUs: Int,
+        waitUs: Int,
+        presentUs: Int,
+    ) {
+        if (!isConnected) return
+        touchScope.launch {
+            try {
+                socket?.getOutputStream()?.let { out ->
+                    val buffer = ByteBuffer.allocate(FRAME_TIMING_SIZE).order(ByteOrder.LITTLE_ENDIAN)
+                    buffer.put(MESSAGE_FRAME_TIMING.toByte())
+                    buffer.putLong(hostContentNs)
+                    buffer.putInt(decodeUs)
+                    buffer.putInt(waitUs)
+                    buffer.putInt(presentUs)
+                    out.write(buffer.array())
+                    out.flush()
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /**
      * Send a ping to measure round-trip latency through the USB connection
      */
     fun sendPing() {
@@ -943,6 +973,8 @@ class StreamClient(
         private const val MESSAGE_DESKTOP_GEOMETRY = 13
         private const val MESSAGE_CLIENT_DECODER_LIMIT_TABLE = 14
         private const val MESSAGE_CLIENT_IDENTITY = 18 // 15–17 reserved
+        private const val MESSAGE_FRAME_TIMING = 22 // 19-21: lossless tiles
+        private const val FRAME_TIMING_SIZE = 1 + 8 + 4 + 4 + 4
         private const val FRAME_FLAG_KEYFRAME = 1
         private const val KEYFRAME_REQUEST_FLAG_FORCE = 1
 

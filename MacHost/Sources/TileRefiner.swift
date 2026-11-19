@@ -7,7 +7,7 @@ import os
 /// Sends lossless copies of tiles that stopped changing (M1b).
 ///
 /// Every 8 ms it asks the server's TileTracker for tiles that have been still
-/// for `settleNs` and are not yet valid on the client, LZ4-encodes them from a
+/// for the settle time (40 ms over USB, 100 ms over Wi-Fi) and are not yet valid on the client, LZ4-encodes them from a
 /// 32BGRA capture taken after their last change and hands them to the server,
 /// which re-checks each against later changes right before writing it. Work
 /// per tick is capped by bytes and time so refining never crowds out video.
@@ -15,7 +15,12 @@ import os
 /// Frames come from a 32BGRA capture stream of their own (ScreenCapture's
 /// tile stream) or, with diag.tileStream=false, the video stream in 32BGRA.
 final class TileRefiner {
-    static let settleNs: UInt64 = 100_000_000          // 100 ms without change
+    static let settleNs: UInt64 = CaptureDiagnostics.tileSettleNs          // Wi-Fi
+    static let settleNsUSB: UInt64 = CaptureDiagnostics.tileSettleNsUSB
+
+    /// How long a tile must stay unchanged before it is refined: shorter over
+    /// USB, where the link has room for the few extra tiles (issue #14).
+    static func settleNs(overUSB: Bool) -> UInt64 { overUSB ? settleNsUSB : settleNs }
     static let tickNs: UInt64 = 8_333_333              // 1/120 s
     /// 1 MB/tick: a full 2560x1600 photo-wallpaper fill took 76-95 ms instead
     /// of 111-136 ms at 512 KB, video frame age unchanged (max < 20 ms). Past
@@ -91,7 +96,7 @@ final class TileRefiner {
             server.resetLosslessTiles(grid: resized)
             return
         }
-        let changes = server.tileTracker.refineCandidateChanges(nowNs: startNs, settleNs: Self.settleNs, limit: 512)
+        let changes = server.tileTracker.refineCandidateChanges(nowNs: startNs, settleNs: Self.settleNs(overUSB: server.clientIsOverUSB), limit: 512)
         // Only a frame taken after a tile's last change can serve it; the
         // server would drop the others anyway, after they cost an encode.
         let candidates = changes.filter { $0.changedNs < frame.capturedAtNs }.map(\.tile)

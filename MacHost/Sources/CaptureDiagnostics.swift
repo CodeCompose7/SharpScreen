@@ -96,6 +96,23 @@ enum CaptureDiagnostics {
     /// diag.tileStream.
     static var tileStream: Bool { UserDefaults.standard.object(forKey: "diag.tileStream") as? Bool ?? true }
 
+    /// How long a tile must stay unchanged before its lossless copy goes out
+    /// over Wi-Fi (stock 100 ms). diag.tileSettleMs.
+    static var tileSettleNs: UInt64 {
+        let v = UserDefaults.standard.integer(forKey: "diag.tileSettleMs")
+        return UInt64(v > 0 ? v : 100) * 1_000_000
+    }
+
+    /// The same over USB (stock 40 ms, issue #14). After a drag stops, 99% of
+    /// the screen was lossless in 139-150 ms at 100 ms and 80-86 ms at 40 ms,
+    /// with about as many tiles sent (+5%) and the same video frame age;
+    /// below 40 ms the 30 fps tile capture dominates (30 ms: 75-88 ms).
+    /// diag.tileSettleMsUSB.
+    static var tileSettleNsUSB: UInt64 {
+        let v = UserDefaults.standard.integer(forKey: "diag.tileSettleMsUSB")
+        return UInt64(v > 0 ? v : 40) * 1_000_000
+    }
+
     /// Frame rate cap of that tile stream (stock 30). diag.tileStreamFps.
     static var tileStreamFps: Int {
         let v = UserDefaults.standard.integer(forKey: "diag.tileStreamFps")
