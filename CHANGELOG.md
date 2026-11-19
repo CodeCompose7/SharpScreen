@@ -6,6 +6,8 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-11-19 — Settings at launch
+
 ### Added
 - **Show Settings at launch** (#10). A new switch in Settings > General >
   Startup, on by default: turn it off and SharpScreen starts in the menu bar
