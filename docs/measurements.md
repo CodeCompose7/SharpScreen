@@ -360,6 +360,67 @@ finished stream never leaks into the next). USB debugging on (18d1:2d01):
   and the app sees the accessory detach. Killing the tablet app makes the Mac's next
   write time out (3 s); the Mac then resets the device and waits for Reconnect.
 
+## Wi-Fi vs USB, again (2026-11-19, issue #9)
+
+Same 5 GHz access point, tablet RSSI -36 / 780 Mbps, AWDL down on the Mac,
+release builds, a window swept across the tablet display for 15-20 s.
+
+| | USB accessory | Wi-Fi |
+|---|---|---|
+| Mac frame age (content -> sent), avg / max | 12-13 / 19-20 ms | 12-13 / 19-25 ms |
+| Tablet decoder latency, avg | ~7 ms | ~7 ms |
+| Transit jitter in motion, p50 / p90 / p99 | 8-12 / 18-24 / 26-33 ms | 8-11 / 17-20 / 25-30 ms |
+| Vsync scheduling wait, avg | 4-6 ms | 5-6 ms |
+| Decode-to-draw handoff, per-2 s max | 15-21 ms | 22-38 ms |
+
+The jitter is the Mac's (capture and encode timing), not the network's: it is
+the same over USB. Wi-Fi adds ~3 ms one way (ping while streaming, both ways:
+p50 6.3-6.6, p99 ~9, max 12 ms round trip) and somewhat larger occasional
+spikes.
+
+Idle Wi-Fi is another matter: with no stream running, power saving gave round
+trips of p50 21 / p90 197 / max 435 ms tablet -> Mac and p50 8 / p90 58 /
+max 498 ms Mac -> tablet (router p99 33, max 151 ms). A running stream keeps
+both radios awake.
+
+### Dragging a large window: the server's sockets (issue #9)
+
+A large, text-filled window swept across the tablet display showed what a
+small one did not: over Wi-Fi the Mac's sends stalled for 24-107 ms (USB:
+under 1 ms) and the tablet's display stopped for 60-140 ms, at only 7-10 Mbps
+of video plus 0.6-2 MB/s of tiles. Ping stayed at p99 ~11 ms, and the tablet
+read the socket at once.
+
+The tablet's kernel counted 15-27% of the stream's TCP segments arriving out of
+order (`TcpExt:TCPOFOQueue`). A packet capture on the Mac's en0 showed the Mac
+sending in order (12 resends in 15 s) while the tablet reported a hole in 25%
+of its ACKs (1,805 holes, filled by the original segment within p90 2.4 ms,
+max 17 ms); the Mac's TCP took the 1,397 duplicate ACKs for loss and slowed
+down, and frames queued behind it.
+
+Only connections Network.framework's NWListener accepted did this, on a random
+share of connections whatever their parameters, and they reached the tablet in
+much larger bursts (~3,000 segments per 30 MB instead of ~21,000). A plain BSD
+socket server, accepted the same way, stayed at 0% in every run. The server
+now listens and sends on BSD sockets (`SocketListener`, `SocketConnection`):
+
+| Big window over Wi-Fi | NWListener | BSD sockets |
+|---|---|---|
+| Segments out of order | 15-27% | 0-0.1% |
+| Mac send completion, max | 55-107 ms | 1.2-1.4 ms |
+| Decode-to-draw handoff, per-2 s max | 56-98 ms | 24-43 ms |
+| Tablet display stop, max | 82-140 ms | 46-96 ms |
+
+Not the cause, measured along the way: the Wi-Fi low-latency lock, TCP_QUICKACK
+on the tablet, tile volume, keyframes, Mac CPU/GPU load, the WMM marking,
+peer-to-peer (AWDL) on the listener.
+
+A still screen sent ~2.7 Mbps over Wi-Fi, mostly a ~200 KB keyframe a second
+(1.1 Mbps with keyframes every 10 s). Keyframes now come every 10 s over
+Wi-Fi (1 s over USB); the stream socket is marked interactive video (WMM
+AC_VI) on the Mac and EF (AC_VO) on the tablet. Neither moved the numbers
+on this uncontended network.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;

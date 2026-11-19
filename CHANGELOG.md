@@ -6,6 +6,20 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+### Fixed
+- **Dragging windows over Wi-Fi no longer stutters** (#9). The Mac's stream
+  connections came from Network.framework's listener, which on Wi-Fi sent in
+  large bursts that reached the tablet out of order (15-27% of TCP segments);
+  each gap held the stream back and the Mac's TCP slowed down, freezing the
+  tablet for 50-140 ms while large windows moved. The server now uses plain
+  BSD sockets: 0% out of order, sends never wait (max 1.4 ms instead of up to
+  107 ms).
+
+### Changed
+- Over Wi-Fi, keyframes come every 10 s instead of every second (a still screen
+  sends 1.1 instead of 2.7 Mbps), and the stream is marked for Wi-Fi's video
+  (Mac) and voice (tablet) access categories.
+
 ## [0.4.2] - 2026-11-19 — Menu bar icon opens Settings
 
 ### Changed

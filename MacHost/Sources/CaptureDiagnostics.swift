@@ -27,10 +27,18 @@ enum CaptureDiagnostics {
         UserDefaults.standard.bool(forKey: "diag.motionPattern")
     }
 
-    /// Seconds between periodic keyframes (stock 1). diag.keyframeIntervalSec.
+    /// Set when the server starts: the stream goes over Wi-Fi.
+    static var streamingOverWiFi = false
+
+    /// Seconds between periodic keyframes: 1 over USB, 10 over Wi-Fi
+    /// (issue #9). A 2960x1848 keyframe is ~200 KB; over Wi-Fi one a second
+    /// was most of the air time of a still screen (2.7 -> 1.1 Mbps at 10 s).
+    /// The stream is TCP, nothing is lost, and the tablet asks for a
+    /// keyframe whenever its decoder needs one. diag.keyframeIntervalSec.
     static var keyframeIntervalSeconds: Double {
         let v = UserDefaults.standard.double(forKey: "diag.keyframeIntervalSec")
-        return v > 0 ? v : 1.0
+        if v > 0 { return v }
+        return streamingOverWiFi ? 10.0 : 1.0
     }
 
     /// Lossless tile bytes per refine tick, in KB (stock 1024). diag.tileKBPerTick.

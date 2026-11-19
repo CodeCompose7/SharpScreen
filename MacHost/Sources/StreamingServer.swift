@@ -169,8 +169,8 @@ final class ListenerStartupGate: @unchecked Sendable {
 
 class StreamingServer {
     private let port: UInt16
-    private var listener: NWListener?
-    private var connection: NWConnection?
+    private var listener: SocketListener?
+    private var connection: SocketConnection?
     var onClientConnected: (() -> Void)?
     var onClientDisconnected: (() -> Void)?
     /// Fired once per connection during protocol startup, BEFORE the display
@@ -293,91 +293,30 @@ class StreamingServer {
     }
 
     var boundPort: UInt16? {
-        listener?.port?.rawValue
+        listener?.port
     }
 
     func start(startupTimeout: TimeInterval = 10) async throws {
         isStopped = false
-        let startupGate = ListenerStartupGate()
-        let startupPort = port
-
-        let newListener: NWListener
+        // Plain BSD sockets, not NWListener (issue #9; see SocketConnection).
+        // TCP_NODELAY and the interactive video service class are set on
+        // every accepted connection.
+        let newListener: SocketListener
         do {
-            let params = NWParameters.tcp
-            params.allowLocalEndpointReuse = true
-
-            // Optimize TCP for low-latency streaming
-            if let tcpOptions = params.defaultProtocolStack.transportProtocol as? NWProtocolTCP.Options {
-                tcpOptions.noDelay = true  // Disable Nagle's algorithm
-            }
-
-            newListener = try NWListener(using: params, on: NWEndpoint.Port(integerLiteral: port))
+            newListener = try SocketListener(port: port)
         } catch {
             debugLog("Failed to start server: \(error)")
             throw StreamingServerStartError.listenerFailed(port: port, underlying: error)
         }
-
         listener = newListener
         newListener.newConnectionHandler = { [weak self] newConnection in
             self?.handleConnection(newConnection)
         }
-
-        newListener.stateUpdateHandler = { [weak self, startupGate] state in
-            guard let self else {
-                startupGate.resolve(.failure(CancellationError()))
-                return
-            }
-            switch state {
-            case .ready:
-                debugLog("TCP Server listening on port \(self.port)")
-                startupGate.resolve(.success(()))
-            case .waiting(let error):
-                debugLog("Server waiting to listen: \(error)")
-                if case .posix(.EADDRINUSE) = error {
-                    startupGate.resolve(
-                        .failure(StreamingServerStartError.listenerFailed(port: self.port, underlying: error))
-                    )
-                } else {
-                    startupGate.noteWaitingError(error)
-                }
-            case .failed(let error):
-                debugLog("Server failed: \(error)")
-                startupGate.resolve(
-                    .failure(StreamingServerStartError.listenerFailed(port: self.port, underlying: error))
-                )
-            case .cancelled:
-                startupGate.resolve(
-                    .failure(StreamingServerStartError.cancelledBeforeReady(port: self.port))
-                )
-            default:
-                break
-            }
-        }
-
-        let timeoutWorkItem = DispatchWorkItem { [startupGate] in
-            startupGate.resolveTimeout(port: startupPort)
-        }
-        networkQueue.asyncAfter(
-            deadline: .now() + max(0, startupTimeout),
-            execute: timeoutWorkItem
-        )
         newListener.start(queue: networkQueue)
-
-        defer { timeoutWorkItem.cancel() }
-        do {
-            try await startupGate.wait()
-            try Task.checkCancellation()
-        } catch {
-            newListener.cancel()
-            if listener === newListener {
-                listener = nil
-            }
-            debugLog("Failed to start server: \(error)")
-            throw error
-        }
+        debugLog("TCP Server listening on port \(newListener.port)")
     }
 
-    private func handleConnection(_ newConnection: NWConnection) {
+    private func handleConnection(_ newConnection: SocketConnection) {
         debugLog("New connection incoming...")
 
         // Clean up old connection properly
@@ -430,7 +369,7 @@ class StreamingServer {
     private let clientOverAccessory = OSAllocatedUnfairLock(initialState: false)
     var clientIsOverAccessory: Bool { clientOverAccessory.withLock { $0 } }
 
-    private func onConnectionReady(_ conn: NWConnection) {
+    private func onConnectionReady(_ conn: SocketConnection) {
         clientOverUSB.withLock { $0 = conn.endpoint.isLoopback }
         var viaAccessory = false
         if case .hostPort(_, let remotePort) = conn.endpoint, conn.endpoint.isLoopback {
@@ -453,7 +392,7 @@ class StreamingServer {
         runAuthHandshake(connection: conn, expectedToken: expected)
     }
 
-    private func beginExistingProtocol(on conn: NWConnection) {
+    private func beginExistingProtocol(on conn: SocketConnection) {
         startReceivingTouch()
 
         // Give new clients a short chance to opt in before the first frame.
@@ -465,7 +404,7 @@ class StreamingServer {
         }
     }
 
-    private func finishProtocolStartup(on conn: NWConnection) {
+    private func finishProtocolStartup(on conn: SocketConnection) {
         guard connection === conn, !isStopped, !connectionReady, !startupHeld else { return }
 
         if !startupPrepared, let prepare = onPrepareForClient {
@@ -500,7 +439,7 @@ class StreamingServer {
         onClientConnected?()
     }
 
-    private func runAuthHandshake(connection conn: NWConnection, expectedToken: Data) {
+    private func runAuthHandshake(connection conn: SocketConnection, expectedToken: Data) {
         // Read fixed prefix [magic 4][token 32][name_len 1] = 37 bytes.
         conn.receive(minimumIncompleteLength: HandshakeCodec.fixedPrefixLen,
                      maximumLength: HandshakeCodec.fixedPrefixLen) { [weak self] prefixData, _, _, error in
@@ -553,7 +492,7 @@ class StreamingServer {
     /// hands back the full request bytes. `onInvalid` fires for a bad name
     /// length or a short read; read errors cancel the connection.
     private func receiveNameSuffix(
-        on conn: NWConnection,
+        on conn: SocketConnection,
         prefix: Data,
         onInvalid: @escaping () -> Void,
         completion: @escaping (Data) -> Void
@@ -580,7 +519,7 @@ class StreamingServer {
     /// Handles a pre-auth "SSPC" code-pairing request (issue #35). On a valid
     /// one-time code, answers with the real 32-byte token + Mac name and closes;
     /// the client then reconnects through the normal SSWA handshake.
-    private func runPairingExchange(connection conn: NWConnection, prefix: Data) {
+    private func runPairingExchange(connection conn: SocketConnection, prefix: Data) {
         receiveNameSuffix(on: conn, prefix: prefix, onInvalid: { [weak self] in
             self?.sendPairingResponse(conn, status: .invalidCode)
         }) { [weak self] full in
@@ -639,7 +578,7 @@ class StreamingServer {
         }
     }
 
-    private func sendPairingResponse(_ conn: NWConnection, status: PairingStatus, token: Data? = nil) {
+    private func sendPairingResponse(_ conn: SocketConnection, status: PairingStatus, token: Data? = nil) {
         let bytes = HandshakeCodec.encodePairingResponse(status: status, token: token, macName: pairingMacName)
         conn.send(content: bytes, completion: .contentProcessed { _ in
             // Pairing connections never stream: close after the reply either
@@ -648,7 +587,7 @@ class StreamingServer {
         })
     }
 
-    private func sendAuthResponse(_ conn: NWConnection, status: HandshakeStatus, thenClose: Bool) {
+    private func sendAuthResponse(_ conn: SocketConnection, status: HandshakeStatus, thenClose: Bool) {
         let bytes = HandshakeCodec.encodeResponse(status: status)
         conn.send(content: bytes, completion: .contentProcessed { _ in
             if thenClose {
@@ -748,7 +687,7 @@ class StreamingServer {
         }
     }
 
-    private func processInputBuffer(connection: NWConnection) {
+    private func processInputBuffer(connection: SocketConnection) {
         while let msgType = inputBuffer.first {
             switch msgType {
             case WireMessage.touchEvent:
