@@ -21,6 +21,9 @@ Side Screen's history up to the fork is in the git log and in
   menu bar you clicked**, below its menu bar. With the window open on one
   display, a click on another display's icon moves it there in one click; it no
   longer ends up with its title bar behind the menu bar.
+- **The settings window comes to the front, active, also under Stage
+  Manager** (#7). It used to come up inactive, or wait in Stage Manager's
+  strip, and a second click on the icon did not close it.
 
 ## [0.4.1] - 2026-11-19 — The USB check means a computer
 
