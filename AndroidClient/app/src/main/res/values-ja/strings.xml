@@ -23,6 +23,7 @@
     <string name="checklist_hint_usb_debugging">開発者向けオプションでONにしてください</string>
     <string name="checklist_hint_usb_cable">USBデータケーブルでタブレットをMacに接続してください（充電器は対象外）</string>
     <string name="checklist_hint_mac_server">Macアプリでストリーミングを開始してください</string>
+    <string name="checklist_hint_mac_accessory_permission">「接続」をタップしてUSB接続を許可してください</string>
 
     <string name="connect">接続</string>
     <string name="status_ready">接続準備完了</string>

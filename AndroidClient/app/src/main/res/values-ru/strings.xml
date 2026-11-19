@@ -23,6 +23,7 @@
     <string name="checklist_hint_usb_debugging">Включите в параметрах разработчика</string>
     <string name="checklist_hint_usb_cable">Подключите планшет к Mac USB-кабелем для передачи данных (зарядное устройство не подходит)</string>
     <string name="checklist_hint_mac_server">Начните трансляцию на Mac</string>
+    <string name="checklist_hint_mac_accessory_permission">Нажмите «Подключить», чтобы разрешить USB-подключение</string>
 
     <string name="connect">Подключить</string>
     <string name="status_ready">Готово к подключению</string>

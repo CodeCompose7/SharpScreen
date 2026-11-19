@@ -23,6 +23,7 @@
     <string name="checklist_hint_usb_debugging">Actívala en las opciones de desarrollador</string>
     <string name="checklist_hint_usb_cable">Conecta la tableta al Mac con un cable USB de datos (un cargador no cuenta)</string>
     <string name="checklist_hint_mac_server">Inicia la transmisión en la app del Mac</string>
+    <string name="checklist_hint_mac_accessory_permission">Toca Conectar para permitir la conexión USB</string>
 
     <string name="connect">Conectar</string>
     <string name="status_ready">Listo para conectar</string>
