@@ -92,6 +92,12 @@ class DisplaySettings: ObservableObject {
     @Published var connectionMode: ConnectionMode {
         didSet { save("connectionMode", connectionMode.rawValue) }
     }
+    /// Open the settings window when the app starts (issue #10). Off: the app
+    /// starts in the menu bar only. A launch at login stays in the background
+    /// either way.
+    @Published var showSettingsOnLaunch: Bool {
+        didSet { save("showSettingsOnLaunch", showSettingsOnLaunch) }
+    }
     @Published var autoStartStreamingOnLaunch: Bool {
         didSet { save("autoStartStreamingOnLaunch", autoStartStreamingOnLaunch) }
     }
@@ -161,6 +167,7 @@ class DisplaySettings: ObservableObject {
         self.touchEnabled = defaults.object(forKey: keyPrefix + "touchEnabled") as? Bool ?? true
         let modeRaw = defaults.string(forKey: keyPrefix + "connectionMode") ?? ConnectionMode.usb.rawValue
         self.connectionMode = ConnectionMode(rawValue: modeRaw) ?? .usb
+        self.showSettingsOnLaunch = defaults.object(forKey: keyPrefix + "showSettingsOnLaunch") as? Bool ?? true
         self.autoStartStreamingOnLaunch = defaults.object(forKey: keyPrefix + "autoStartStreamingOnLaunch") as? Bool ?? false
         self.usbAccessoryEnabled = defaults.object(forKey: keyPrefix + "usbAccessoryEnabled") as? Bool ?? true
         let startupRaw = defaults.string(forKey: keyPrefix + "startupMode") ?? modeRaw
@@ -270,7 +277,7 @@ class DisplaySettings: ObservableObject {
     func resetToDefaults() {
         let keys = ["resolution", "refreshRate", "hiDPI", "bitrate", "quality",
                     "gamingBoost", "port", "rotation", "flipHorizontal", "flipVertical", "showAllResolutions",
-                    "customWidth", "customHeight", "touchEnabled", "autoStartStreamingOnLaunch", "startupMode",
+                    "customWidth", "customHeight", "touchEnabled", "showSettingsOnLaunch", "autoStartStreamingOnLaunch", "startupMode",
                     "usbAccessoryEnabled"]
         for key in keys {
             defaults.removeObject(forKey: keyPrefix + key)
@@ -290,6 +297,7 @@ class DisplaySettings: ObservableObject {
         customWidth = 1920
         customHeight = 1200
         touchEnabled = true
+        showSettingsOnLaunch = true
         autoStartStreamingOnLaunch = false
         startupMode = .usb
         usbAccessoryEnabled = true
