@@ -565,6 +565,38 @@ moving full-screen picture). The scheduler's own wait is the remaining 2-4 ms,
 and it buys the smoothness: giving it up takes judder from ~30% to ~45-50% of
 steps. p50 stays.
 
+### Encoding: ~12 ms, and what did not change it (2026-11-20)
+
+Big-window drag over USB, ~90-110 new frames a second plus repeats to 120.
+"Encode" is VideoToolbox submit -> output (Latency line); the wait/service
+split below logged, per frame, the time behind the previous frame's output
+and the rest.
+
+| Tried | Encode p50 (p90) | Total behind the Mac, p50 |
+|---|---|---|
+| Stock | 11.1-12.4 (15-17.7) | 38-43 |
+| Lossless tiles off (tablet `diag.lossless false`) | 11.6-12.1 | 42.4-42.6 |
+| No repeat frames (`diag.noRepeats`) | 8.6-8.9 (11.5-11.8) | 41.7-44.6 |
+| Repeats anchored to the next vsync + 1.5 ms instead of a free-running timer | 11.9-13.2 | 39.6-47.7 |
+| PrioritizeEncodingSpeedOverQuality | 9.1-10.3 | 37-44.5 |
+| EnableLowLatencyRateControl | **53-54** | 95-97 |
+| ExpectedFrameRate 240, MaximumRealTimeFrameRate 240, RealTime off | no change (~12) | - |
+| Capture CGColorSpace removed; a plain memcpy copy of the capture; App Nap off | no change | - |
+
+- On a still screen (repeats only, one every 8.33 ms) each frame takes ~12.7
+  ms from submit to output, ~4.3 ms of it after the next frame was already
+  submitted: the encoder keeps about 1.5 frames in flight at 120 fps at
+  2960x1848. During the drag the split is ~8.4 ms service plus ~2-3 ms behind
+  the previous frame.
+- A standalone VideoToolbox benchmark with the same settings gave 5.5-6.1 ms
+  when paced with usleep (which runs late here, ~90 fps) and ~108 ms when paced
+  precisely, from a timer or a spin loop. It does not stand in for the app, so
+  no conclusion is drawn from it.
+- Without repeats the encode stage drops ~3 ms, but the tablet decodes slower
+  at the lower input rate and the total did not improve. Nothing here was
+  kept; the encode stage looks like the hardware encoder's own latency at
+  this size and rate.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
