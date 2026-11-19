@@ -534,6 +534,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // the stage. From macOS 14 activate(ignoringOtherApps:) is cooperative
         // and the plain activate() is the call to use.
         if #available(macOS 14.0, *) {
+            // Activation is cooperative from macOS 14: ask as a handoff from
+            // the app in front, which a click on our menu bar icon allows;
+            // a plain request was often refused and the window came up
+            // inactive.
+            if let front = NSWorkspace.shared.frontmostApplication, front != NSRunningApplication.current {
+                NSRunningApplication.current.activate(from: front, options: [])
+            }
             NSApp.activate()
         } else {
             NSApp.activate(ignoringOtherApps: true)
