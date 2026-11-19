@@ -6,6 +6,8 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-11-20 — Sharper sooner over USB
+
 ### Changed
 - **Text sharpens sooner over USB** (#14). After a window stops moving, the
   lossless copy of what changed now goes out once it has been still for 40 ms
