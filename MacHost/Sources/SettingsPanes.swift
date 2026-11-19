@@ -69,9 +69,13 @@ struct ConnectionPane: View {
                 .padding(.top, -6)
             }
             RowDivider()
+            // The tablet in use over the accessory link needs no adb reverse.
+            let overAccessory = settings.usbDevices.contains { $0.isActive && $0.transport == .accessory }
             StatusRow(title: "ADB reverse",
-                      status: settings.adbReverseConfigured ? String(localized: "OK") : String(localized: "Pending"),
-                      color: settings.adbReverseConfigured ? .green : (adbOptional ? .secondary : .orange),
+                      status: overAccessory ? String(localized: "Not needed")
+                          : settings.adbReverseConfigured ? String(localized: "OK") : String(localized: "Pending"),
+                      color: overAccessory ? .secondary
+                          : settings.adbReverseConfigured ? .green : (adbOptional ? .secondary : .orange),
                       hint: "Whether `adb reverse tcp:\(port) tcp:\(port)` is currently configured. The Mac app sets this up automatically when you click Start. Goes green within ~2 seconds after the tablet is plugged in and authorized.")
             RowDivider()
             StatusRow(title: "USB device",

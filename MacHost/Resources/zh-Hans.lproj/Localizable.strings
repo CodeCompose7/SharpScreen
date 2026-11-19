@@ -272,3 +272,4 @@
 "Use ADB Only" = "仅用 ADB";
 "Waiting for your approval or for ADB" = "正在等待你的批准或 ADB";
 "While streaming, SharpScreen switches this device into USB accessory mode, so developer options and ADB are not needed. It returns to normal when streaming stops or the cable is unplugged." = "串流期间，SharpScreen 会把此设备切换到 USB 配件模式，因此不需要开发者选项和 ADB。停止串流或拔下数据线后，设备会恢复正常。";
+"Not needed" = "不需要";
