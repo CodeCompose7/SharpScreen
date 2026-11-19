@@ -98,6 +98,13 @@ class DisplaySettings: ObservableObject {
     @Published var startupMode: ConnectionMode {
         didSet { save("startupMode", startupMode.rawValue) }
     }
+    /// USB without ADB (Android Open Accessory) for tablets the user approves.
+    @Published var usbAccessoryEnabled: Bool {
+        didSet {
+            save("usbAccessoryEnabled", usbAccessoryEnabled)
+            onUsbDevicesChanged?()
+        }
+    }
 
     // Runtime state (not persisted)
     @Published var displayCreated = false
@@ -119,6 +126,8 @@ class DisplaySettings: ObservableObject {
     @Published var adbInstalled = false
     @Published var adbReverseConfigured = false
     @Published var usbDeviceConnected = false
+    /// Android devices on USB; exactly one is active (issue #3).
+    @Published var usbDevices: [UsbDeviceEntry] = []
     @Published var wifiConnected = false
     @Published var listeningAddress: String?
     @Published var isRunning = false
@@ -127,6 +136,10 @@ class DisplaySettings: ObservableObject {
     @Published var captureMethod: String = "Initializing..."
 
     var onToggleServer: (() -> Void)?
+    var onSelectUsbDevice: ((String) -> Void)?
+    var onForgetUsbDevice: ((String) -> Void)?
+    /// Re-evaluate USB devices now instead of at the next 2 s refresh.
+    var onUsbDevicesChanged: (() -> Void)?
 
     init() {
         self.resolution = defaults.string(forKey: keyPrefix + "resolution") ?? "1920x1200"
@@ -148,6 +161,7 @@ class DisplaySettings: ObservableObject {
         let modeRaw = defaults.string(forKey: keyPrefix + "connectionMode") ?? ConnectionMode.usb.rawValue
         self.connectionMode = ConnectionMode(rawValue: modeRaw) ?? .usb
         self.autoStartStreamingOnLaunch = defaults.object(forKey: keyPrefix + "autoStartStreamingOnLaunch") as? Bool ?? false
+        self.usbAccessoryEnabled = defaults.object(forKey: keyPrefix + "usbAccessoryEnabled") as? Bool ?? true
         let startupRaw = defaults.string(forKey: keyPrefix + "startupMode") ?? modeRaw
         self.startupMode = ConnectionMode(rawValue: startupRaw) ?? .usb
 
@@ -255,7 +269,8 @@ class DisplaySettings: ObservableObject {
     func resetToDefaults() {
         let keys = ["resolution", "refreshRate", "hiDPI", "bitrate", "quality",
                     "gamingBoost", "port", "rotation", "flipHorizontal", "flipVertical", "showAllResolutions",
-                    "customWidth", "customHeight", "touchEnabled", "autoStartStreamingOnLaunch", "startupMode"]
+                    "customWidth", "customHeight", "touchEnabled", "autoStartStreamingOnLaunch", "startupMode",
+                    "usbAccessoryEnabled"]
         for key in keys {
             defaults.removeObject(forKey: keyPrefix + key)
         }
@@ -276,6 +291,7 @@ class DisplaySettings: ObservableObject {
         touchEnabled = true
         autoStartStreamingOnLaunch = false
         startupMode = .usb
+        usbAccessoryEnabled = true
 
         print("Settings reset to defaults")
     }

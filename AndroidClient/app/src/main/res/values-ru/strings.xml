@@ -18,6 +18,7 @@
     <string name="checklist_usb_debugging">Отладка по USB включена</string>
     <string name="checklist_usb_cable">USB-кабель подключен</string>
     <string name="checklist_mac_server">Сервер на Mac запущен</string>
+    <string name="checklist_mac_accessory">Связь с Mac по USB (без ADB)</string>
     <string name="checklist_hint_developer_mode">Включите параметры разработчика</string>
     <string name="checklist_hint_usb_debugging">Включите в параметрах разработчика</string>
     <string name="checklist_hint_usb_cable">Подключите планшет к Mac кабелем</string>

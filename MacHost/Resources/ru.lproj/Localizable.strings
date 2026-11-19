@@ -244,3 +244,30 @@
 "SharpScreen uses this language after it restarts." = "SharpScreen будет использовать этот язык после перезапуска.";
 "System" = "Системный";
 "Restart SharpScreen to apply the new language." = "Перезапустите SharpScreen, чтобы применить новый язык.";
+
+/* USB devices, accessory mode (issue #3) */
+"ADB (Optional)" = "ADB (необязательно)";
+"Ask again before using this tablet in accessory mode." = "Спросить снова, прежде чем использовать этот планшет в режиме аксессуара.";
+"Asks once per tablet before switching it into accessory mode." = "Спрашивает один раз для каждого планшета перед переводом в режим аксессуара.";
+"Connect" = "Подключить";
+"Connect without ADB" = "Подключение без ADB";
+"Connect “%@” over USB without ADB?" = "Подключить «%@» по USB без ADB?";
+"Connected · ADB" = "Подключён · ADB";
+"Connected · not in use" = "Подключён · не используется";
+"In use · ADB" = "Используется · ADB";
+"In use · USB accessory" = "Используется · USB-аксессуар";
+"No Android device on USB." = "Нет Android-устройств на USB.";
+"Not Now" = "Не сейчас";
+"Open SharpScreen on the tablet" = "Откройте SharpScreen на планшете";
+"Reconnect" = "Переподключить";
+"Start streaming to look for tablets on USB." = "Начните трансляцию, чтобы найти планшеты на USB.";
+"Switching to USB accessory…" = "Переход в режим USB-аксессуара…";
+"Tablet" = "Планшет";
+"Tablets you approve connect in USB accessory mode: no developer options on the tablet and no adb on the Mac. One tablet streams at a time; pick it here or in the menu." = "Одобренные планшеты подключаются в режиме USB-аксессуара: не нужны ни параметры разработчика на планшете, ни adb на Mac. Транслирует один планшет; выберите его здесь или в меню.";
+"Tablets you keep on ADB need USB debugging on the tablet and adb on the Mac. SharpScreen sets up adb reverse for the tablet in use." = "Планшетам на ADB нужны отладка по USB на планшете и adb на Mac. SharpScreen настраивает adb reverse для используемого планшета.";
+"USB Devices" = "USB-устройства";
+"USB accessory stopped · click Reconnect" = "USB-аксессуар остановлен · нажмите «Переподключить»";
+"Use" = "Использовать";
+"Use ADB Only" = "Только ADB";
+"Waiting for your approval or for ADB" = "Ожидание вашего одобрения или ADB";
+"While streaming, SharpScreen switches this device into USB accessory mode, so developer options and ADB are not needed. It returns to normal when streaming stops or the cable is unplugged." = "Во время трансляции SharpScreen переводит это устройство в режим USB-аксессуара, поэтому параметры разработчика и ADB не нужны. Устройство вернётся в обычный режим, когда трансляция остановится или кабель будет отключён.";

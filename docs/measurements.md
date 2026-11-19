@@ -346,6 +346,20 @@ instead of the 1 MB/tick (120 MB/s) cap. Not yet tried: Samsung Auto Blocker
 on. The tablet leaves accessory mode only when the cable is unplugged (or, with
 ADB, `svc usb setFunctions`).
 
+### In the app (2026-11-19)
+
+AccessoryLink (Mac, IOUSBHost) and AccessoryLink.kt (tablet) relay the
+streaming TCP connection over the accessory, framed by UsbLink (session ids so a
+finished stream never leaks into the next). USB debugging on (18d1:2d01):
+
+- 120 fps, average frame age 11-12 ms (max < 20 ms), as over adb.
+- Lossless tiles capped at 384 KB/tick (46 MB/s, below the link's 69 MB/s so video
+  never queues behind tiles): a full 2960x1848 refill (13.6 MB) takes 288-291 ms
+  instead of 76-95 ms over adb at 1 MB/tick.
+- Quitting the Mac app resets the device: the tablet leaves accessory mode at once
+  and the app sees the accessory detach. Killing the tablet app makes the Mac's next
+  write time out (3 s); the Mac then resets the device and waits for Reconnect.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;

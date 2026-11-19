@@ -7,8 +7,10 @@
 //     -I/opt/homebrew/include/libusb-1.0 -L/opt/homebrew/lib -lusb-1.0
 //   ./aoa_spike [MB]
 //
-// Needs libusb (brew install libusb). Throwaway measurement tool; the real
-// transport would use IOUSBHost so the app ships no extra library.
+// Needs libusb (brew install libusb). Measurement tool: its tablet side,
+// AoaSpikeActivity (model "SharpScreen AOA Spike"), was a debug-only activity
+// in commit 5f70e17 and is gone; the shipped transport is AccessoryLink
+// (IOUSBHost on the Mac, AccessoryLink.kt on the tablet).
 
 #include <libusb.h>
 #include <stdint.h>

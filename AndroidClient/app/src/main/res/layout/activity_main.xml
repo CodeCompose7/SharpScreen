@@ -408,6 +408,7 @@
 
                 <!-- Developer Mode Check -->
                 <LinearLayout
+                    android:id="@+id/rowDeveloperMode"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="36dp"
@@ -443,6 +444,7 @@
 
                 <!-- USB Debugging Check -->
                 <LinearLayout
+                    android:id="@+id/rowUsbDebugging"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="36dp"

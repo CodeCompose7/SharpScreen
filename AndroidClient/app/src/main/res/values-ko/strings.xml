@@ -17,6 +17,7 @@
     <string name="checklist_usb_debugging">USB 디버깅 켜짐</string>
     <string name="checklist_usb_cable">USB 케이블 연결됨</string>
     <string name="checklist_mac_server">Mac 서버 실행 중</string>
+    <string name="checklist_mac_accessory">Mac 연결 (USB, ADB 불필요)</string>
     <string name="checklist_hint_developer_mode">개발자 옵션을 켜세요</string>
     <string name="checklist_hint_usb_debugging">개발자 옵션에서 USB 디버깅을 켜세요</string>
     <string name="checklist_hint_usb_cable">케이블로 태블릿을 Mac에 연결하세요</string>

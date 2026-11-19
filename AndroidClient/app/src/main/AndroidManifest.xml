@@ -21,11 +21,20 @@
             android:name=".MainActivity"
             android:screenOrientation="fullUser"
             android:configChanges="orientation|screenSize|screenLayout"
+            android:launchMode="singleTask"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- USB without ADB (issue #3): the Mac switches the tablet into
+                 accessory mode and Android opens this activity. -->
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
+                android:resource="@xml/usb_accessory_filter" />
         </activity>
 
         <activity

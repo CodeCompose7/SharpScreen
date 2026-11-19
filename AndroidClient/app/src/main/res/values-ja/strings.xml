@@ -18,6 +18,7 @@
     <string name="checklist_usb_debugging">USBデバッグが有効</string>
     <string name="checklist_usb_cable">USBケーブル接続済み</string>
     <string name="checklist_mac_server">Macサーバー実行中</string>
+    <string name="checklist_mac_accessory">Macとの接続（USB・ADB不要）</string>
     <string name="checklist_hint_developer_mode">開発者向けオプションをONにしてください</string>
     <string name="checklist_hint_usb_debugging">開発者向けオプションでONにしてください</string>
     <string name="checklist_hint_usb_cable">ケーブルでMacに接続してください</string>

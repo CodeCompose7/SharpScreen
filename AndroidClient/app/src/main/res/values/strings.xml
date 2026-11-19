@@ -24,6 +24,7 @@
     <string name="checklist_usb_debugging">USB Debugging enabled</string>
     <string name="checklist_usb_cable">USB cable connected</string>
     <string name="checklist_mac_server">Mac server running</string>
+    <string name="checklist_mac_accessory">Mac link over USB (no ADB needed)</string>
     <string name="checklist_hint_developer_mode">Turn on Developer options</string>
     <string name="checklist_hint_usb_debugging">Turn on USB debugging in Developer options</string>
     <string name="checklist_hint_usb_cable">Connect the tablet to the Mac with a cable</string>

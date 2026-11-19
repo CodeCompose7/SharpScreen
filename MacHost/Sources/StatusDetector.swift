@@ -103,3 +103,20 @@ enum StatusDetector {
         return nil
     }
 }
+
+extension StatusDetector {
+    /// `adb -s <serial> reverse --remove tcp:P`: this tablet is not the active one.
+    static func removeAdbReverse(port: Int, serial: String) {
+        guard let adbPath = adbExecutablePath() else { return }
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: adbPath)
+        task.arguments = ["-s", serial, "reverse", "--remove", "tcp:\(port)"]
+        task.standardOutput = Pipe()
+        task.standardError = Pipe()
+        do {
+            try task.run()
+            task.waitUntilExit()
+            debugLog("USB: removed adb reverse from \(serial) (not the active tablet)")
+        } catch {}
+    }
+}

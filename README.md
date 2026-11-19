@@ -18,7 +18,19 @@ Grab the Mac app (`SharpScreen-<version>.dmg`) and the Android app
   right-click > Open (or System Settings > Privacy & Security > Open Anyway). Grant
   Screen Recording when asked.
 - **Android** (8+): enable "Install unknown apps" for your browser or file manager and
-  open the APK. USB mode needs Developer options > USB debugging on the tablet.
+  open the APK.
+
+### USB without ADB
+
+Start streaming in USB mode and plug in the tablet. The Mac asks once whether to connect
+that tablet without ADB; the tablet then switches into USB accessory mode (Android Open
+Accessory), asks once whether SharpScreen should open, and connects by itself. No
+developer options on the tablet and no `adb` on the Mac. The tablet returns to normal
+when streaming stops or the cable comes out.
+
+Tablets you keep on ADB still work as before (Developer options > USB debugging on the
+tablet, `adb` on the Mac). With several tablets plugged in, one streams at a time; pick
+it in the menu or in Settings > Connection.
 
 ## Goal
 
