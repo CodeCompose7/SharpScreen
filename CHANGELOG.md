@@ -6,6 +6,8 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-19 — The display is called SharpScreen
+
 ### Fixed
 - **The tablet shows up as "SharpScreen" in System Settings ▸ Displays**
   (it still said "SideScreen") (#5).
