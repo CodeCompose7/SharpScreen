@@ -49,13 +49,6 @@ enum WireMessage {
     static let tileInvalidate: UInt8 = 20
     /// Server→client: LZ4-compressed BGRA tiles (see LosslessTileCodec).
     static let losslessTiles: UInt8 = 21
-    /// Client→server, one byte 0x81: "I can acknowledge video frames"
-    /// (issue #9). The server answers with the same type, payload-free, and
-    /// only then does the client send type 23. Older servers drop both bytes.
-    static let frameAcks: UInt8 = 22
-    /// Client→server: video frames received so far, mod 16384, as two 7-bit
-    /// bytes with the high bit set ([23][0x80|hi][0x80|lo]).
-    static let frameAck: UInt8 = 23
 }
 
 private extension String {
@@ -176,8 +169,8 @@ final class ListenerStartupGate: @unchecked Sendable {
 
 class StreamingServer {
     private let port: UInt16
-    private var listener: NWListener?
-    private var connection: NWConnection?
+    private var listener: SocketListener?
+    private var connection: SocketConnection?
     var onClientConnected: (() -> Void)?
     var onClientDisconnected: (() -> Void)?
     /// Fired once per connection during protocol startup, BEFORE the display
@@ -300,94 +293,30 @@ class StreamingServer {
     }
 
     var boundPort: UInt16? {
-        listener?.port?.rawValue
+        listener?.port
     }
 
     func start(startupTimeout: TimeInterval = 10) async throws {
         isStopped = false
-        let startupGate = ListenerStartupGate()
-        let startupPort = port
-
-        let newListener: NWListener
+        // Plain BSD sockets, not NWListener (issue #9; see SocketConnection).
+        // TCP_NODELAY and the interactive video service class are set on
+        // every accepted connection.
+        let newListener: SocketListener
         do {
-            let params = NWParameters.tcp
-            params.allowLocalEndpointReuse = true
-            // Wi-Fi: send in the video access category (WMM AC_VI), ahead of
-            // bulk traffic on the same access point (issue #9).
-            params.serviceClass = .interactiveVideo
-
-            // Optimize TCP for low-latency streaming
-            if let tcpOptions = params.defaultProtocolStack.transportProtocol as? NWProtocolTCP.Options {
-                tcpOptions.noDelay = true  // Disable Nagle's algorithm
-            }
-
-            newListener = try NWListener(using: params, on: NWEndpoint.Port(integerLiteral: port))
+            newListener = try SocketListener(port: port)
         } catch {
             debugLog("Failed to start server: \(error)")
             throw StreamingServerStartError.listenerFailed(port: port, underlying: error)
         }
-
         listener = newListener
         newListener.newConnectionHandler = { [weak self] newConnection in
             self?.handleConnection(newConnection)
         }
-
-        newListener.stateUpdateHandler = { [weak self, startupGate] state in
-            guard let self else {
-                startupGate.resolve(.failure(CancellationError()))
-                return
-            }
-            switch state {
-            case .ready:
-                debugLog("TCP Server listening on port \(self.port)")
-                startupGate.resolve(.success(()))
-            case .waiting(let error):
-                debugLog("Server waiting to listen: \(error)")
-                if case .posix(.EADDRINUSE) = error {
-                    startupGate.resolve(
-                        .failure(StreamingServerStartError.listenerFailed(port: self.port, underlying: error))
-                    )
-                } else {
-                    startupGate.noteWaitingError(error)
-                }
-            case .failed(let error):
-                debugLog("Server failed: \(error)")
-                startupGate.resolve(
-                    .failure(StreamingServerStartError.listenerFailed(port: self.port, underlying: error))
-                )
-            case .cancelled:
-                startupGate.resolve(
-                    .failure(StreamingServerStartError.cancelledBeforeReady(port: self.port))
-                )
-            default:
-                break
-            }
-        }
-
-        let timeoutWorkItem = DispatchWorkItem { [startupGate] in
-            startupGate.resolveTimeout(port: startupPort)
-        }
-        networkQueue.asyncAfter(
-            deadline: .now() + max(0, startupTimeout),
-            execute: timeoutWorkItem
-        )
         newListener.start(queue: networkQueue)
-
-        defer { timeoutWorkItem.cancel() }
-        do {
-            try await startupGate.wait()
-            try Task.checkCancellation()
-        } catch {
-            newListener.cancel()
-            if listener === newListener {
-                listener = nil
-            }
-            debugLog("Failed to start server: \(error)")
-            throw error
-        }
+        debugLog("TCP Server listening on port \(newListener.port)")
     }
 
-    private func handleConnection(_ newConnection: NWConnection) {
+    private func handleConnection(_ newConnection: SocketConnection) {
         debugLog("New connection incoming...")
 
         // Clean up old connection properly
@@ -405,7 +334,6 @@ class StreamingServer {
         clientSupportsDesktopGeometry = false
         clientIdentity = nil
         handshakeDeviceName = nil
-        frameAckState.withLock { $0 = FrameAckState() }
         startupPrepared = false
         startupHeld = false
         waitingForSyncFrame = true
@@ -441,7 +369,7 @@ class StreamingServer {
     private let clientOverAccessory = OSAllocatedUnfairLock(initialState: false)
     var clientIsOverAccessory: Bool { clientOverAccessory.withLock { $0 } }
 
-    private func onConnectionReady(_ conn: NWConnection) {
+    private func onConnectionReady(_ conn: SocketConnection) {
         clientOverUSB.withLock { $0 = conn.endpoint.isLoopback }
         var viaAccessory = false
         if case .hostPort(_, let remotePort) = conn.endpoint, conn.endpoint.isLoopback {
@@ -464,7 +392,7 @@ class StreamingServer {
         runAuthHandshake(connection: conn, expectedToken: expected)
     }
 
-    private func beginExistingProtocol(on conn: NWConnection) {
+    private func beginExistingProtocol(on conn: SocketConnection) {
         startReceivingTouch()
 
         // Give new clients a short chance to opt in before the first frame.
@@ -476,7 +404,7 @@ class StreamingServer {
         }
     }
 
-    private func finishProtocolStartup(on conn: NWConnection) {
+    private func finishProtocolStartup(on conn: SocketConnection) {
         guard connection === conn, !isStopped, !connectionReady, !startupHeld else { return }
 
         if !startupPrepared, let prepare = onPrepareForClient {
@@ -511,7 +439,7 @@ class StreamingServer {
         onClientConnected?()
     }
 
-    private func runAuthHandshake(connection conn: NWConnection, expectedToken: Data) {
+    private func runAuthHandshake(connection conn: SocketConnection, expectedToken: Data) {
         // Read fixed prefix [magic 4][token 32][name_len 1] = 37 bytes.
         conn.receive(minimumIncompleteLength: HandshakeCodec.fixedPrefixLen,
                      maximumLength: HandshakeCodec.fixedPrefixLen) { [weak self] prefixData, _, _, error in
@@ -564,7 +492,7 @@ class StreamingServer {
     /// hands back the full request bytes. `onInvalid` fires for a bad name
     /// length or a short read; read errors cancel the connection.
     private func receiveNameSuffix(
-        on conn: NWConnection,
+        on conn: SocketConnection,
         prefix: Data,
         onInvalid: @escaping () -> Void,
         completion: @escaping (Data) -> Void
@@ -591,7 +519,7 @@ class StreamingServer {
     /// Handles a pre-auth "SSPC" code-pairing request (issue #35). On a valid
     /// one-time code, answers with the real 32-byte token + Mac name and closes;
     /// the client then reconnects through the normal SSWA handshake.
-    private func runPairingExchange(connection conn: NWConnection, prefix: Data) {
+    private func runPairingExchange(connection conn: SocketConnection, prefix: Data) {
         receiveNameSuffix(on: conn, prefix: prefix, onInvalid: { [weak self] in
             self?.sendPairingResponse(conn, status: .invalidCode)
         }) { [weak self] full in
@@ -650,7 +578,7 @@ class StreamingServer {
         }
     }
 
-    private func sendPairingResponse(_ conn: NWConnection, status: PairingStatus, token: Data? = nil) {
+    private func sendPairingResponse(_ conn: SocketConnection, status: PairingStatus, token: Data? = nil) {
         let bytes = HandshakeCodec.encodePairingResponse(status: status, token: token, macName: pairingMacName)
         conn.send(content: bytes, completion: .contentProcessed { _ in
             // Pairing connections never stream: close after the reply either
@@ -659,7 +587,7 @@ class StreamingServer {
         })
     }
 
-    private func sendAuthResponse(_ conn: NWConnection, status: HandshakeStatus, thenClose: Bool) {
+    private func sendAuthResponse(_ conn: SocketConnection, status: HandshakeStatus, thenClose: Bool) {
         let bytes = HandshakeCodec.encodeResponse(status: status)
         conn.send(content: bytes, completion: .contentProcessed { _ in
             if thenClose {
@@ -759,7 +687,7 @@ class StreamingServer {
         }
     }
 
-    private func processInputBuffer(connection: NWConnection) {
+    private func processInputBuffer(connection: SocketConnection) {
         while let msgType = inputBuffer.first {
             switch msgType {
             case WireMessage.touchEvent:
@@ -829,30 +757,6 @@ class StreamingServer {
                     debugLog("Client asked for a lossless tile resync")
                     resetLosslessTiles(grid: tileTracker.grid)
                 }
-
-            case WireMessage.frameAcks:
-                guard inputBuffer.count >= 2 else { return }
-                let version = inputByte(at: 1) & 0x7F
-                consumeInputBytes(2)
-                if version >= 1 {
-                    // On the frame queue, so both sides start counting at the
-                    // same frame: every frame sent after this reply counts.
-                    frameQueue.async { [weak self] in
-                        guard let self else { return }
-                        self.frameAckState.withLock { s in
-                            s = FrameAckState()
-                            s.enabled = true
-                        }
-                        connection.send(content: Data([WireMessage.frameAcks]), completion: .contentProcessed { _ in })
-                    }
-                    debugLog("Client acknowledges video frames: sending backs off when the network lags")
-                }
-
-            case WireMessage.frameAck:
-                guard inputBuffer.count >= 3 else { return }
-                let count = UInt64(inputByte(at: 1) & 0x7F) << 7 | UInt64(inputByte(at: 2) & 0x7F)
-                consumeInputBytes(3)
-                frameAckState.withLock { $0.acknowledge(count14: count) }
 
             case WireMessage.clientSupportsFrameMetadata:
                 // One-byte opt-in from newer clients. Keeping this payload-free
@@ -1020,79 +924,10 @@ class StreamingServer {
 
         let actionOffset = 2 + pointerCount * 8
         let action = data.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: actionOffset, as: Int32.self) }
-        if Self.touchStatsEnabled { noteTouchArrival(action: Int(action)) }
 
         DispatchQueue.main.async {
             self.onTouchEvent?(x1, y1, Int(action), pointerCount, x2, y2)
         }
-    }
-
-    // MARK: - Frame acknowledgements (issue #9)
-
-    /// Video frames handed to the connection vs acknowledged by the client.
-    struct FrameAckState {
-        static let window = 256
-        var enabled = false
-        var sent: UInt64 = 0
-        var acked: UInt64 = 0
-        var sendNs = [UInt64](repeating: 0, count: window)
-
-        mutating func noteSent(atNs ns: UInt64) {
-            sendNs[Int(sent % UInt64(Self.window))] = ns
-            sent += 1
-        }
-
-        /// `count14`: frames the client has received, mod 16384.
-        mutating func acknowledge(count14: UInt64) {
-            let behind = ((sent & 0x3FFF) &- count14) & 0x3FFF
-            guard behind <= sent else { return }
-            acked = max(acked, sent - behind)
-        }
-
-        /// The oldest unacknowledged frame has waited longer than `limitNs`.
-        func backlogged(nowNs: UInt64, limitNs: UInt64) -> Bool {
-            guard enabled, sent > acked else { return false }
-            if sent - acked >= UInt64(Self.window) { return true }
-            let oldest = sendNs[Int(acked % UInt64(Self.window))]
-            return nowNs > oldest && nowNs - oldest > limitNs
-        }
-    }
-
-    private let frameAckState = OSAllocatedUnfairLock(initialState: FrameAckState())
-
-    /// Frames are piling up between here and the client (Wi-Fi slowing
-    /// down): capture skips new encodes and tiles wait, so the client gets
-    /// the newest screen when the link catches up instead of a queue of old
-    /// ones. diag.backlogMs (stock 30).
-    var isNetworkBacklogged: Bool {
-        let now = DispatchTime.now().uptimeNanoseconds
-        return frameAckState.withLock { $0.backlogged(nowNs: now, limitNs: Self.backlogLimitNs) }
-    }
-
-    private static let backlogLimitNs: UInt64 = {
-        let ms = UserDefaults.standard.object(forKey: "diag.backlogMs") as? Int ?? 30
-        return UInt64(max(ms, 1)) * 1_000_000
-    }()
-
-    // diag.touchStats: how evenly touch moves arrive (issue #9).
-    private static let touchStatsEnabled = UserDefaults.standard.bool(forKey: "diag.touchStats")
-    private var touchMoveTimes: [UInt64] = []
-    private var touchStatsSince: UInt64 = 0
-
-    private func noteTouchArrival(action: Int) {
-        let now = DispatchTime.now().uptimeNanoseconds
-        if action == 1 { touchMoveTimes.append(now) } // move (0 down, 1 move, 2 up)
-        if touchStatsSince == 0 { touchStatsSince = now }
-        guard now - touchStatsSince >= 2_000_000_000 else { return }
-        touchStatsSince = now
-        let times = touchMoveTimes
-        touchMoveTimes.removeAll(keepingCapacity: true)
-        guard times.count > 2 else { return }
-        let gaps = zip(times.dropFirst(), times).map { Double($0 - $1) / 1e6 }.sorted()
-        func pct(_ p: Double) -> Double { gaps[min(gaps.count - 1, Int(Double(gaps.count - 1) * p))] }
-        let bunched = gaps.filter { $0 < 1 }.count
-        debugLog(String(format: "Touch moves: %d in 2 s, gap p50 %.1f p90 %.1f p99 %.1f max %.1f ms, <1 ms apart %d%%",
-                        times.count, pct(0.5), pct(0.9), pct(0.99), gaps.last ?? 0, bunched * 100 / gaps.count))
     }
 
     private func inputByte(at offset: Int) -> UInt8 {
@@ -1198,7 +1033,6 @@ class StreamingServer {
 
             let packet = self.makeFramePacket(data, timestamp: contentNs > 0 ? contentNs : timestamp, isKeyframe: isKeyframe)
             let sendCallNs = DispatchTime.now().uptimeNanoseconds
-            self.frameAckState.withLock { $0.noteSent(atNs: sendCallNs) }
 
             connection.send(content: packet, completion: .contentProcessed { error in
                 if error != nil {

@@ -383,30 +383,43 @@ trips of p50 21 / p90 197 / max 435 ms tablet -> Mac and p50 8 / p90 58 /
 max 498 ms Mac -> tablet (router p99 33, max 151 ms). A running stream keeps
 both radios awake.
 
-### Dragging a large window (issue #9, still open)
+### Dragging a large window: the server's sockets (issue #9)
 
-A large, text-filled window swept across the tablet display shows what a small
-one did not: over Wi-Fi the Mac's sends stall for 24-107 ms (USB: under 1 ms)
-and the tablet's display stops for 60-140 ms, at only 7-10 Mbps of video plus
-0.6-2 MB/s of tiles. Ping stays at p99 ~11 ms meanwhile, and the tablet reads
-the socket at once (its receive queue stays at 0).
+A large, text-filled window swept across the tablet display showed what a
+small one did not: over Wi-Fi the Mac's sends stalled for 24-107 ms (USB:
+under 1 ms) and the tablet's display stopped for 60-140 ms, at only 7-10 Mbps
+of video plus 0.6-2 MB/s of tiles. Ping stayed at p99 ~11 ms, and the tablet
+read the socket at once.
 
-The tablet's kernel counts 15-27% of the stream's TCP segments arriving out of
-order (`TcpExt:TCPOFOQueue`); TCP holds everything behind each gap. It is per
-connection and looks random: the same minimal NWListener test gave 0% on some
-connections and ~26% on others, whatever its parameters (peer-to-peer,
-interface type, service class). Connections the Mac opened to the tablet
-(Python, NWConnection; uniform, bursty, mixed and bidirectional traffic, also
-while the Mac drags a window) stayed at 0-0.5%. The stream's own connection was
-on the bad side every time it was measured. Not the cause: the Wi-Fi
-low-latency lock, TCP_QUICKACK, tile volume, keyframes, Mac CPU/GPU load.
-Next step: a packet capture on the Mac to see which side reorders.
+The tablet's kernel counted 15-27% of the stream's TCP segments arriving out of
+order (`TcpExt:TCPOFOQueue`). A packet capture on the Mac's en0 showed the Mac
+sending in order (12 resends in 15 s) while the tablet reported a hole in 25%
+of its ACKs (1,805 holes, filled by the original segment within p90 2.4 ms,
+max 17 ms); the Mac's TCP took the 1,397 duplicate ACKs for loss and slowed
+down, and frames queued behind it.
+
+Only connections Network.framework's NWListener accepted did this, on a random
+share of connections whatever their parameters, and they reached the tablet in
+much larger bursts (~3,000 segments per 30 MB instead of ~21,000). A plain BSD
+socket server, accepted the same way, stayed at 0% in every run. The server
+now listens and sends on BSD sockets (`SocketListener`, `SocketConnection`):
+
+| Big window over Wi-Fi | NWListener | BSD sockets |
+|---|---|---|
+| Segments out of order | 15-27% | 0-0.1% |
+| Mac send completion, max | 55-107 ms | 1.2-1.4 ms |
+| Decode-to-draw handoff, per-2 s max | 56-98 ms | 24-43 ms |
+| Tablet display stop, max | 82-140 ms | 46-96 ms |
+
+Not the cause, measured along the way: the Wi-Fi low-latency lock, TCP_QUICKACK
+on the tablet, tile volume, keyframes, Mac CPU/GPU load, the WMM marking,
+peer-to-peer (AWDL) on the listener.
 
 A still screen sent ~2.7 Mbps over Wi-Fi, mostly a ~200 KB keyframe a second
 (1.1 Mbps with keyframes every 10 s). Keyframes now come every 10 s over
 Wi-Fi (1 s over USB); the stream socket is marked interactive video (WMM
 AC_VI) on the Mac and EF (AC_VO) on the tablet. Neither moved the numbers
-above on this uncontended network.
+on this uncontended network.
 
 ## Tablet decoders
 

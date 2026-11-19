@@ -30,8 +30,6 @@ final class FramePacer {
         var repeated = 0
         var replay = 0
         var skippedBusy = 0
-        /// Not encoded while the network was backed up (issue #9).
-        var skippedNetwork = 0
         var idleIgnored = 0
         /// Captured frames whose capture time is not after the previous one's.
         var outOfOrder = 0
@@ -87,13 +85,7 @@ final class FramePacer {
         var statsStartNs: UInt64 = 0
         var pending: Int32 = 0
         var lastCapturePts: CMTime = .invalid
-        /// A new frame was skipped for the network: the next submission
-        /// carries new pixels, whatever its kind.
-        var newPixelsPending = false
     }
-
-    /// True while the link to the client is backed up; set by the owner.
-    var networkBusy: (() -> Bool)?
 
     private let state = OSAllocatedUnfairLock(initialState: State())
     private let encodeQueue: DispatchQueue
@@ -142,18 +134,10 @@ final class FramePacer {
         }
         let nowNs = DispatchTime.now().uptimeNanoseconds
         let contentNs: UInt64 = capturePts.isValid && capturePts.seconds > 0 ? UInt64(capturePts.seconds * 1e9) : nowNsForContent()
-        // Keyframe replays always go out; everything else waits while the
-        // network is backed up, so frames never queue behind the link.
-        let networkBusy = kind != .replay && (networkBusy?() ?? false)
         let job: (CVPixelBuffer, CMTime, Bool, UInt64)? = state.withLockUnchecked { s in
             if let buffer {
                 s.lastBuffer = buffer
                 s.lastContentNs = contentNs
-            }
-            if networkBusy {
-                s.counters.skippedNetwork += 1
-                if kind == .captured { s.newPixelsPending = true }
-                return nil
             }
             guard s.pending < Self.maxPendingEncodes else {
                 s.counters.skippedBusy += 1
@@ -164,16 +148,13 @@ final class FramePacer {
             let us = Policy.monotonicUs(candidateUs: Int64(nowNs / 1000), lastUs: s.lastPtsUs)
             s.lastPtsUs = us
             s.lastSubmitNs = nowNs
-            // Pixels skipped for the network go out now, as a new frame.
-            let effectiveKind: Kind = s.newPixelsPending && kind == .repeated ? .captured : kind
-            if effectiveKind == .captured { s.newPixelsPending = false }
-            switch effectiveKind {
+            switch kind {
             case .captured: s.counters.captured += 1
             case .idle: s.counters.idle += 1
             case .repeated: s.counters.repeated += 1
             case .replay: s.counters.replay += 1
             }
-            return (frame, CMTime(value: us, timescale: 1_000_000), effectiveKind != .captured, s.lastContentNs)
+            return (frame, CMTime(value: us, timescale: 1_000_000), kind != .captured, s.lastContentNs)
         }
         guard let (frame, pts, isRepeat, frameContentNs) = job else { return false }
         encodeQueue.async { [encode, state] in
@@ -235,6 +216,6 @@ final class FramePacer {
             return c
         }
         guard let c = snapshot else { return }
-        debugLog("Capture: \(c.encoded) encoded = \(c.captured) new + \(c.idle) idle + \(c.repeated) repeated + \(c.replay) replay; \(c.skippedBusy) skipped (encoder busy), \(c.skippedNetwork) skipped (network busy), \(c.idleIgnored) idle ticks ignored, \(c.outOfOrder) out of order")
+        debugLog("Capture: \(c.encoded) encoded = \(c.captured) new + \(c.idle) idle + \(c.repeated) repeated + \(c.replay) replay; \(c.skippedBusy) skipped (encoder busy), \(c.idleIgnored) idle ticks ignored, \(c.outOfOrder) out of order")
     }
 }

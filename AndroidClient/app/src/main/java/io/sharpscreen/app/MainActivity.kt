@@ -148,8 +148,6 @@ class MainActivity : AppCompatActivity() {
         GlCompositor.losslessTiles = intent?.getBooleanExtra("diag.lossless", true) ?: true
         // `--ez diag.vsyncPresent false`: present frames as soon as drawn (before M4).
         GlCompositor.vsyncPresent = intent?.getBooleanExtra("diag.vsyncPresent", true) ?: true
-        StreamClient.wifiLowLatencyLock = intent?.getBooleanExtra("diag.wifiLock", true) ?: true
-        StreamClient.quickAckEnabled = intent?.getBooleanExtra("diag.quickAck", true) ?: true
         intent?.getIntExtra("diag.presentPercentile", 0)?.takeIf { it in 1..99 }?.let { PresentScheduler.PERCENTILE = it }
         // `--es diag.updateFeedURL http://127.0.0.1:8766/android-update.json`: read updates from
         // a test feed instead of the GitHub Release (this launch only).
