@@ -321,6 +321,22 @@ class DisplaySettings: ObservableObject {
 // MARK: - Window Controller
 
 class SettingsWindowController: NSWindowController, NSWindowDelegate {
+    /// When the window last stopped being the key window. A click on the
+    /// menu bar icon takes key (and activation) away before its action runs,
+    /// so "in front a moment ago" is how the icon tells "close it" (#7).
+    private(set) var resignedKeyAt: Date?
+
+    func windowDidResignKey(_ notification: Notification) {
+        resignedKeyAt = Date()
+    }
+
+    /// The window is the one in front, or was until the click being handled.
+    var isInFront: Bool {
+        guard let window, window.isVisible else { return false }
+        if NSApp.isActive && window.isKeyWindow { return true }
+        return resignedKeyAt.map { Date().timeIntervalSince($0) < 0.5 } ?? false
+    }
+
     convenience init(settings: DisplaySettings) {
         let window = ConstrainedWindow(
             contentRect: NSRect(origin: .zero, size: SettingsView.size),

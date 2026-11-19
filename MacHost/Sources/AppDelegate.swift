@@ -454,8 +454,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Closed only when it is the window in front: visible alone is not
         // enough, because Stage Manager keeps a window that is not in front
         // visible in its strip, and the click should bring it forward.
-        if let window = settingsWindow?.window, window.isVisible, window.isOnActiveSpace,
-           NSApp.isActive, window.isKeyWindow,
+        if let window = settingsWindow?.window, settingsWindow?.isInFront == true, window.isOnActiveSpace,
            clickedScreen == nil || window.screen == clickedScreen {
             window.performClose(nil)
         } else {
