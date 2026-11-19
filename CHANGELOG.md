@@ -6,6 +6,8 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-11-19 — Smoother Wi-Fi dragging
+
 ### Fixed
 - **Smoother dragging over Wi-Fi** (#9). Lossless tiles (the sharp copy of
   text that has stopped changing) now give way to video over Wi-Fi while the
