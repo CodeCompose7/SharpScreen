@@ -132,6 +132,8 @@
 "Startup" = "Inicio";
 "Launch at Login" = "Abrir al iniciar sesión";
 "Run SharpScreen in the background automatically after you log in." = "Ejecutar SharpScreen en segundo plano automáticamente al iniciar sesión.";
+"Show Settings at launch" = "Mostrar los ajustes al abrir";
+"Open this window when SharpScreen starts. When off, it starts in the menu bar only; click the menu bar icon to open Settings." = "Abrir esta ventana al iniciar SharpScreen. Si está desactivado, solo se inicia en la barra de menús; haz clic en su icono para abrir los ajustes.";
 "Auto-start streaming on launch" = "Iniciar la transmisión al abrir";
 "Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "Inicia el servidor automáticamente al abrir la app, para que la tableta pueda conectarse sin tocar el Mac.";
 "Startup mode" = "Modo de inicio";

@@ -108,16 +108,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             refreshStatusIndicators()
         }
 
-        if #available(macOS 13.0, *) {
-            if DaemonManager.shared.isEnabled {
-                print("🚀 Launch at Login is enabled - starting silently in background")
-                // Do not show settings window automatically.
-                // applicationShouldHandleReopen will show it if the user manually launched the app.
-            } else {
-                showSettings()
-            }
-        } else {
+        // Only a launch macOS made at login stays in the background. Asking
+        // whether Launch at Login is enabled instead kept the window closed on
+        // every manual launch once it was on.
+        let launchAtLogin = Self.launchedAsLoginItem()
+        if Self.showsSettingsAtLaunch(option: settings.showSettingsOnLaunch, launchAtLogin: launchAtLogin) {
             showSettings()
+        } else if launchAtLogin {
+            print("🚀 Launched at login - starting silently in background")
+            // applicationShouldHandleReopen shows settings if the user opens the app again.
+        } else {
+            debugLog("Show Settings at launch is off - starting in the menu bar")
         }
 
         // Declarative auto-start (no Mac interaction): start the server in the
@@ -134,6 +135,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+    }
+
+    /// Whether the settings window opens when the app starts (issue #10):
+    /// only when the user wants it, and never on a launch at login, which
+    /// runs in the background.
+    static func showsSettingsAtLaunch(option: Bool, launchAtLogin: Bool) -> Bool {
+        option && !launchAtLogin
+    }
+
+    /// macOS marks the open-application event of a login item launch
+    /// (SMAppService.mainApp included) with keyAELaunchedAsLogInItem. Valid
+    /// while applicationDidFinishLaunching runs.
+    static func launchedAsLoginItem() -> Bool {
+        guard let event = NSAppleEventManager.shared().currentAppleEvent,
+              event.eventID == AEEventID(kAEOpenApplication) else { return false }
+        return event.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))?.enumCodeValue == OSType(keyAELaunchedAsLogInItem)
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
