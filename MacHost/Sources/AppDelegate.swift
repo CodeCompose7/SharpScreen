@@ -396,6 +396,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 toggleServer: { [weak self] in self?.toggleServerFromMenu() },
                 showSettings: { [weak self, weak menu] in
                     menu?.cancelTracking()
+                    self?.moveSettings(toScreenAt: NSEvent.mouseLocation)
                     self?.showSettings()
                 },
                 quit: { NSApp.terminate(nil) }
@@ -446,13 +447,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Shows the settings window, or closes it when it is open on this
-    /// desktop.
+    /// desktop of the display that was clicked. Open on another display, it
+    /// moves here instead of closing.
     func toggleSettings() {
-        if let window = settingsWindow?.window, window.isVisible, window.isOnActiveSpace {
+        let clickedScreen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) }
+        if let window = settingsWindow?.window, window.isVisible, window.isOnActiveSpace,
+           clickedScreen == nil || window.screen == clickedScreen {
             window.performClose(nil)
         } else {
+            moveSettings(toScreenAt: NSEvent.mouseLocation)
             showSettings()
         }
+    }
+
+    /// Opened from the menu bar: on the display that was clicked, centered,
+    /// unless the window is already there; never with its title bar under
+    /// that display's menu bar.
+    private func moveSettings(toScreenAt point: NSPoint) {
+        guard let window = settingsWindow?.window,
+              let screen = NSScreen.screens.first(where: { $0.frame.contains(point) }) else { return }
+        let top = screen.frame.maxY - menuBarHeight(on: screen)
+        var frame = window.frame
+        if window.screen != screen {
+            let area = screen.visibleFrame
+            frame.origin = NSPoint(x: area.midX - frame.width / 2, y: area.midY - frame.height / 2)
+        }
+        // A display whose menu bar hides itself reports no menu bar in its
+        // visible frame, and the bar then slides over the title bar.
+        if frame.maxY > top { frame.origin.y = max(screen.frame.minY, top - frame.height) }
+        guard frame.origin != window.frame.origin else { return }
+        window.setFrameOrigin(frame.origin)
+    }
+
+    /// The menu bar's height on `screen`, also when it hides itself there.
+    private func menuBarHeight(on screen: NSScreen) -> CGFloat {
+        var height = max(screen.frame.maxY - screen.visibleFrame.maxY, NSStatusBar.system.thickness)
+        if let bar = statusItem?.button?.window, bar.screen == screen {
+            height = max(height, bar.frame.height)
+        }
+        return height
     }
 
     @objc private func toggleServerFromMenu() {
