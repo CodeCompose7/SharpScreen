@@ -6,6 +6,19 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-11-19 — Fewer Wi-Fi keyframes
+
+### Fixed
+- **Less lag when moving windows over Wi-Fi** (#9). While anything moved, the
+  tablet asked for a new keyframe every 1.5 s, so the Mac sent a 560-670 KB
+  keyframe every 1.5 s instead of every 10 s, and each one held the frames
+  behind it for 100+ ms of Wi-Fi air time. The tablet now asks only after 12 s
+  without one (or on a decoder error): a third less video while dragging, and
+  the Mac's send queue mostly ~100-200 KB instead of 540-900 KB. When a Wi-Fi
+  burst briefly fills the tablet's decoder, it now waits up to 20 ms instead of
+  dropping a frame and asking for yet another keyframe. Needs the updated
+  Android app.
+
 ## [0.4.3] - 2026-11-19 — Smoother Wi-Fi
 
 ### Fixed

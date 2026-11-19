@@ -243,6 +243,11 @@ class StreamingServer {
     private let receiveQueue = DispatchQueue(label: "receiveQueue", qos: .userInteractive)
     private let networkQueue = DispatchQueue(label: "networkQueue", qos: .userInteractive)
     private var bytesSent: UInt64 = 0
+    /// frameQueue only, per stats period: the most the socket held behind,
+    /// and the largest frame (issue #9: a ~600 KB keyframe is 100+ ms of Wi-Fi).
+    private var maxQueuedBytes = 0
+    private var maxFrameBytes = 0
+    private var maxFrameWasKey = false
     private var frameCount: UInt64 = 0
     private var droppedFrames: UInt64 = 0
     private var lastStatsTime = DispatchTime.now()
@@ -1033,6 +1038,9 @@ class StreamingServer {
 
             let packet = self.makeFramePacket(data, timestamp: contentNs > 0 ? contentNs : timestamp, isKeyframe: isKeyframe)
             let sendCallNs = DispatchTime.now().uptimeNanoseconds
+            let queued = connection.queuedBytes
+            if queued > self.maxQueuedBytes { self.maxQueuedBytes = queued }
+            if data.count > self.maxFrameBytes { self.maxFrameBytes = data.count; self.maxFrameWasKey = isKeyframe }
 
             connection.send(content: packet, completion: .contentProcessed { error in
                 if error != nil {
@@ -1114,7 +1122,7 @@ class StreamingServer {
             // Log pipeline latency profile
             if profiledFrameCount > 0 {
                 let avgAgeMs = Double(totalFrameAgeNs) / Double(profiledFrameCount) / 1_000_000.0
-                debugLog("Pipeline: \(String(format: "%.1f", fps))fps, \(String(format: "%.1f", mbps))Mbps, avg frame age: \(String(format: "%.1f", avgAgeMs))ms, max \(String(format: "%.1f", Double(maxFrameAgeNs) / 1e6))ms, >20ms: \(lateFrames), max send-done \(String(format: "%.1f", Double(maxSendDoneNs) / 1e6))ms, tiles: \(tilesSent) (\(tilesSentBytes / 1024) KB, \(tileTracker.validCount) valid, \(invalidatesSent) invalidated), new frames: \(newFrames) avg \(String(format: "%.1f", newFrames > 0 ? Double(newFrameAgeNs) / Double(newFrames) / 1e6 : 0))ms max \(String(format: "%.1f", Double(maxNewFrameAgeNs) / 1e6))ms, dropped: \(droppedFrames)")
+                debugLog("Pipeline: \(String(format: "%.1f", fps))fps, \(String(format: "%.1f", mbps))Mbps, avg frame age: \(String(format: "%.1f", avgAgeMs))ms, max \(String(format: "%.1f", Double(maxFrameAgeNs) / 1e6))ms, >20ms: \(lateFrames), max send-done \(String(format: "%.1f", Double(maxSendDoneNs) / 1e6))ms, send queue max \(maxQueuedBytes / 1024) KB, largest frame \(maxFrameBytes / 1024) KB\(maxFrameWasKey ? " (key)" : ""), tiles: \(tilesSent) (\(tilesSentBytes / 1024) KB, \(tileTracker.validCount) valid, \(invalidatesSent) invalidated), new frames: \(newFrames) avg \(String(format: "%.1f", newFrames > 0 ? Double(newFrameAgeNs) / Double(newFrames) / 1e6 : 0))ms max \(String(format: "%.1f", Double(maxNewFrameAgeNs) / 1e6))ms, dropped: \(droppedFrames)")
             }
 
             bytesSent = 0
@@ -1125,6 +1133,8 @@ class StreamingServer {
             maxFrameAgeNs = 0
             lateFrames = 0
             maxSendDoneNs = 0
+            maxQueuedBytes = 0
+            maxFrameBytes = 0
             newFrameAgeNs = 0
             newFrames = 0
             maxNewFrameAgeNs = 0

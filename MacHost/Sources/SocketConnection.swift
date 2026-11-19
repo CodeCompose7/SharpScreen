@@ -202,6 +202,16 @@ final class SocketConnection {
         io.async { [self] in finish(state: .cancelled, error: .posix(.ECANCELED)) }
     }
 
+    /// Bytes waiting here or in the kernel's send buffer (not yet
+    /// acknowledged): how far the link is behind.
+    var queuedBytes: Int {
+        var kernel: Int32 = 0
+        var length = socklen_t(MemoryLayout<Int32>.size)
+        getsockopt(fd, SOL_SOCKET, 0x1024 /* SO_NWRITE */, &kernel, &length)
+        let mine = io.sync { writes.reduce(0) { $0 + $1.data.count - $1.offset } }
+        return Int(kernel) + mine
+    }
+
     // MARK: - Private (io queue)
 
     private func readAvailable() {
