@@ -927,7 +927,11 @@ class StreamClient(
         private const val MAX_FRAME_SIZE = 32 * 1024 * 1024 // 32MB
         private const val PAIRING_READ_TIMEOUT_MS = 10_000
         private const val KEYFRAME_REQUEST_INTERVAL_NS = 500_000_000L
-        private const val KEYFRAME_STALE_INTERVAL_NS = 1_500_000_000L
+        // Only a stuck-decoder guard: the stream is TCP, so nothing is lost and the decoder asks
+        // for a keyframe itself on errors. Must stay above the host's longest keyframe interval
+        // (10 s over Wi-Fi): at 1.5 s the tablet pulled a ~600 KB keyframe every 1.5 s of motion,
+        // each one a 100+ ms stall on Wi-Fi (issue #9).
+        private const val KEYFRAME_STALE_INTERVAL_NS = 12_000_000_000L
         private const val MESSAGE_VIDEO_FRAME = 0
         private const val MESSAGE_VIDEO_FRAME_WITH_METADATA = 6
         private const val MESSAGE_KEYFRAME_REQUEST = 7
