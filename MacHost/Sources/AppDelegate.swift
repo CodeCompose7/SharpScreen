@@ -449,9 +449,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Shows the settings window, or closes it when it is open on this
-    /// desktop.
+    /// desktop of the display that was clicked. Open on another display, it
+    /// moves here instead of closing.
     func toggleSettings() {
-        if let window = settingsWindow?.window, window.isVisible, window.isOnActiveSpace {
+        let clickedScreen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) }
+        if let window = settingsWindow?.window, window.isVisible, window.isOnActiveSpace,
+           clickedScreen == nil || window.screen == clickedScreen {
             window.performClose(nil)
         } else {
             moveSettings(toScreenAt: NSEvent.mouseLocation)
