@@ -39,10 +39,11 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
 /// macOS-settings-style toolbar: SF Symbol over a short label. Every item has
 /// the same fixed width so the icons are evenly spaced whatever the label
-/// length (Korean and English labels differ a lot).
+/// length. 84pt fits the longest label in every shipped language at full
+/// size (Russian "Подключение", 79pt in semibold).
 struct SettingsTabBar: View {
     @Binding var selection: SettingsTab
-    static let itemWidth: CGFloat = 76
+    static let itemWidth: CGFloat = 84
 
     var body: some View {
         VStack(spacing: 0) {
