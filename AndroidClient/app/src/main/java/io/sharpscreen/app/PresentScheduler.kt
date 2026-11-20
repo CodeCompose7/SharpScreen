@@ -91,6 +91,18 @@ class PresentScheduler {
     fun start() {
         if (running) return
         running = true
+        // Resuming after a pause (power saving, issue #16): what frames could
+        // make at a slower panel rate says nothing about now. Relearn; frames
+        // show as soon as they can meanwhile (MIN_SAMPLES, ~0.25 s at 120 fps).
+        sampleCount = 0
+        sampleNext = 0
+        offsetNs = Long.MIN_VALUE
+        framesSinceOffset = 0
+        lastHostNs = Long.MIN_VALUE
+        lastRequestNs = null
+        lastTargetNs = Long.MIN_VALUE
+        presents = LongArray(0)
+        deadlines = LongArray(0)
         choreographer.postVsyncCallback(vsyncCallback)
     }
 
@@ -108,7 +120,7 @@ class PresentScheduler {
         hostContentNs: Long,
         queueNs: Long,
     ): Long? {
-        if (presents.isEmpty()) return null
+        if (!running || presents.isEmpty()) return null
         // A repeat (same pixels, the source's content time) goes with the
         // frame it repeats; it must not pull the offset up either.
         if (hostContentNs <= lastHostNs) return lastRequestNs

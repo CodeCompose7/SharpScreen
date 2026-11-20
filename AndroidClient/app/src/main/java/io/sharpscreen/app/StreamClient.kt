@@ -159,6 +159,7 @@ class StreamClient(
                 advertiseDesktopGeometrySupport() // Likewise
                 advertiseIdentity() // Likewise: the Mac picks this tablet's profile when type 8 lands
                 advertiseLosslessTilesSupport()
+                advertisePowerModeSupport()
                 advertiseFrameMetadataSupport()
                 isConnected = true
                 lastKeyframeReceivedNs = 0L
@@ -392,6 +393,7 @@ class StreamClient(
                 advertiseDesktopGeometrySupport() // Likewise
                 advertiseIdentity() // Likewise: the Mac picks this tablet's profile when type 8 lands
                 advertiseLosslessTilesSupport()
+                advertisePowerModeSupport()
                 advertiseFrameMetadataSupport()
                 isConnected = true
                 acquireWifiLowLatency()
@@ -440,6 +442,19 @@ class StreamClient(
                 }
             } catch (_: Exception) {
             }
+        }
+    }
+
+    /**
+     * Type 23 + a version byte with the high bit set (an older host skips unknown
+     * bytes one at a time and stays in step): this client takes the host's power
+     * mode (type 24, issue #16).
+     */
+    private fun advertisePowerModeSupport() {
+        outputStream?.let { out ->
+            out.writeByte(MESSAGE_CLIENT_SUPPORTS_POWER_MODE)
+            out.writeByte(POWER_MODE_PROTOCOL_BYTE)
+            out.flush()
         }
     }
 
@@ -609,6 +624,12 @@ class StreamClient(
                             onLatencyMeasured?.invoke(rtt)
                         }
 
+                        MESSAGE_POWER_MODE -> {
+                            val powerSaving = input.readByte().toInt() == 1
+                            diagLog("Host power mode: ${if (powerSaving) "power saving" else "performance"}")
+                            onPowerMode?.invoke(powerSaving)
+                        }
+
                         LosslessTileWire.TILE_INVALIDATE -> {
                             val tiles = LosslessTileWire.readInvalidate(input)
                             onTileInvalidate?.invoke(tiles)
@@ -684,6 +705,9 @@ class StreamClient(
             }
         }
     }
+
+    /** The host's power mode (true: power saving), when it sends one (issue #16). */
+    var onPowerMode: ((Boolean) -> Unit)? = null
 
     // Callback for latency measurement (round-trip ping/pong)
     var onLatencyMeasured: ((Double) -> Unit)? = null
@@ -974,6 +998,9 @@ class StreamClient(
         private const val MESSAGE_CLIENT_DECODER_LIMIT_TABLE = 14
         private const val MESSAGE_CLIENT_IDENTITY = 18 // 15–17 reserved
         private const val MESSAGE_FRAME_TIMING = 22 // 19-21: lossless tiles
+        private const val MESSAGE_CLIENT_SUPPORTS_POWER_MODE = 23
+        private const val MESSAGE_POWER_MODE = 24
+        private const val POWER_MODE_PROTOCOL_BYTE = 0x81
         private const val FRAME_TIMING_SIZE = 1 + 8 + 4 + 4 + 4
         private const val FRAME_FLAG_KEYFRAME = 1
         private const val KEYFRAME_REQUEST_FLAG_FORCE = 1

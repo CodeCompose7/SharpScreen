@@ -629,6 +629,80 @@ closing.
   changes with the video frame's composite time instead of its delivery made no
   difference; dropped.
 
+## Tablet power on a still screen (2026-11-20, issue #16)
+
+Streaming a still screen, the tablet decoded, drew and presented the host's
+120 repeat frames a second. Over USB (accessory, charging) the battery
+current was -812 mA streaming a still screen, -849 mA while dragging, and
++128 mA with the app in the background: ~0.9 A (~3.5 W) for showing a picture
+that did not change, more than the Mac's port supplied.
+
+Now the tablet decodes a repeat (same content time as the frame on screen,
+same surface size) but does not draw or present it, and the Mac repeats only
+10 times a second once nothing new has come for 50 ms (back to every slot with
+the next new pixels). Debug app over USB (adb), the SharpScreen display still
+(a caret or clock still changed it 1-3 times a second), CPU from `top` (of 800%):
+
+| Still screen | Frames sent/s | App | SurfaceFlinger | Decoder (c2) | Composer |
+|---|---|---|---|---|---|
+| Before | 120-121 | 93-97% | 28-31% | 33-36% | 10-12% |
+| After | 15-23 | 28-33% | 17-18% | 7-10% | 4-5% |
+
+- While dragging nothing changes (new pixels every slot): app 93-98%,
+  SurfaceFlinger 33-35% either way.
+- Drag latency (Mac screen -> tablet glass, p50) was 34.4 or 38.4 ms per
+  session either way, before 34.4 / 38.3 and after 38.5 / 34.4: the same
+  half-vsync step between sessions seen before, not the change.
+- Battery current over USB was not usable for an A/B here: while charging it
+  swung between +300 and +1270 mA on the same setup.
+- `--ez diag.drawRepeats true` (tablet) and `diag.idleRepeatFps 0` (Mac)
+  restore the old behaviour.
+
+### Variable and fixed refresh rate (2026-11-20, issue #16)
+
+Settings > Streaming > Tablet Refresh Rate (variable by default; the code
+calls the modes powerSaving and performance). In variable the Mac repeats 10 times a second on a still screen and the tablet,
+once it has presented fewer than 6 new frames in the last second, asks for
+30 Hz: the panel then ran at 30 Hz on a still screen and 120 Hz while
+dragging (SurfaceFlinger's refresh rate). Releasing the 120 Hz mode pin alone
+left the panel at 120 Hz; it took a 30 Hz vote on the video surface
+(`Surface.setFrameRate`) and on the window (`preferredRefreshRate`, the stats
+overlay redraws it twice a second), with the present scheduler's per-vsync
+callbacks paused. Three new frames within 60 ms ask for 120 Hz back.
+
+The scheduler first kept its offset from the 30 Hz period: a drag starting
+from still ran 44-54 ms behind the Mac (p50, first 2 s, max 97-110 ms). It now
+relearns on resume: first-window max 20-44 ms variable, 42-64 ms fixed.
+
+Battery current with the cable out, Wi-Fi, still screen, stats overlay on,
+the debug app logging `BatteryManager` current every 5 s (`--ez
+diag.powerLog true`), the mode switched on the Mac every 90 s (first 15 s of
+each phase dropped):
+
+| Mode | Average current |
+|---|---|
+| Variable | -712 mA, -715 mA |
+| Fixed | -980 mA, -925 mA |
+
+About 240 mA (~25%) less with a variable rate, ~0.9 W at 3.9 V.
+
+Against a baseline: the same picture (a screenshot of the stream) shown full
+screen in the gallery, SharpScreen stopped. A script on the tablet waited for
+the cable to come out, then alternated baseline and Wi-Fi streaming (variable)
+every 90 s and logged `dumpsys battery` every 5 s; that reading only moves
+about every 30 s:
+
+| Phase | 30 s blocks |
+|---|---|
+| Baseline 1 | -542, -560, -530 mA |
+| Streaming 1 | -637, -632, (-1175) mA |
+| Baseline 2 | (-657 switching), -552, -567, -600 mA |
+| Streaming 2 | -720, -642, -670 mA |
+
+With a variable rate SharpScreen adds ~100 mA (~0.4 W) to showing the same
+picture (~550-570 mA, most of it the panel). There is little left to win on
+a still screen.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;

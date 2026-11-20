@@ -522,6 +522,7 @@ struct StreamingPane: View {
             gamingSection
             bitrateSection
             qualitySection
+            powerSection
             touchSection
             if settings.clientConnected {
                 performanceSection
@@ -602,6 +603,23 @@ struct StreamingPane: View {
                     }
                     .foregroundColor(.orange)
                 }
+            }
+        }
+    }
+
+    private var powerSection: some View {
+        SettingsSection("Tablet Refresh Rate") {
+            SettingsBlock {
+                PillSegmentedControl(selection: $settings.powerMode, options: [
+                    .init(value: PowerMode.powerSaving, title: "Variable"),
+                    .init(value: PowerMode.performance, title: "Fixed")
+                ])
+                Text(settings.powerMode == .powerSaving
+                     ? LocalizedStringKey("While the screen is still, the tablet lowers its refresh rate to save battery. It returns to the highest rate as soon as something moves.")
+                     : LocalizedStringKey("The tablet keeps its display at the highest refresh rate while streaming. Uses more battery."))
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

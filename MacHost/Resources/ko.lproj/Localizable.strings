@@ -136,6 +136,11 @@
 "Run SharpScreen in the background automatically after you log in." = "로그인하면 SharpScreen을 백그라운드에서 자동으로 실행합니다.";
 "Show Settings at launch" = "실행 시 설정 창 표시";
 "Open this window when SharpScreen starts. When off, it starts in the menu bar only; click the menu bar icon to open Settings." = "SharpScreen을 시작할 때 이 창을 엽니다. 끄면 메뉴 막대에서만 시작하며, 메뉴 막대 아이콘을 클릭하면 설정이 열립니다.";
+"Tablet Refresh Rate" = "태블릿 화면 주사율";
+"Variable" = "가변";
+"Fixed" = "고정";
+"While the screen is still, the tablet lowers its refresh rate to save battery. It returns to the highest rate as soon as something moves." = "화면이 멈춰 있으면 태블릿 화면 주사율을 낮춰 배터리를 아낍니다. 움직이면 바로 최고 주사율로 돌아갑니다.";
+"The tablet keeps its display at the highest refresh rate while streaming. Uses more battery." = "스트리밍하는 동안 태블릿 화면을 항상 최고 주사율로 유지합니다. 배터리를 더 씁니다.";
 "Auto-start streaming on launch" = "실행 시 스트리밍 자동 시작";
 "Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "앱이 열리면 서버를 자동으로 시작해 Mac을 조작하지 않아도 태블릿이 연결할 수 있습니다.";
 "Startup mode" = "시작 모드";

@@ -58,7 +58,7 @@ final class FramePacerTests: XCTestCase {
         XCTAssertLessThan(stamps[0], stamps[1])
     }
 
-    func testPacingFillsAStillScreenTowardTheFrameRate() {
+    func testPacingFillsAStillScreenThenIdles() {
         let lock = NSLock()
         var encoded = 0
         let pacer = FramePacer(fps: 120, encodeQueue: DispatchQueue(label: "t"), pacingEnabled: true) { _, _, _, _ in
@@ -69,9 +69,10 @@ final class FramePacerTests: XCTestCase {
         Thread.sleep(forTimeInterval: 0.5)
         pacer.stop()
         lock.lock(); let n = encoded; lock.unlock()
-        // 0.5 s at 120 fps = 60 slots; allow scheduler slack on a busy test host.
-        XCTAssertGreaterThan(n, 45)
-        XCTAssertLessThanOrEqual(n, 62)
+        // The first 50 ms at 120 fps (~6 slots), then 10 repeats a second
+        // (issue #16): ~11 in 0.5 s. Allow scheduler slack on a busy test host.
+        XCTAssertGreaterThan(n, 6)
+        XCTAssertLessThanOrEqual(n, 18)
     }
 
     /// Capture frames arriving at an irregular ~100 fps plus the pacer must
@@ -97,5 +98,19 @@ final class FramePacerTests: XCTestCase {
         lock.lock(); let n = encoded; lock.unlock()
         XCTAssertGreaterThan(n, 105)
         XCTAssertLessThan(n, 135, "one frame per 1/120 s slot, plus capture frames sharing a slot")
+    }
+
+    func testStillScreenRepeatsAtTheIdleRate() {
+        let ms: UInt64 = 1_000_000
+        let idle = { (now: UInt64, captured: UInt64, submit: UInt64) in
+            FramePacer.Policy.shouldRepeatWhenIdle(nowNs: now * ms, lastCapturedNs: captured * ms, lastSubmitNs: submit * ms,
+                                                   idleAfterNs: 250 * ms, idleIntervalNs: 100 * ms)
+        }
+        XCTAssertTrue(idle(1_100, 1_000, 1_092), "moving: every slot")
+        XCTAssertTrue(idle(1_249, 1_000, 1_241), "still for less than 250 ms: every slot")
+        XCTAssertFalse(idle(1_300, 1_000, 1_250), "still: not 100 ms since the last repeat")
+        XCTAssertTrue(idle(1_350, 1_000, 1_250), "still: 100 ms since the last repeat")
+        XCTAssertTrue(FramePacer.Policy.shouldRepeatWhenIdle(nowNs: 5_000 * ms, lastCapturedNs: 1_000 * ms, lastSubmitNs: 4_999 * ms,
+                                                             idleAfterNs: 250 * ms, idleIntervalNs: 0), "idle rate off")
     }
 }

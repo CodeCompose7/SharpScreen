@@ -134,6 +134,11 @@
 "Run SharpScreen in the background automatically after you log in." = "ログイン後にSharpScreenをバックグラウンドで自動的に実行します。";
 "Show Settings at launch" = "起動時に設定ウインドウを表示";
 "Open this window when SharpScreen starts. When off, it starts in the menu bar only; click the menu bar icon to open Settings." = "SharpScreenの起動時にこのウインドウを開きます。オフにするとメニューバーだけで起動します。設定を開くにはメニューバーのアイコンをクリックしてください。";
+"Tablet Refresh Rate" = "タブレットのリフレッシュレート";
+"Variable" = "可変";
+"Fixed" = "固定";
+"While the screen is still, the tablet lowers its refresh rate to save battery. It returns to the highest rate as soon as something moves." = "画面が静止しているあいだはタブレットのリフレッシュレートを下げてバッテリーを節約します。何かが動くとすぐに最高のリフレッシュレートに戻ります。";
+"The tablet keeps its display at the highest refresh rate while streaming. Uses more battery." = "ストリーミング中はタブレットのディスプレイを常に最高のリフレッシュレートに保ちます。バッテリーの消費が多くなります。";
 "Auto-start streaming on launch" = "起動時にストリーミングを自動開始";
 "Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "アプリが開いたときにサーバを自動的に開始します。Macを操作しなくてもタブレットから接続できます。";
 "Startup mode" = "起動時のモード";
