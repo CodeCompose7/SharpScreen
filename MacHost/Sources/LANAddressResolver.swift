@@ -5,8 +5,24 @@ enum LANAddressResolver {
     /// Returns the first non-loopback, non-link-local IPv4 address from `getifaddrs`,
     /// preferring `en0` (typical Wi-Fi / Ethernet) when present.
     static func primaryIPv4() -> String? {
+        let candidates = ipv4Candidates()
+        if let en0 = candidates.first(where: { $0.name == "en0" }) { return en0.ip }
+        if let enN = candidates.first(where: { $0.name.hasPrefix("en") }) { return enN.ip }
+        return candidates.first?.ip
+    }
+
+    /// Every usable IPv4 address, en0 first, then other en*, then the rest.
+    static func allIPv4() -> [String] {
+        let c = ipv4Candidates()
+        let ordered = c.filter { $0.name == "en0" } + c.filter { $0.name != "en0" && $0.name.hasPrefix("en") }
+            + c.filter { !$0.name.hasPrefix("en") }
+        var seen = Set<String>()
+        return ordered.map(\.ip).filter { seen.insert($0).inserted }
+    }
+
+    private static func ipv4Candidates() -> [(name: String, ip: String)] {
         var ifaddrPtr: UnsafeMutablePointer<ifaddrs>?
-        guard getifaddrs(&ifaddrPtr) == 0, let first = ifaddrPtr else { return nil }
+        guard getifaddrs(&ifaddrPtr) == 0, let first = ifaddrPtr else { return [] }
         defer { freeifaddrs(ifaddrPtr) }
 
         var candidates: [(name: String, ip: String)] = []
@@ -36,9 +52,7 @@ enum LANAddressResolver {
             ptr = cur.pointee.ifa_next
         }
 
-        if let en0 = candidates.first(where: { $0.name == "en0" }) { return en0.ip }
-        if let enN = candidates.first(where: { $0.name.hasPrefix("en") }) { return enN.ip }
-        return candidates.first?.ip
+        return candidates
     }
 
     static func isLoopback(_ ip: String) -> Bool {

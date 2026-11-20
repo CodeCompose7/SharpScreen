@@ -31,6 +31,14 @@ Tablets you keep on ADB still work as before (Developer options > USB debugging 
 tablet, `adb` on the Mac). With several tablets plugged in, one streams at a time; pick
 it in the menu or in Settings > Connection.
 
+### Moving between networks
+
+Pair a tablet over Wi-Fi once: when the Mac's address changes (home, office),
+Reconnect finds it again, at an address that worked before or on the local
+network, where the Mac announces itself while it streams over Wi-Fi. Networks
+that block multicast work through the remembered addresses; pair again by code
+only on a network the Mac has never been reached on.
+
 ### Smoother Wi-Fi
 
 AirDrop, Handoff, Universal Control and iPhone Mirroring share the Mac's Wi-Fi through
