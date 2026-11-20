@@ -292,6 +292,37 @@ class GlCompositor(
         handler.postDelayed(deferredCompose, COMPOSE_DEFER_MS)
     }
 
+    /** When the last frame (video or tiles) was presented; any thread may read it. */
+    @Volatile
+    var lastPresentNs = 0L
+        private set
+
+    private val recentPresents = LongArray(8)
+    private var recentPresentNext = 0
+
+    /**
+     * Stop or resume the present scheduler's per-vsync callbacks (power saving,
+     * issue #16): while they run every vsync, the panel stayed at 120 Hz even
+     * with the app asking for nothing. Frames presented meanwhile go out at once.
+     */
+    fun pauseVsyncCallbacks(paused: Boolean) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        handler.post {
+            // Tell SurfaceFlinger this surface is fine at a low rate while still.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                try {
+                    output.setFrameRate(if (paused) RELAXED_FRAME_RATE else 0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT)
+                } catch (_: Exception) {
+                }
+            }
+            val s = scheduler ?: return@post
+            if (paused) s.stop() else s.start()
+        }
+    }
+
+    /** New video frames presented since [sinceNs] (up to 8); any thread. */
+    fun presentsSince(sinceNs: Long): Int = synchronized(recentPresents) { recentPresents.count { it > sinceNs } }
+
     /** Host content time and surface size of the last video frame drawn. */
     private var shownHostNs = 0L
     private var shownWidth = 0
@@ -455,6 +486,21 @@ class GlCompositor(
         if (tracing) Trace.beginSection("ssPresent n=$swapCount v=${if (fromVideo) 1 else 0} host=$traceHostNs req=${pendingPresentNs ?: 0}")
         EGL14.eglSwapBuffers(eglDisplay, eglSurface)
         if (tracing) Trace.endSection()
+        val presentNs = System.nanoTime()
+        lastPresentNs = presentNs
+        if (fromVideo) {
+            // Video frames only: a lossless tile batch follows each small change.
+            val thirdLastNs: Long
+            synchronized(recentPresents) {
+                recentPresents[recentPresentNext] = presentNs
+                recentPresentNext = (recentPresentNext + 1) % recentPresents.size
+                thirdLastNs = recentPresents[(recentPresentNext - 3 + recentPresents.size) % recentPresents.size]
+            }
+            // Three new frames close together: something is moving, not a caret blinking.
+            if (refreshRelaxed && thirdLastNs > 0L && presentNs - thirdLastNs < MOTION_WINDOW_NS) {
+                onPresentWhileRelaxed?.invoke()
+            }
+        }
     }
 
     /** Recent draw+swap time, for "queued by" when picking a vsync. */
@@ -545,6 +591,23 @@ class GlCompositor(
          */
         @Volatile
         var onFrameTiming: ((Long, Int, Int, Int) -> Unit)? = null
+
+        /**
+         * Set while the activity has let the panel leave its top refresh rate on
+         * a still screen (power saving, issue #16); the next present then calls
+         * [onPresentWhileRelaxed] (GL thread) so the activity can ask for it back.
+         */
+        @Volatile
+        var refreshRelaxed = false
+
+        @Volatile
+        var onPresentWhileRelaxed: (() -> Unit)? = null
+
+        /** What the surface asks for on a still screen in power saving (issue #16). */
+        const val RELAXED_FRAME_RATE = 30f
+
+        /** Three new frames within this mean motion (a drag presents one every 8-17 ms). */
+        const val MOTION_WINDOW_NS = 60_000_000L
 
         /**
          * Draw and present repeat frames too (before issue #16). Per launch:

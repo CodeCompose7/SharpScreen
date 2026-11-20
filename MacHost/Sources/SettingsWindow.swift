@@ -98,6 +98,10 @@ class DisplaySettings: ObservableObject {
     @Published var showSettingsOnLaunch: Bool {
         didSet { save("showSettingsOnLaunch", showSettingsOnLaunch) }
     }
+    /// Tablet power on a still screen (issue #16). Stock: power saving.
+    @Published var powerMode: PowerMode {
+        didSet { save("powerMode", powerMode.rawValue) }
+    }
     @Published var autoStartStreamingOnLaunch: Bool {
         didSet { save("autoStartStreamingOnLaunch", autoStartStreamingOnLaunch) }
     }
@@ -168,6 +172,7 @@ class DisplaySettings: ObservableObject {
         let modeRaw = defaults.string(forKey: keyPrefix + "connectionMode") ?? ConnectionMode.usb.rawValue
         self.connectionMode = ConnectionMode(rawValue: modeRaw) ?? .usb
         self.showSettingsOnLaunch = defaults.object(forKey: keyPrefix + "showSettingsOnLaunch") as? Bool ?? true
+        self.powerMode = PowerMode(rawValue: defaults.string(forKey: keyPrefix + "powerMode") ?? "") ?? .powerSaving
         self.autoStartStreamingOnLaunch = defaults.object(forKey: keyPrefix + "autoStartStreamingOnLaunch") as? Bool ?? false
         self.usbAccessoryEnabled = defaults.object(forKey: keyPrefix + "usbAccessoryEnabled") as? Bool ?? true
         let startupRaw = defaults.string(forKey: keyPrefix + "startupMode") ?? modeRaw
@@ -277,7 +282,7 @@ class DisplaySettings: ObservableObject {
     func resetToDefaults() {
         let keys = ["resolution", "refreshRate", "hiDPI", "bitrate", "quality",
                     "gamingBoost", "port", "rotation", "flipHorizontal", "flipVertical", "showAllResolutions",
-                    "customWidth", "customHeight", "touchEnabled", "showSettingsOnLaunch", "autoStartStreamingOnLaunch", "startupMode",
+                    "customWidth", "customHeight", "touchEnabled", "showSettingsOnLaunch", "powerMode", "autoStartStreamingOnLaunch", "startupMode",
                     "usbAccessoryEnabled"]
         for key in keys {
             defaults.removeObject(forKey: keyPrefix + key)
@@ -298,6 +303,7 @@ class DisplaySettings: ObservableObject {
         customHeight = 1200
         touchEnabled = true
         showSettingsOnLaunch = true
+        powerMode = .powerSaving
         autoStartStreamingOnLaunch = false
         startupMode = .usb
         usbAccessoryEnabled = true

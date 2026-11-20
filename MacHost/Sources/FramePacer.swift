@@ -237,7 +237,8 @@ final class FramePacer {
         let due = state.withLock {
             Policy.shouldRepeat(lastSubmitNs: $0.lastSubmitNs, previousTickNs: previousTickNs)
                 && Policy.shouldRepeatWhenIdle(nowNs: nowTickNs, lastCapturedNs: $0.lastCapturedNs, lastSubmitNs: $0.lastSubmitNs,
-                                               idleAfterNs: idleAfterNs, idleIntervalNs: idleIntervalNs)
+                                               idleAfterNs: idleAfterNs,
+                                               idleIntervalNs: PowerMode.active == .powerSaving ? idleIntervalNs : 0)
         }
         if due { submit(nil, kind: .repeated) }
         // Mark the slot boundary after our own repeat, so it does not count as

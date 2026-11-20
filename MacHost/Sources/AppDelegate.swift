@@ -286,6 +286,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        // Tablet power mode (issue #16): the pacer reads it on every tick; a
+        // client that takes power modes hears about the change at once.
+        PowerMode.active = settings.powerMode
+        settings.$powerMode
+            .dropFirst()
+            .sink { [weak self] mode in
+                PowerMode.active = mode
+                self?.streamingServer?.sendPowerMode()
+            }
+            .store(in: &cancellables)
+
         // Observer cho touch enable/disable - propagate to streaming server so
         // incoming touch frames from the client are dropped early when off.
         settings.$touchEnabled

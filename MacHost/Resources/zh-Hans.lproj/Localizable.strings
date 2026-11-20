@@ -135,6 +135,10 @@
 "Run SharpScreen in the background automatically after you log in." = "登录后自动在后台运行 SharpScreen。";
 "Show Settings at launch" = "启动时显示设置";
 "Open this window when SharpScreen starts. When off, it starts in the menu bar only; click the menu bar icon to open Settings." = "SharpScreen 启动时打开此窗口。关闭后仅在菜单栏中启动；点按菜单栏图标即可打开设置。";
+"Tablet Power" = "平板电源";
+"Power Saving" = "省电";
+"On a still screen the tablet does less and its display may slow down until something moves. Uses less battery." = "画面静止时平板会减少工作，在有内容变动之前屏幕刷新率可能会降低。更省电。";
+"The tablet keeps its display at the top refresh rate and decodes every frame while streaming. Uses more battery." = "串流时平板屏幕保持最高刷新率，并解码每一帧。更耗电。";
 "Auto-start streaming on launch" = "启动时自动开始串流";
 "Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "App 打开时自动启动服务器，无需操作 Mac 即可让平板电脑连接。";
 "Startup mode" = "启动模式";

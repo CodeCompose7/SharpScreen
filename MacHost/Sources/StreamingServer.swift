@@ -54,6 +54,13 @@ enum WireMessage {
     /// little-endian (issue #13).
     static let frameTiming: UInt8 = 22
     static let frameTimingSize = 1 + 8 + 4 + 4 + 4
+    /// Client -> host: type + one version byte (high bit set, so an older
+    /// host skipping unknown bytes one at a time stays in step). The client
+    /// takes power mode messages (issue #16).
+    static let clientSupportsPowerMode: UInt8 = 23
+    /// Host -> client, only to a client that said it takes them: type + mode
+    /// (1 power saving, 0 performance).
+    static let powerMode: UInt8 = 24
 }
 
 private extension String {
@@ -338,6 +345,7 @@ class StreamingServer {
         connectionReady = false
         clientSupportsFrameMetadata = false
         losslessClient.withLock { $0 = false }
+        powerModeClient.withLock { $0 = false }
         clientIsAvcOnly = false
         clientDecodeLimits = nil
         clientDecodeLimitTable = nil
@@ -373,6 +381,18 @@ class StreamingServer {
     /// The client is over USB (adb reverse, loopback) rather than Wi-Fi.
     private let clientOverUSB = OSAllocatedUnfairLock(initialState: true)
     var clientIsOverUSB: Bool { clientOverUSB.withLock { $0 } }
+
+    /// The client takes power mode messages (it said so).
+    private let powerModeClient = OSAllocatedUnfairLock(initialState: false)
+
+    /// Tell a client that takes them the current power mode (issue #16). Any
+    /// thread; a no-op for older clients.
+    func sendPowerMode() {
+        guard powerModeClient.withLock({ $0 }), let connection, connectionReady, !isStopped else { return }
+        let mode = PowerMode.active
+        connection.send(content: Data([WireMessage.powerMode, mode.wireValue]), completion: .contentProcessed { _ in })
+        debugLog("Power mode to client: \(mode.rawValue)")
+    }
 
     /// Per-stage frame latency, from tablets that report it (issue #13).
     let latency = LatencyBreakdown()
@@ -454,6 +474,9 @@ class StreamingServer {
         sendDisplaySize()
         connectionReady = true
         debugLog("Connection ready for frames (metadata=\(clientSupportsFrameMetadata ? "on" : "off"), codec=\(codec))")
+        // The client says it takes power modes during its opt-ins, before the
+        // display config it must read first: tell it now.
+        sendPowerMode()
         onClientConnected?()
     }
 
@@ -766,6 +789,13 @@ class StreamingServer {
                 let flags = inputByte(at: 1)
                 consumeInputBytes(2)
                 onKeyframeRequested?((flags & 1) != 0)
+
+            case WireMessage.clientSupportsPowerMode:
+                guard inputBuffer.count >= 2 else { return }
+                consumeInputBytes(2)
+                powerModeClient.withLock { $0 = true }
+                debugLog("Client takes power modes")
+                sendPowerMode()
 
             case WireMessage.clientSupportsLosslessTiles:
                 // Type + one version byte (high bit set).
