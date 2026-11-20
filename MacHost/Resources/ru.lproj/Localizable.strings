@@ -134,6 +134,11 @@
 "Run SharpScreen in the background automatically after you log in." = "Автоматически запускать SharpScreen в фоне после входа в систему.";
 "Show Settings at launch" = "Показывать настройки при запуске";
 "Open this window when SharpScreen starts. When off, it starts in the menu bar only; click the menu bar icon to open Settings." = "Открывать это окно при запуске SharpScreen. Если выключено, приложение запускается только в строке меню; чтобы открыть настройки, нажмите на его значок в строке меню.";
+"Tablet Refresh Rate" = "Частота обновления планшета";
+"Variable" = "Переменная";
+"Fixed" = "Постоянная";
+"While the screen is still, the tablet lowers its refresh rate to save battery. It returns to the highest rate as soon as something moves." = "Пока изображение неподвижно, планшет снижает частоту обновления и экономит заряд. Как только что-нибудь начинает двигаться, она возвращается к максимальной.";
+"The tablet keeps its display at the highest refresh rate while streaming. Uses more battery." = "Во время трансляции планшет всегда держит экран на максимальной частоте обновления. Расходует больше заряда.";
 "Auto-start streaming on launch" = "Начинать трансляцию при запуске";
 "Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "Автоматически запускать сервер при открытии приложения, чтобы планшет мог подключиться без действий на Mac.";
 "Startup mode" = "Режим при запуске";

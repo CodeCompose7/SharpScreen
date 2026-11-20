@@ -6,6 +6,27 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.9] - 2026-11-20 — Tablet battery
+
+### Added
+- **Variable or fixed tablet refresh rate** (#16). Settings > Streaming >
+  Tablet Refresh Rate, variable by default: while the screen is still the
+  tablet's display drops to 30 Hz and returns to its highest rate as soon as
+  something moves, and motion is as quick as with fixed. Fixed keeps the
+  highest rate, as before. Needs both apps updated (older tablet apps keep
+  the old behaviour).
+
+### Fixed
+- **Much less tablet power on a still screen** (#16). With nothing changing,
+  the Mac kept sending 120 copies of the last frame a second and the tablet
+  decoded, drew and presented every one: ~0.9 A, more than a Mac's USB port
+  supplies, so the battery ran down while connected. The Mac now repeats only
+  10 times a second once the screen has been still for 50 ms, and the tablet
+  no longer redraws a repeat. With the cable out on a still screen, the tablet
+  drew ~950 mA before and ~650-715 mA now with a variable rate, against
+  ~550-570 mA for the same picture without SharpScreen. Motion and its latency
+  are unchanged. Needs both apps updated.
+
 ## [0.4.8] - 2026-11-20 — USB memory fix
 
 ### Fixed

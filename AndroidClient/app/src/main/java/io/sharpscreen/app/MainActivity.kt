@@ -101,6 +101,7 @@ class MainActivity : AppCompatActivity() {
     private var isConnected = false // Track connection state to prevent checklist conflicts
         set(value) {
             field = value
+            if (!value) resetHostPowerMode()
             applyRefreshRatePreference()
             onStreamingUiChanged()
         }
@@ -114,6 +115,71 @@ class MainActivity : AppCompatActivity() {
             onStreamingUiChanged()
         }
     private var demoTouchHintShown = false
+
+    // Power saving (issue #16): the host chose it, so on a still screen the panel
+    // may leave its top refresh rate; the next frame drawn asks for it back.
+    private var hostPowerSaving = false
+    private var refreshRelaxed = false
+    private val idleRefreshHandler = Handler(Looper.getMainLooper())
+    private val idleRefreshCheck =
+        object : Runnable {
+            override fun run() {
+                if (!hostPowerSaving) return
+                idleRefreshHandler.postDelayed(this, IDLE_REFRESH_CHECK_MS)
+                // The mode arrives with the connection, before it counts as up.
+                if (!isStreamingUi) return
+                // Still, or only a caret or a clock changing (1-3 frames a second);
+                // a drag presents 60-120.
+                val compositor = videoDecoder?.compositor
+                if (!refreshRelaxed && compositor != null && compositor.lastPresentNs > 0L &&
+                    compositor.presentsSince(System.nanoTime() - RELAX_REFRESH_WINDOW_NS) < RELAX_REFRESH_MAX_PRESENTS
+                ) {
+                    setRefreshRelaxed(true)
+                }
+            }
+        }
+
+    private fun setRefreshRelaxed(relaxed: Boolean) {
+        if (refreshRelaxed == relaxed) return
+        refreshRelaxed = relaxed
+        GlCompositor.refreshRelaxed = relaxed
+        videoDecoder?.compositor?.pauseVsyncCallbacks(relaxed)
+        applyRefreshRatePreference()
+    }
+
+    private fun applyHostPowerMode(powerSaving: Boolean) {
+        hostPowerSaving = powerSaving
+        idleRefreshHandler.removeCallbacks(idleRefreshCheck)
+        if (powerSaving) {
+            idleRefreshHandler.postDelayed(idleRefreshCheck, IDLE_REFRESH_CHECK_MS)
+        } else {
+            setRefreshRelaxed(false)
+        }
+    }
+
+    private val powerLogHandler = Handler(Looper.getMainLooper())
+
+    private fun startPowerLog() {
+        val battery = getSystemService(BATTERY_SERVICE) as android.os.BatteryManager
+        val tick =
+            object : Runnable {
+                override fun run() {
+                    val ua = battery.getLongProperty(android.os.BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+                    val level = battery.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                    Log.i("PowerLog", "current_ua=$ua level=$level streaming=$isStreamingUi powerSaving=$hostPowerSaving relaxed=$refreshRelaxed")
+                    powerLogHandler.postDelayed(this, 5_000L)
+                }
+            }
+        powerLogHandler.removeCallbacksAndMessages(null)
+        powerLogHandler.post(tick)
+    }
+
+    private fun resetHostPowerMode() {
+        hostPowerSaving = false
+        idleRefreshHandler.removeCallbacks(idleRefreshCheck)
+        refreshRelaxed = false
+        GlCompositor.refreshRelaxed = false
+    }
 
     /** True while video is on screen — a real session or the demo. Drives the streaming chrome. */
     private val isStreamingUi get() = isConnected || demoActive
@@ -148,8 +214,13 @@ class MainActivity : AppCompatActivity() {
         GlCompositor.losslessTiles = intent?.getBooleanExtra("diag.lossless", true) ?: true
         // `--ez diag.vsyncPresent false`: present frames as soon as drawn (before M4).
         GlCompositor.vsyncPresent = intent?.getBooleanExtra("diag.vsyncPresent", true) ?: true
+        GlCompositor.drawRepeats = intent?.getBooleanExtra("diag.drawRepeats", false) ?: false
+        // `--ez diag.powerLog true`: log the battery current every 5 s (tag PowerLog),
+        // to compare power modes with the cable out (issue #16).
+        if (intent?.getBooleanExtra("diag.powerLog", false) == true) startPowerLog()
         // `--ez diag.frameTiming true`: report each frame's tablet-side timing to the
         // host for its latency breakdown (issue #13). The host must be 0.4.7 or later.
+        GlCompositor.onPresentWhileRelaxed = { runOnUiThread { setRefreshRelaxed(false) } }
         GlCompositor.onFrameTiming =
             if (intent?.getBooleanExtra("diag.frameTiming", false) == true) {
                 { host, decodeUs, waitUs, presentUs -> streamClient?.sendFrameTiming(host, decodeUs, waitUs, presentUs) }
@@ -1414,6 +1485,7 @@ class MainActivity : AppCompatActivity() {
      * Wire up all StreamClient callbacks. Used by both USB connect() and wireless connectWireless().
      */
     private fun setupStreamClientCallbacks() {
+        streamClient?.onPowerMode = { powerSaving -> runOnUiThread { applyHostPowerMode(powerSaving) } }
         streamClient?.onTileInvalidate = { tiles -> videoDecoder?.compositor?.invalidateTiles(tiles) }
         streamClient?.onLosslessTiles = { tileSize, tiles -> videoDecoder?.compositor?.applyTiles(tileSize, tiles) }
         streamClient?.onFrameReceived = { frameData, frameSize, timestamp, isKeyframe ->
@@ -1677,6 +1749,7 @@ class MainActivity : AppCompatActivity() {
 
                 connectedOverAccessory = AccessoryLink.state == AccessoryLink.State.READY && port == AccessoryLink.port
                 streamClient = StreamClient(host, port, applicationContext)
+                streamClient?.onPowerMode = { powerSaving -> runOnUiThread { applyHostPowerMode(powerSaving) } }
                 streamClient?.onTileInvalidate = { tiles -> videoDecoder?.compositor?.invalidateTiles(tiles) }
                 streamClient?.onLosslessTiles = { tileSize, tiles -> videoDecoder?.compositor?.applyTiles(tileSize, tiles) }
                 streamClient?.onFrameReceived = { frameData, frameSize, timestamp, isKeyframe ->
@@ -1999,7 +2072,7 @@ class MainActivity : AppCompatActivity() {
         @Suppress("DEPRECATION")
         val display = windowManager.defaultDisplay ?: return
         val wanted =
-            if (isStreamingUi) {
+            if (isStreamingUi && !refreshRelaxed) {
                 with(DisplayRefresh) {
                     highestRefreshMode(display.supportedModes.map { it.toMode() }, display.mode.toMode())?.id
                         ?: display.mode.modeId
@@ -2007,11 +2080,15 @@ class MainActivity : AppCompatActivity() {
             } else {
                 0 // no preference
             }
+        // Power saving on a still screen (issue #16): the stats overlay redraws the
+        // window twice a second, which kept the panel at 120 Hz on its own.
+        val wantedRate = if (isStreamingUi && refreshRelaxed) RELAXED_REFRESH_HZ else 0f
         val attrs = window.attributes
-        if (attrs.preferredDisplayModeId != wanted) {
+        if (attrs.preferredDisplayModeId != wanted || attrs.preferredRefreshRate != wantedRate) {
             attrs.preferredDisplayModeId = wanted
+            attrs.preferredRefreshRate = wantedRate
             window.attributes = attrs
-            Log.i("DisplayRefresh", "preferredDisplayModeId=$wanted (streaming=$isStreamingUi)")
+            Log.i("DisplayRefresh", "preferredDisplayModeId=$wanted rate=$wantedRate (streaming=$isStreamingUi)")
         }
     }
 
@@ -2220,3 +2297,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+
+/** Power saving: let the panel slow down when fewer than this many frames were presented in the window (issue #16). */
+private const val RELAX_REFRESH_WINDOW_NS = 1_000_000_000L
+private const val RELAX_REFRESH_MAX_PRESENTS = 6
+private const val IDLE_REFRESH_CHECK_MS = 250L
+
+/** The rate a still screen asks for in power saving; what moves gets the top rate back. */
+private const val RELAXED_REFRESH_HZ = 30f

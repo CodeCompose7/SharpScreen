@@ -53,6 +53,17 @@ final class FramePacer {
             lastSubmitNs > 0 && lastSubmitNs <= previousTickNs
         }
 
+        /// On a still screen, repeat only every `idleIntervalNs` once nothing
+        /// new has come for `idleAfterNs`. Each repeat cost the tablet a
+        /// decode, a draw and a present: ~0.9 A at 120 a second with nothing
+        /// changing (issue #16). New pixels still go out at once.
+        static func shouldRepeatWhenIdle(nowNs: UInt64, lastCapturedNs: UInt64, lastSubmitNs: UInt64,
+                                         idleAfterNs: UInt64, idleIntervalNs: UInt64) -> Bool {
+            guard idleIntervalNs > 0, lastCapturedNs > 0, nowNs >= lastCapturedNs,
+                  nowNs - lastCapturedNs >= idleAfterNs else { return true }
+            return nowNs >= lastSubmitNs && nowNs - lastSubmitNs >= idleIntervalNs
+        }
+
         /// Next timestamp in microseconds, strictly after `lastUs`.
         static func monotonicUs(candidateUs: Int64, lastUs: Int64) -> Int64 {
             candidateUs > lastUs ? candidateUs : lastUs + 1
@@ -72,6 +83,23 @@ final class FramePacer {
         UserDefaults.standard.bool(forKey: "diag.noRepeats")
     }
 
+    /// Repeats a second once the screen has been still for `idleAfterNs`
+    /// (stock 10; 0 keeps the full rate). diag.idleRepeatFps.
+    static var idleRepeatFps: Int {
+        guard let v = UserDefaults.standard.object(forKey: "diag.idleRepeatFps") as? Int else { return 10 }
+        return max(0, v)
+    }
+
+    /// How long without new pixels before repeats slow down (stock 50 ms;
+    /// a drag sends new pixels every 8-17 ms). A caret or a clock changing
+    /// once or twice a second restarted a 250 ms run of 120 repeats a second
+    /// each time: 37-58 frames a second on a still screen instead of ~10.
+    /// diag.idleAfterMs.
+    static var idleAfterNs: UInt64 {
+        let v = UserDefaults.standard.integer(forKey: "diag.idleAfterMs")
+        return UInt64(v > 0 ? v : 50) * 1_000_000
+    }
+
     /// Frames allowed in flight on the encode queue (same limit as before).
     static let maxPendingEncodes: Int32 = 2
 
@@ -80,6 +108,8 @@ final class FramePacer {
         /// When lastBuffer's pixels were composited (host ns), 0 if unknown.
         var lastContentNs: UInt64 = 0
         var lastSubmitNs: UInt64 = 0
+        /// When new pixels were last submitted.
+        var lastCapturedNs: UInt64 = 0
         var lastPtsUs: Int64 = 0
         var counters = Counters()
         var statsStartNs: UInt64 = 0
@@ -97,11 +127,15 @@ final class FramePacer {
     private var statsTimer: DispatchSourceTimer?
     private var previousTickNs: UInt64 = 0  // touched only on the timer queue
     private let policy: Policy
+    private let idleIntervalNs: UInt64
+    private let idleAfterNs = FramePacer.idleAfterNs
     let pacingEnabled: Bool
 
     init(fps: Int, encodeQueue: DispatchQueue, pacingEnabled: Bool = FramePacer.isEnabled,
          encode: @escaping (CVPixelBuffer, CMTime, Bool, UInt64) -> Void) {
         self.policy = Policy(fps: fps)
+        let idleFps = FramePacer.idleRepeatFps
+        self.idleIntervalNs = idleFps > 0 && idleFps < fps ? UInt64(1_000_000_000 / idleFps) : 0
         self.encodeQueue = encodeQueue
         self.pacingEnabled = pacingEnabled
         self.encode = encode
@@ -149,7 +183,9 @@ final class FramePacer {
             s.lastPtsUs = us
             s.lastSubmitNs = nowNs
             switch kind {
-            case .captured: s.counters.captured += 1
+            case .captured:
+                s.counters.captured += 1
+                s.lastCapturedNs = nowNs
             case .idle: s.counters.idle += 1
             case .repeated: s.counters.repeated += 1
             case .replay: s.counters.replay += 1
@@ -197,7 +233,13 @@ final class FramePacer {
     }
 
     private func tick() {
-        let due = state.withLock { Policy.shouldRepeat(lastSubmitNs: $0.lastSubmitNs, previousTickNs: previousTickNs) }
+        let nowTickNs = DispatchTime.now().uptimeNanoseconds
+        let due = state.withLock {
+            Policy.shouldRepeat(lastSubmitNs: $0.lastSubmitNs, previousTickNs: previousTickNs)
+                && Policy.shouldRepeatWhenIdle(nowNs: nowTickNs, lastCapturedNs: $0.lastCapturedNs, lastSubmitNs: $0.lastSubmitNs,
+                                               idleAfterNs: idleAfterNs,
+                                               idleIntervalNs: PowerMode.active == .powerSaving ? idleIntervalNs : 0)
+        }
         if due { submit(nil, kind: .repeated) }
         // Mark the slot boundary after our own repeat, so it does not count as
         // "already filled" for the next slot.
