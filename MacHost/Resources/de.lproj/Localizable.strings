@@ -134,10 +134,11 @@
 "Run SharpScreen in the background automatically after you log in." = "SharpScreen nach dem Anmelden automatisch im Hintergrund ausführen.";
 "Show Settings at launch" = "Einstellungen beim Öffnen anzeigen";
 "Open this window when SharpScreen starts. When off, it starts in the menu bar only; click the menu bar icon to open Settings." = "Dieses Fenster öffnen, wenn SharpScreen startet. Wenn aus, startet es nur in der Menüleiste; klicke auf das Symbol in der Menüleiste, um die Einstellungen zu öffnen.";
-"Tablet Power" = "Tablet-Energie";
-"Power Saving" = "Stromsparen";
-"On a still screen the tablet does less and its display may slow down until something moves. Uses less battery." = "Bei einem ruhenden Bild arbeitet das Tablet weniger, und sein Display kann langsamer werden, bis sich etwas bewegt. Braucht weniger Akku.";
-"The tablet keeps its display at the top refresh rate and decodes every frame while streaming. Uses more battery." = "Das Tablet hält sein Display beim Streamen auf der höchsten Bildwiederholrate und dekodiert jedes Bild. Braucht mehr Akku.";
+"Tablet Refresh Rate" = "Bildwiederholrate des Tablets";
+"Variable" = "Variabel";
+"Fixed" = "Fest";
+"While the screen is still, the tablet lowers its refresh rate to save battery. It returns to the highest rate as soon as something moves." = "Solange sich nichts bewegt, senkt das Tablet seine Bildwiederholrate und spart Akku. Sobald sich etwas bewegt, kehrt es zur höchsten Rate zurück.";
+"The tablet keeps its display at the highest refresh rate while streaming. Uses more battery." = "Das Tablet hält sein Display beim Streamen immer auf der höchsten Bildwiederholrate. Braucht mehr Akku.";
 "Auto-start streaming on launch" = "Streaming beim Öffnen starten";
 "Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "Startet den Server automatisch beim Öffnen der App, damit sich das Tablet verbinden kann, ohne dass du den Mac bedienen musst.";
 "Startup mode" = "Startmodus";

@@ -658,10 +658,10 @@ the next new pixels). Debug app over USB (adb), the SharpScreen display still
 - `--ez diag.drawRepeats true` (tablet) and `diag.idleRepeatFps 0` (Mac)
   restore the old behaviour.
 
-### Power saving and performance modes (2026-11-20, issue #16)
+### Variable and fixed refresh rate (2026-11-20, issue #16)
 
-Settings > Streaming > Tablet Power (power saving by default). In power
-saving the Mac repeats 10 times a second on a still screen and the tablet,
+Settings > Streaming > Tablet Refresh Rate (variable by default; the code
+calls the modes powerSaving and performance). In variable the Mac repeats 10 times a second on a still screen and the tablet,
 once it has presented fewer than 6 new frames in the last second, asks for
 30 Hz: the panel then ran at 30 Hz on a still screen and 120 Hz while
 dragging (SurfaceFlinger's refresh rate). Releasing the 120 Hz mode pin alone
@@ -672,8 +672,7 @@ callbacks paused. Three new frames within 60 ms ask for 120 Hz back.
 
 The scheduler first kept its offset from the 30 Hz period: a drag starting
 from still ran 44-54 ms behind the Mac (p50, first 2 s, max 97-110 ms). It now
-relearns on resume: first-window max 20-44 ms in power saving, 42-64 ms in
-performance.
+relearns on resume: first-window max 20-44 ms variable, 42-64 ms fixed.
 
 Battery current with the cable out, Wi-Fi, still screen, stats overlay on,
 the debug app logging `BatteryManager` current every 5 s (`--ez
@@ -682,10 +681,10 @@ each phase dropped):
 
 | Mode | Average current |
 |---|---|
-| Power saving | -712 mA, -715 mA |
-| Performance | -980 mA, -925 mA |
+| Variable | -712 mA, -715 mA |
+| Fixed | -980 mA, -925 mA |
 
-About 240 mA (~25%) less in power saving, ~0.9 W at 3.9 V.
+About 240 mA (~25%) less with a variable rate, ~0.9 W at 3.9 V.
 
 ## Tablet decoders
 

@@ -134,10 +134,11 @@
 "Run SharpScreen in the background automatically after you log in." = "Exécuter SharpScreen automatiquement en arrière-plan après l’ouverture de session.";
 "Show Settings at launch" = "Afficher les réglages à l’ouverture";
 "Open this window when SharpScreen starts. When off, it starts in the menu bar only; click the menu bar icon to open Settings." = "Ouvrir cette fenêtre au démarrage de SharpScreen. Si cette option est désactivée, l’app démarre uniquement dans la barre des menus ; cliquez sur son icône pour ouvrir les réglages.";
-"Tablet Power" = "Énergie de la tablette";
-"Power Saving" = "Économie d’énergie";
-"On a still screen the tablet does less and its display may slow down until something moves. Uses less battery." = "Quand l’écran ne bouge pas, la tablette travaille moins et son affichage peut ralentir jusqu’au prochain mouvement. Consomme moins de batterie.";
-"The tablet keeps its display at the top refresh rate and decodes every frame while streaming. Uses more battery." = "Pendant la diffusion, la tablette garde son affichage à la fréquence maximale et décode chaque image. Consomme plus de batterie.";
+"Tablet Refresh Rate" = "Fréquence de la tablette";
+"Variable" = "Variable";
+"Fixed" = "Fixe";
+"While the screen is still, the tablet lowers its refresh rate to save battery. It returns to the highest rate as soon as something moves." = "Quand l’écran ne bouge pas, la tablette baisse sa fréquence de rafraîchissement pour économiser la batterie. Elle revient à la fréquence maximale dès que quelque chose bouge.";
+"The tablet keeps its display at the highest refresh rate while streaming. Uses more battery." = "Pendant la diffusion, la tablette garde toujours son affichage à la fréquence maximale. Consomme plus de batterie.";
 "Auto-start streaming on launch" = "Lancer la diffusion à l’ouverture";
 "Start the server automatically when the app opens, so the tablet can connect without touching the Mac." = "Démarre le serveur automatiquement à l’ouverture de l’app, pour que la tablette puisse se connecter sans toucher au Mac.";
 "Startup mode" = "Mode au démarrage";

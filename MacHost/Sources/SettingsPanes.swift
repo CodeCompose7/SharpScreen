@@ -608,15 +608,15 @@ struct StreamingPane: View {
     }
 
     private var powerSection: some View {
-        SettingsSection("Tablet Power") {
+        SettingsSection("Tablet Refresh Rate") {
             SettingsBlock {
                 PillSegmentedControl(selection: $settings.powerMode, options: [
-                    .init(value: PowerMode.powerSaving, title: "Power Saving"),
-                    .init(value: PowerMode.performance, title: "Performance")
+                    .init(value: PowerMode.powerSaving, title: "Variable"),
+                    .init(value: PowerMode.performance, title: "Fixed")
                 ])
                 Text(settings.powerMode == .powerSaving
-                     ? LocalizedStringKey("On a still screen the tablet does less and its display may slow down until something moves. Uses less battery.")
-                     : LocalizedStringKey("The tablet keeps its display at the top refresh rate and decodes every frame while streaming. Uses more battery."))
+                     ? LocalizedStringKey("While the screen is still, the tablet lowers its refresh rate to save battery. It returns to the highest rate as soon as something moves.")
+                     : LocalizedStringKey("The tablet keeps its display at the highest refresh rate while streaming. Uses more battery."))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
