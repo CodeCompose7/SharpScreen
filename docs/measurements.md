@@ -629,6 +629,35 @@ closing.
   changes with the video frame's composite time instead of its delivery made no
   difference; dropped.
 
+## Tablet power on a still screen (2026-11-20, issue #16)
+
+Streaming a still screen, the tablet decoded, drew and presented the host's
+120 repeat frames a second. Over USB (accessory, charging) the battery
+current was -812 mA streaming a still screen, -849 mA while dragging, and
++128 mA with the app in the background: ~0.9 A (~3.5 W) for showing a picture
+that did not change, more than the Mac's port supplied.
+
+Now the tablet decodes a repeat (same content time as the frame on screen,
+same surface size) but does not draw or present it, and the Mac repeats only
+10 times a second once nothing new has come for 50 ms (back to every slot with
+the next new pixels). Debug app over USB (adb), the SharpScreen display still
+(a caret or clock still changed it 1-3 times a second), CPU from `top` (of 800%):
+
+| Still screen | Frames sent/s | App | SurfaceFlinger | Decoder (c2) | Composer |
+|---|---|---|---|---|---|
+| Before | 120-121 | 93-97% | 28-31% | 33-36% | 10-12% |
+| After | 15-23 | 28-33% | 17-18% | 7-10% | 4-5% |
+
+- While dragging nothing changes (new pixels every slot): app 93-98%,
+  SurfaceFlinger 33-35% either way.
+- Drag latency (Mac screen -> tablet glass, p50) was 34.4 or 38.4 ms per
+  session either way, before 34.4 / 38.3 and after 38.5 / 34.4: the same
+  half-vsync step between sessions seen before, not the change.
+- Battery current over USB was not usable for an A/B here: while charging it
+  swung between +300 and +1270 mA on the same setup.
+- `--ez diag.drawRepeats true` (tablet) and `diag.idleRepeatFps 0` (Mac)
+  restore the old behaviour.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;

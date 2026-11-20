@@ -292,6 +292,21 @@ class GlCompositor(
         handler.postDelayed(deferredCompose, COMPOSE_DEFER_MS)
     }
 
+    /** Host content time and surface size of the last video frame drawn. */
+    private var shownHostNs = 0L
+    private var shownWidth = 0
+    private var shownHeight = 0
+    private var repeatsSkipped = 0
+
+    private fun isRepeatOfShown(host: Long?): Boolean {
+        if (drawRepeats || host == null || !hasVideoFrame || host != shownHostNs) return false
+        val w = IntArray(1)
+        val h = IntArray(1)
+        EGL14.eglQuerySurface(eglDisplay, eglSurface, EGL14.EGL_WIDTH, w, 0)
+        EGL14.eglQuerySurface(eglDisplay, eglSurface, EGL14.EGL_HEIGHT, h, 0)
+        return w[0] == shownWidth && h[0] == shownHeight
+    }
+
     private fun drawFrame() {
         if (released) return
         if (composePending) {
@@ -308,8 +323,17 @@ class GlCompositor(
         }
         surfaceTexture.updateTexImage()
         surfaceTexture.getTransformMatrix(texMatrix)
-        hasVideoFrame = true
         val host = FrameContentTimes.take(surfaceTexture.timestamp / 1000)
+        if (isRepeatOfShown(host)) {
+            // Same pixels as the frame on screen (the host repeats its last
+            // frame to keep the stream at the display rate). The decoder
+            // still decoded it; drawing and presenting it again only kept
+            // the GPU, SurfaceFlinger and the panel busy: ~0.9 A on a still
+            // screen (issue #16).
+            repeatsSkipped++
+            return
+        }
+        hasVideoFrame = true
         traceHostNs = host ?: 0L
         val s = scheduler
         if (s != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -380,6 +404,11 @@ class GlCompositor(
         EGL14.eglQuerySurface(eglDisplay, eglSurface, EGL14.EGL_WIDTH, w, 0)
         EGL14.eglQuerySurface(eglDisplay, eglSurface, EGL14.EGL_HEIGHT, h, 0)
         GLES20.glViewport(0, 0, w[0], h[0])
+        if (fromVideo) {
+            shownHostNs = traceHostNs
+            shownWidth = w[0]
+            shownHeight = h[0]
+        }
 
         GLES20.glUseProgram(program)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
@@ -446,8 +475,9 @@ class GlCompositor(
                 "frames=$frames handoff avg=${"%.2f".format(if (handoffSamples > 0) handoffSumNs / handoffSamples / 1e6 else 0.0)}ms " +
                     "max=${"%.2f".format(handoffMaxNs / 1e6)}ms, draw+swap avg=${"%.2f".format(drawSumNs / frames / 1e6)}ms " +
                     "max=${"%.2f".format(drawMaxNs / 1e6)}ms, tiles applied=$tilesApplied invalidated=$tilesInvalidated " +
-                    "lossless now=${mask.count { it != 0.toByte() }}/${mask.size}" + schedulerStats(),
+                    "lossless now=${mask.count { it != 0.toByte() }}/${mask.size}, repeats not drawn=$repeatsSkipped" + schedulerStats(),
             )
+            repeatsSkipped = 0
             frames = 0
             drawSumNs = 0
             drawMaxNs = 0
@@ -515,6 +545,13 @@ class GlCompositor(
          */
         @Volatile
         var onFrameTiming: ((Long, Int, Int, Int) -> Unit)? = null
+
+        /**
+         * Draw and present repeat frames too (before issue #16). Per launch:
+         * `--ez diag.drawRepeats true`.
+         */
+        @Volatile
+        var drawRepeats = false
 
         /** Present each frame on the host's cadence (PresentScheduler); diag.vsyncPresent=false turns it off. */
         @Volatile

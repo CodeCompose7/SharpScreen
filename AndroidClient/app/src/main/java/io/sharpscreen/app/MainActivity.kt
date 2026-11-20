@@ -148,6 +148,7 @@ class MainActivity : AppCompatActivity() {
         GlCompositor.losslessTiles = intent?.getBooleanExtra("diag.lossless", true) ?: true
         // `--ez diag.vsyncPresent false`: present frames as soon as drawn (before M4).
         GlCompositor.vsyncPresent = intent?.getBooleanExtra("diag.vsyncPresent", true) ?: true
+        GlCompositor.drawRepeats = intent?.getBooleanExtra("diag.drawRepeats", false) ?: false
         // `--ez diag.frameTiming true`: report each frame's tablet-side timing to the
         // host for its latency breakdown (issue #13). The host must be 0.4.7 or later.
         GlCompositor.onFrameTiming =

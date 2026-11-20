@@ -6,6 +6,16 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+### Fixed
+- **Much less tablet power on a still screen** (#16). With nothing changing,
+  the Mac kept sending 120 copies of the last frame a second and the tablet
+  decoded, drew and presented every one: ~0.9 A, more than a Mac's USB port
+  supplies, so the battery ran down while connected. The Mac now repeats only
+  10 times a second once the screen has been still for 50 ms, and the tablet
+  no longer redraws a repeat. On a still screen the app's CPU drops from
+  93-97% to 28-33%, SurfaceFlinger from ~30% to 17%, the decoder from ~35% to
+  7-10%; motion and its latency are unchanged. Needs both apps updated.
+
 ## [0.4.8] - 2026-11-20 — USB memory fix
 
 ### Fixed
