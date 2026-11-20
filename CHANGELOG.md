@@ -7,6 +7,13 @@ Side Screen's history up to the fork is in the git log and in
 ## [Unreleased]
 
 ### Fixed
+- **Power saving / performance mode** (#16). Settings > Streaming > Tablet
+  Power, power saving by default. In power saving the tablet's display drops
+  to 30 Hz while the screen is still and returns to 120 Hz as soon as
+  something moves; with the cable out the tablet drew ~25% less current
+  (~715 instead of ~950 mA on a still screen). Performance keeps 120 Hz and
+  every frame, as before. Needs both apps updated (older tablet apps keep
+  the old behaviour).
 - **Much less tablet power on a still screen** (#16). With nothing changing,
   the Mac kept sending 120 copies of the last frame a second and the tablet
   decoded, drew and presented every one: ~0.9 A, more than a Mac's USB port
