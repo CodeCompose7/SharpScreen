@@ -224,23 +224,28 @@ final class AccessoryLink {
         var parser = UsbLink.Parser()
         let buffer = NSMutableData(length: 64 * 1024)!
         while isRunning {
-            guard let pipe = inPipe else { break }
-            var count = 0
-            do {
-                try pipe.__sendIORequest(with: buffer, bytesTransferred: &count, completionTimeout: 0)
-            } catch {
-                if isRunning {
-                    // Unplugged, or reset under us: nothing to reset any more.
-                    debugLog("USB accessory: \(serial) read ended — \(error)")
-                    report(.failed("disconnected"))
-                    stop(reset: false)
+            // Drain what IOUSBHostPipe autoreleases on each read (issue #15).
+            let keepGoing: Bool = autoreleasepool {
+                guard let pipe = inPipe else { return false }
+                var count = 0
+                do {
+                    try pipe.__sendIORequest(with: buffer, bytesTransferred: &count, completionTimeout: 0)
+                } catch {
+                    if isRunning {
+                        // Unplugged, or reset under us: nothing to reset any more.
+                        debugLog("USB accessory: \(serial) read ended — \(error)")
+                        report(.failed("disconnected"))
+                        stop(reset: false)
+                    }
+                    return false
                 }
-                return
+                guard count > 0 else { return true }
+                for frame in parser.feed(Data(bytes: buffer.bytes, count: count)) {
+                    handle(frame)
+                }
+                return true
             }
-            guard count > 0 else { continue }
-            for frame in parser.feed(Data(bytes: buffer.bytes, count: count)) {
-                handle(frame)
-            }
+            if !keepGoing { return }
         }
     }
 
@@ -327,10 +332,16 @@ final class AccessoryLink {
         guard let pipe = outPipe else { throw LinkError("not open") }
         var offset = 0
         for size in UsbLink.transferSizes(length: frame.count, maxPacket: maxPacket) {
-            let chunk = NSMutableData(data: frame.subdata(in: offset..<(offset + size)))
-            var sent = 0
-            // A tablet that stops reading for this long has gone away.
-            try pipe.__sendIORequest(with: chunk, bytesTransferred: &sent, completionTimeout: 3)
+            // IOUSBHostPipe autoreleases the buffer it is given. The relay
+            // threads loop forever and never drain a pool on their own, so
+            // every chunk sent stayed in memory: ~3 MB/s, 20 GB after two
+            // hours of streaming (issue #15). Drain per transfer.
+            try autoreleasepool {
+                let chunk = NSMutableData(data: frame.subdata(in: offset..<(offset + size)))
+                var sent = 0
+                // A tablet that stops reading for this long has gone away.
+                try pipe.__sendIORequest(with: chunk, bytesTransferred: &sent, completionTimeout: 3)
+            }
             offset += size
         }
     }
