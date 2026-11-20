@@ -6,6 +6,8 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.10] - 2026-11-20 — Find the Mac anywhere
+
 ### Added
 - **No new pairing when the Mac moves** (#17). A tablet paired once over
   Wi-Fi finds its Mac again at home, at the office or wherever its address
