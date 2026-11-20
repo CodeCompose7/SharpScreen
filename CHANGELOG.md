@@ -6,6 +6,21 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.10] - 2026-11-20 — Find the Mac anywhere
+
+### Added
+- **No new pairing when the Mac moves** (#17). A tablet paired once over
+  Wi-Fi finds its Mac again at home, at the office or wherever its address
+  changed: Reconnect tries the address that worked last, other addresses that
+  worked before, and the local network, where the Mac now announces itself
+  (mDNS/DNS-SD, `_sharpscreen._tcp`). The announcement signs each of the Mac's
+  addresses with the pairing token (HMAC), and the tablet only connects to an
+  address signed for its own pairing, so a look-alike on the network cannot
+  collect the token. Measured: same address 0.1 s, a changed address found on
+  the network 1.6 s; with the Mac off, "can't reach" shows after ~5 s instead
+  of ~13 s. Networks that block multicast still connect through the
+  remembered addresses. Needs both apps updated.
+
 ## [0.4.9] - 2026-11-20 — Tablet battery
 
 ### Added
