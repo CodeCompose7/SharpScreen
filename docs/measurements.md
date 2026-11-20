@@ -686,6 +686,23 @@ each phase dropped):
 
 About 240 mA (~25%) less with a variable rate, ~0.9 W at 3.9 V.
 
+Against a baseline: the same picture (a screenshot of the stream) shown full
+screen in the gallery, SharpScreen stopped. A script on the tablet waited for
+the cable to come out, then alternated baseline and Wi-Fi streaming (variable)
+every 90 s and logged `dumpsys battery` every 5 s; that reading only moves
+about every 30 s:
+
+| Phase | 30 s blocks |
+|---|---|
+| Baseline 1 | -542, -560, -530 mA |
+| Streaming 1 | -637, -632, (-1175) mA |
+| Baseline 2 | (-657 switching), -552, -567, -600 mA |
+| Streaming 2 | -720, -642, -670 mA |
+
+With a variable rate SharpScreen adds ~100 mA (~0.4 W) to showing the same
+picture (~550-570 mA, most of it the panel). There is little left to win on
+a still screen.
+
 ## Tablet decoders
 
 `c2.mtk.hevc.decoder.lowlatency`, `c2.mtk.av1.decoder.lowlatency`, VP9, AVC;
