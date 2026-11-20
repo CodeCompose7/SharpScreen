@@ -160,11 +160,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    /// Announces the wireless server on the local network (issue #17).
+    nonisolated(unsafe) private var hostAdvertiser: HostAdvertiser?
+
     @MainActor
     private func refreshStatusIndicators() {
         settings.adbInstalled = StatusDetector.adbInstalled()
         settings.wifiConnected = StatusDetector.wifiReachable()
         settings.listeningAddress = LANAddressResolver.primaryIPv4()
+        hostAdvertiser?.refreshIfAddressesChanged()
 
         // "Displays have separate Spaces" off → any fullscreen app blanks the
         // virtual display (#50). Nothing we can do about it from capture side;
@@ -783,7 +787,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             streamingServer = StreamingServer(port: settings.port)
             streamingServer?.touchEnabled = settings.touchEnabled
             if settings.connectionMode == .wireless {
-                streamingServer?.expectedAuthToken = WirelessAuth.loadOrCreate()
+                let token = WirelessAuth.loadOrCreate()
+                streamingServer?.expectedAuthToken = token
+                // Let paired tablets find this Mac on whatever network it is on (issue #17).
+                hostAdvertiser = HostAdvertiser(token: token, port: UInt16(settings.port))
+                hostAdvertiser?.start(name: Host.current().localizedName ?? "Mac")
                 configurePairingCode(on: streamingServer)
                 streamingServer?.onWirelessClientPaired = { [weak self] deviceName in
                     guard let self = self else { return }
@@ -1095,6 +1103,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         streamingServer?.expectedPairingCode = nil
 
         usbManager.stop()
+        hostAdvertiser?.stop()
+        hostAdvertiser = nil
         screenCapture?.stopStreaming()
         streamingServer?.stop()
         virtualDisplayManager?.destroyDisplay()

@@ -7,6 +7,8 @@ import android.provider.Settings
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 /**
  * Five-state UI machine for the Wireless tab on Android.
@@ -206,6 +208,8 @@ class WirelessTabController(
         macName: String,
         ip: String,
     ) {
+        // Remember where this Mac answered (issue #17).
+        storage.load()?.let { storage.rememberAddress(it.host, it.port) }
         views.connectedMacName.text = macName
         views.connectedMacIp.text = ip
         transition(State.CONNECTED)
@@ -238,9 +242,33 @@ class WirelessTabController(
         activity.startActivityForResult(intent, REQ_SCAN)
     }
 
+    /**
+     * Find the Mac first (issue #17): where it answered last, elsewhere it
+     * answered before, or on this network. Falls back to the stored address,
+     * whose failure shows the usual "can't reach" screen.
+     */
     private fun attemptAutoConnect(entry: PairedHostStorage.Entry) {
         val deviceName = defaultDeviceName(activity)
-        onConnectRequested(entry.host, entry.port, entry.token, deviceName, entry.macName)
+        val scope = (activity as? androidx.lifecycle.LifecycleOwner)?.lifecycleScope
+        if (scope == null) {
+            onConnectRequested(entry.host, entry.port, entry.token, deviceName, entry.macName)
+            return
+        }
+        scope.launch {
+            val found = HostFinder.locate(activity, entry.token, storage.knownAddresses())
+            if (found == null) {
+                // Nothing answered anywhere, the stored address included: say so
+                // now rather than after a full connection attempt's timeouts.
+                onConnectError(StreamClient.WirelessConnectError.NetworkUnreachable)
+                return@launch
+            }
+            val (host, port) = found
+            if (host != entry.host || port != entry.port) {
+                storage.rememberAddress(host, port)
+                views.connectingSubtitle.text = "$host:$port"
+            }
+            onConnectRequested(host, port, entry.token, deviceName, entry.macName)
+        }
     }
 
     companion object {
