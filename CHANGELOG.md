@@ -6,6 +6,8 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-11-20 — USB memory fix
+
 ### Fixed
 - **Memory kept growing while streaming over USB without ADB** (#15). Every
   chunk sent to the tablet over the USB accessory link stayed in memory: about
