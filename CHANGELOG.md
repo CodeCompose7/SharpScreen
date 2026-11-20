@@ -6,6 +6,15 @@ Side Screen's history up to the fork is in the git log and in
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-11-20 — USB memory fix
+
+### Fixed
+- **Memory kept growing while streaming over USB without ADB** (#15). Every
+  chunk sent to the tablet over the USB accessory link stayed in memory: about
+  1.4 MB/s on a still screen and several MB/s while windows moved, 20 GB after
+  two hours. The relay now releases each transfer's buffer; memory stays flat
+  (~40-50 MB) while streaming. Wi-Fi and USB with ADB were not affected.
+
 ## [0.4.7] - 2026-11-20 — Sharper sooner over USB
 
 ### Changed
